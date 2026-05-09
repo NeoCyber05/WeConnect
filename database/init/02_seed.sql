@@ -7,6 +7,25 @@ SET NAMES utf8mb4;
 
 USE weconnect;
 
+-- ── 0. CLEANUP ───────────────────────────────────────────────
+SET FOREIGN_KEY_CHECKS = 0;
+TRUNCATE TABLE MESSAGES;
+TRUNCATE TABLE CONVERSATIONS;
+TRUNCATE TABLE CALLS;
+TRUNCATE TABLE FRIENDSHIPS;
+TRUNCATE TABLE FRIEND_REQUESTS;
+TRUNCATE TABLE EVENT_FEEDBACK;
+TRUNCATE TABLE EVENT_REGISTRATIONS;
+TRUNCATE TABLE EVENTS;
+TRUNCATE TABLE GAME_MESSAGES;
+TRUNCATE TABLE GAME_PARTICIPANTS;
+TRUNCATE TABLE GAME_ROOMS;
+TRUNCATE TABLE USER_HOBBIES;
+TRUNCATE TABLE OTPS;
+TRUNCATE TABLE USERS;
+TRUNCATE TABLE HOBBIES;
+SET FOREIGN_KEY_CHECKS = 1;
+
 -- ── 1. HOBBIES ───────────────────────────────────────────────
 INSERT INTO HOBBIES (name, category) VALUES
 ('Anime',          'Giải trí'),
@@ -32,44 +51,44 @@ INSERT INTO USERS (email, phone_number, password_hash, full_name, date_of_birth,
 -- Role 1 – Người muốn kết bạn
 ('nguyen.tuan@gmail.com',   '0901111001', '$2b$12$M9zaNuf1FQMP7p3Z9cxO5.ZuyVzY.9wGctQMKxq9T044MyYdYlMsq',
  'Nguyễn Tuấn',   '1999-03-15', 'MALE',
- 'https://storage.weconnect.vn/avatars/nguyen_tuan.jpg',
+ '/static/avatars/nguyen_tuan.jpg',
  'Mình đang học tiếng Nhật N3, muốn tìm bạn cùng luyện nói.',
  'Hà Nội', 'N3', 'vi', 'USER', TRUE),
 
 ('tran.linh@gmail.com',     '0901111002', '$2b$12$M9zaNuf1FQMP7p3Z9cxO5.ZuyVzY.9wGctQMKxq9T044MyYdYlMsq',
  'Trần Thị Linh', '2000-07-22', 'FEMALE',
- 'https://storage.weconnect.vn/avatars/tran_linh.jpg',
+ '/static/avatars/tran_linh.jpg',
  'Yêu thích anime và văn hoá Nhật Bản, đang học N4.',
  'TP.HCM', 'N4', 'vi', 'USER', TRUE),
 
 ('pham.anh@gmail.com',      '0901111003', '$2b$12$M9zaNuf1FQMP7p3Z9cxO5.ZuyVzY.9wGctQMKxq9T044MyYdYlMsq',
  'Phạm Minh Anh', '1998-11-08', 'MALE',
- 'https://storage.weconnect.vn/avatars/pham_anh.jpg',
+ '/static/avatars/pham_anh.jpg',
  'Kỹ sư phần mềm, muốn giao lưu văn hoá Nhật-Việt.',
  'Đà Nẵng', 'N2', 'vi', 'USER', TRUE),
 
 ('le.mai@gmail.com',        '0901111004', '$2b$12$M9zaNuf1FQMP7p3Z9cxO5.ZuyVzY.9wGctQMKxq9T044MyYdYlMsq',
  'Lê Thị Mai',    '2001-05-30', 'FEMALE',
- 'https://storage.weconnect.vn/avatars/le_mai.jpg',
+ '/static/avatars/le_mai.jpg',
  'Sinh viên đại học, thích du lịch và nấu ăn.',
  'Hà Nội', 'N5', 'vi', 'USER', FALSE),
 
 ('hoang.duc@gmail.com',     '0901111005', '$2b$12$M9zaNuf1FQMP7p3Z9cxO5.ZuyVzY.9wGctQMKxq9T044MyYdYlMsq',
  'Hoàng Đức',     '1997-09-18', 'MALE',
- 'https://storage.weconnect.vn/avatars/hoang_duc.jpg',
+ '/static/avatars/hoang_duc.jpg',
  'Làm việc tại Tokyo 2 năm, muốn giữ kết nối với cộng đồng Việt.',
  'Tokyo', 'N1', 'vi', 'USER', TRUE),
 
 -- Role 2 – Người tổ chức sự kiện
 ('organizer.han@weconnect.vn', '0902000001', '$2b$12$M9zaNuf1FQMP7p3Z9cxO5.ZuyVzY.9wGctQMKxq9T044MyYdYlMsq',
  'Hà Nguyễn (CLB Nhật-Việt)', '1990-01-10', 'FEMALE',
- 'https://storage.weconnect.vn/avatars/organizer_han.jpg',
+ '/static/avatars/organizer_han.jpg',
  'Chủ nhiệm CLB Giao lưu Nhật-Việt tại Hà Nội.',
  'Hà Nội', 'N1', 'vi', 'ORGANIZER', TRUE),
 
 ('organizer.minh@weconnect.vn', '0902000002', '$2b$12$M9zaNuf1FQMP7p3Z9cxO5.ZuyVzY.9wGctQMKxq9T044MyYdYlMsq',
  'Minh Trần (JVLink HCM)',    '1988-06-25', 'MALE',
- 'https://storage.weconnect.vn/avatars/organizer_minh.jpg',
+ '/static/avatars/organizer_minh.jpg',
  'Tổ chức các sự kiện kết nối người Nhật và người Việt tại TP.HCM.',
  'TP.HCM', 'N2', 'ja', 'ORGANIZER', TRUE);
 
@@ -149,25 +168,25 @@ INSERT INTO EVENTS (organizer_id, title, description, start_time, end_time, loca
  'Sự kiện giao lưu dành cho người học tiếng Nhật và người Nhật muốn học tiếng Việt. Cùng trò chuyện, chia sẻ văn hoá và kết bạn mới nhé!',
  '2024-12-07 14:00:00', '2024-12-07 17:00:00',
  'Cà phê Nhật Bản – 15 Tràng Tiền, Hoàn Kiếm, Hà Nội',
- 30, 'https://storage.weconnect.vn/events/event_hanoi_1.jpg', 'ENDED'),
+ 30, '/static/events/event_hanoi_1.jpg', 'ENDED'),
 
 (7, 'Hội ngộ cộng đồng WeConnect TP.HCM',
  'Buổi gặp mặt offline đầu tiên của cộng đồng WeConnect khu vực TP.HCM. Có minigame, quà tặng và nhiều hoạt động thú vị!',
  '2024-12-15 09:00:00', '2024-12-15 12:00:00',
  'Beta Café – 78 Lê Lợi, Quận 1, TP.HCM',
- 50, 'https://storage.weconnect.vn/events/event_hcm_1.jpg', 'ENDED'),
+ 50, '/static/events/event_hcm_1.jpg', 'ENDED'),
 
 (6, 'Workshop: Học tiếng Nhật qua Anime',
  'Workshop thực hành: học từ vựng và ngữ pháp tiếng Nhật thông qua các đoạn phim anime yêu thích. Phù hợp trình độ N5-N3.',
  '2025-01-18 09:00:00', '2025-01-18 11:30:00',
  'Toà nhà FPT – 17 Duy Tân, Cầu Giấy, Hà Nội',
- 25, 'https://storage.weconnect.vn/events/event_anime_ws.jpg', 'UPCOMING'),
+ 25, '/static/events/event_anime_ws.jpg', 'UPCOMING'),
 
 (7, 'Tiệc Tết cùng bạn Nhật: Văn hoá đón năm mới',
  'Chia sẻ phong tục đón năm mới của người Nhật và người Việt. Cùng làm bánh chưng và viết thư đầu năm (nengajou)!',
  '2025-01-25 14:00:00', '2025-01-25 18:00:00',
  'Trung tâm văn hoá Nhật Bản – 27 Quang Trung, TP.HCM',
- 40, 'https://storage.weconnect.vn/events/event_tet.jpg', 'UPCOMING');
+ 40, '/static/events/event_tet.jpg', 'UPCOMING');
 
 -- ── 10. EVENT_REGISTRATIONS ──────────────────────────────────
 INSERT INTO EVENT_REGISTRATIONS (event_id, user_id, registered_at) VALUES

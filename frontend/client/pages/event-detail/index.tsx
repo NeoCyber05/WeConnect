@@ -1,8 +1,21 @@
 import { useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import EditEventModal, { Event } from "@/components/EditEventModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+
+interface FeedbackOut {
+  feedback_id: number;
+  rating: number;
+  comment: string;
+  created_at: string;
+  user: {
+    user_id: number;
+    full_name: string;
+    avatar_url: string | null;
+  };
+}
 interface EventOut {
   event_id: number;
   title: string;
@@ -71,6 +84,8 @@ export default function Index() {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [newRating, setNewRating] = useState(5);
 
   const { data: user } = useQuery({
     queryKey: ["me"],
@@ -101,11 +116,54 @@ export default function Index() {
     },
   });
 
+  const { data: feedbackList } = useQuery({
+    queryKey: ["event-feedback", id],
+    queryFn: () => apiFetch<FeedbackOut[]>(`/api/v1/events/${id}/feedback`),
+    enabled: !!id,
+  });
+
+  const feedbackMutation = useMutation({
+    mutationFn: (data: { rating: number; comment: string }) =>
+      apiFetch(`/api/v1/events/${id}/feedback`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["event-feedback", id] });
+      setNewComment("");
+      setNewRating(5);
+    },
+  });
+
   const isOrganizer = user?.user_id === event?.organizer.user_id;
+  const hasFeedback = feedbackList?.some((f) => f.user.user_id === user?.user_id);
+  const canFeedback = event?.is_registered && !isOrganizer && !hasFeedback;
 
   const registered = event?.registered_count ?? 0;
   const total = event?.capacity ?? 1;
   const progressPct = (registered / total) * 100;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background font-inter">
+        <Navbar />
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-4 border-brand-green border-t-transparent rounded-full animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  if (isError || !event) {
+    return (
+      <div className="min-h-screen bg-background font-inter">
+        <Navbar />
+        <main className="max-w-[1180px] mx-auto px-6 py-6 pb-12">
+          <p className="text-center text-red-500 py-10">Không thể tải sự kiện.</p>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background font-inter">
@@ -120,161 +178,258 @@ export default function Index() {
           <span>Quay lại danh sách sự kiện</span>
         </Link>
 
-        {isLoading && (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 border-4 border-brand-green border-t-transparent rounded-full animate-spin" />
+        <div className="relative rounded-lg overflow-hidden h-[280px] sm:h-[360px] lg:h-[450px] bg-[#F6F3F5] mb-6">
+          <img
+            src={event.image_url || "https://api.builder.io/api/v1/image/assets/TEMP/78e3156d16c6300089b55bfaf620fc8759e9c921?width=2264"}
+            alt={event.title}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[rgba(19,27,46,0.85)] via-[rgba(19,27,46,0)] to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
+            <div className="inline-flex items-center bg-brand-green px-3 py-1 rounded-sm mb-3">
+              <span className="text-white text-[10px] font-bold tracking-[1.5px] uppercase">{event.status}</span>
+            </div>
+            <h1 className="text-white text-3xl sm:text-4xl lg:text-[42px] font-black leading-tight tracking-[-1.2px]">
+              {event.title}
+            </h1>
           </div>
-        )}
+        </div>
 
-        {isError && (
-          <p className="text-center text-red-500 py-10">Không thể tải sự kiện.</p>
-        )}
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
+          <div className="flex-1 min-w-0">
+            <div className="bg-white rounded-lg border border-[#E4E2E4] shadow-[0_8px_32px_0_rgba(0,0,0,0.04)] p-6">
+              <div className="pb-4 mb-5 border-b border-[#F0EDEF]">
+                <h2 className="text-[#1B1B1D] text-xl font-bold leading-7 tracking-[-0.5px]">Thông tin sự kiện</h2>
+              </div>
+              <div className="space-y-4 text-[#45464D] text-[15px] leading-[26px]">
+                <p>{event.description}</p>
+              </div>
 
-        {event && (
-          <>
-            <div className="relative rounded-lg overflow-hidden h-[280px] sm:h-[360px] lg:h-[450px] bg-[#F6F3F5] mb-6">
-              <img
-                src={event.image_url || "https://api.builder.io/api/v1/image/assets/TEMP/78e3156d16c6300089b55bfaf620fc8759e9c921?width=2264"}
-                alt={event.title}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[rgba(19,27,46,0.85)] via-[rgba(19,27,46,0)] to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
-                <div className="inline-flex items-center bg-brand-green px-3 py-1 rounded-sm mb-3">
-                  <span className="text-white text-[10px] font-bold tracking-[1.5px] uppercase">{event.status}</span>
+              <div className="mt-8 pt-8 border-t border-[#F0EDEF]">
+                <div className="flex items-center gap-4 mb-6">
+                  <h3 className="text-[#1B1B1D] text-lg font-bold">Người tổ chức</h3>
                 </div>
-                <h1 className="text-white text-3xl sm:text-4xl lg:text-[42px] font-black leading-tight tracking-[-1.2px]">
-                  {event.title}
-                </h1>
+                <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+                  <img
+                    src={event.organizer.avatar_url || "https://api.builder.io/api/v1/image/assets/TEMP/1aa6cda7cbb8af6978846088580c88c40f54f3f7?width=48"}
+                    alt={event.organizer.full_name}
+                    className="w-12 h-12 rounded-full object-cover shadow-sm"
+                  />
+                  <div>
+                    <p className="text-[#1B1B1D] font-bold">{event.organizer.full_name}</p>
+                    <p className="text-wc-gray text-xs">Organizer</p>
+                  </div>
+                  <Link
+                    to={`/users/${event.organizer.user_id}`}
+                    className="ml-auto text-wc-green text-sm font-semibold hover:underline"
+                  >
+                    Xem hồ sơ
+                  </Link>
+                </div>
               </div>
             </div>
 
-            <div className="flex flex-col lg:flex-row gap-6 items-start">
-              <div className="flex-1 min-w-0">
-                <div className="bg-white rounded-lg border border-[#E4E2E4] shadow-[0_8px_32px_0_rgba(0,0,0,0.04)] p-6">
-                  <div className="pb-4 mb-5 border-b border-[#F0EDEF]">
-                    <h2 className="text-[#1B1B1D] text-xl font-bold leading-7 tracking-[-0.5px]">Thông tin sự kiện</h2>
-                  </div>
-                  <div className="space-y-4 text-[#45464D] text-[15px] leading-[26px]">
-                    <p>{event.description}</p>
-                  </div>
-                </div>
+            <div className="mt-6 bg-white rounded-lg border border-[#E4E2E4] shadow-[0_8px_32px_0_rgba(0,0,0,0.04)] p-6">
+              <div className="pb-4 mb-6 border-b border-[#F0EDEF] flex items-center justify-between">
+                <h2 className="text-[#1B1B1D] text-xl font-bold leading-7 tracking-[-0.5px]">Đánh giá & Phản hồi</h2>
+                <span className="text-wc-gray text-sm font-medium">{feedbackList?.length || 0} lượt đánh giá</span>
               </div>
 
-              <div className="w-full lg:w-[380px] flex-shrink-0">
-                <div className="bg-white rounded-lg border border-[#E4E2E4] shadow-[0_8px_32px_0_rgba(0,0,0,0.04)] p-6">
-                  <p className="text-[#1B1B1D] text-sm font-semibold mb-5">Chi tiết sự kiện</p>
-
-                  <div className="flex items-start gap-3.5 mb-5">
-                    <div className="w-[42px] h-[42px] rounded-lg bg-brand-icon-bg flex items-center justify-center flex-shrink-0">
-                      <CalendarIcon />
-                    </div>
-                    <div>
-                      <p className="text-[#57657B] text-[10px] font-bold tracking-[1px] uppercase mb-0.5">Thời gian</p>
-                      <p className="text-[#1B1B1D] text-sm font-semibold leading-5">
-                        {event.start_time ? new Date(event.start_time).toLocaleDateString("vi-VN", { year: "numeric", month: "long", day: "numeric", weekday: "long" }) : ""}
-                      </p>
-                      <p className="text-[#45464D] text-xs leading-4">
-                        {event.start_time ? new Date(event.start_time).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : ""}
-                        {event.end_time ? ` 〜 ${new Date(event.end_time).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}` : ""}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3.5 mb-6 pb-5 border-b border-[#F0EDEF]">
-                    <div className="w-[42px] h-[42px] rounded-lg bg-brand-icon-bg flex items-center justify-center flex-shrink-0">
-                      <LocationIcon />
-                    </div>
-                    <div>
-                      <p className="text-[#57657B] text-[10px] font-bold tracking-[1px] uppercase mb-0.5">Địa điểm</p>
-                      <p className="text-[#1B1B1D] text-sm font-semibold leading-5">{event.location}</p>
-                    </div>
-                  </div>
-
-                  <div className="mb-5">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[#1B1B1D] text-sm font-medium">Trạng thái tham gia</span>
-                      <span className="text-brand-green text-sm font-semibold">{registered} / {total} người</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-[#F0EDEF] rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-brand-green rounded-full"
-                        style={{ width: `${progressPct}%` }}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between mt-1.5">
-                      <span className="text-[#45464D] text-xs">Đã đăng ký {registered} người</span>
-                      <span className="text-[#45464D] text-xs">Còn trống {total - registered} chỗ</span>
-                    </div>
-                  </div>
-
-                  {isOrganizer ? (
-                    <div className="flex flex-col gap-3">
+              {canFeedback && (
+                <div className="mb-8 p-6 rounded-xl bg-wc-light border border-wc-border">
+                  <h4 className="text-[#1B1B1D] font-bold mb-4">Để lại đánh giá của bạn</h4>
+                  <div className="flex items-center gap-2 mb-4">
+                    {[1, 2, 3, 4, 5].map((star) => (
                       <button
-                        onClick={() => setIsEditing(true)}
-                        className="w-full bg-[#1B1B1D] hover:bg-[#2D2D2F] transition-colors text-white text-sm font-bold py-3.5 px-6 rounded-lg"
+                        key={star}
+                        onClick={() => setNewRating(star)}
+                        className="focus:outline-none transition-transform hover:scale-110"
                       >
-                        Chỉnh sửa sự kiện
+                        <svg
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill={star <= newRating ? "#FBBF24" : "none"}
+                          stroke={star <= newRating ? "#FBBF24" : "#CBD5E1"}
+                          strokeWidth="2"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" />
+                        </svg>
                       </button>
-                      <Link
-                        to={`/organizer/events/${id}/stats`}
-                        className="w-full bg-white border border-[#E4E2E4] hover:bg-slate-50 transition-colors text-[#1B1B1D] text-sm font-bold py-3.5 px-6 rounded-lg text-center"
-                      >
-                        Xem thống kê chi tiết
-                      </Link>
-                    </div>
-                  ) : event.is_full && !event.is_registered ? (
-                    <button disabled className="w-full bg-gray-300 text-gray-500 text-sm font-bold py-3.5 px-6 rounded-lg cursor-not-allowed">
-                      Hết chỗ
-                    </button>
-                  ) : event.is_registered ? (
-                    <button
-                      onClick={() => unregisterMutation.mutate()}
-                      disabled={unregisterMutation.isPending}
-                      className="w-full bg-red-600 hover:bg-red-700 transition-colors text-white text-sm font-bold py-3.5 px-6 rounded-lg disabled:opacity-60"
-                    >
-                      {unregisterMutation.isPending ? "Đang xử lý..." : "Huỷ đăng ký"}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => registerMutation.mutate()}
-                      disabled={registerMutation.isPending}
-                      className="w-full bg-[#1B1B1D] hover:bg-[#2D2D2F] transition-colors text-white text-sm font-bold py-3.5 px-6 rounded-lg disabled:opacity-60"
-                    >
-                      {registerMutation.isPending ? "Đang xử lý..." : "Đăng ký tham gia sự kiện này"}
-                    </button>
-                  )}
+                    ))}
+                  </div>
+                  <textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Chia sẻ cảm nghĩ của bạn về sự kiện này..."
+                    className="w-full h-24 p-4 rounded-lg border border-slate-200 outline-none focus:border-wc-green transition-colors resize-none text-sm mb-4"
+                  />
+                  <button
+                    onClick={() => feedbackMutation.mutate({ rating: newRating, comment: newComment })}
+                    disabled={feedbackMutation.isPending || !newComment.trim()}
+                    className="bg-wc-green hover:bg-wc-green/90 text-white font-bold py-2 px-6 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    Gửi đánh giá
+                  </button>
                 </div>
+              )}
+
+              <div className="space-y-6">
+                {feedbackList && feedbackList.length > 0 ? (
+                  feedbackList.map((feedback) => (
+                    <div key={feedback.feedback_id} className="flex gap-4 pb-6 border-b border-slate-50 last:border-0 last:pb-0">
+                      <img
+                        src={feedback.user.avatar_url || "https://api.builder.io/api/v1/image/assets/TEMP/1aa6cda7cbb8af6978846088580c88c40f54f3f7?width=48"}
+                        alt={feedback.user.full_name}
+                        className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-bold text-[#1B1B1D] text-sm">{feedback.user.full_name}</span>
+                          <span className="text-[#A1A1A5] text-xs">
+                            {new Date(feedback.created_at).toLocaleDateString("vi-VN")}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 mb-2">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <svg
+                              key={star}
+                              width="12"
+                              height="12"
+                              viewBox="0 0 24 24"
+                              fill={star <= feedback.rating ? "#FBBF24" : "none"}
+                              stroke={star <= feedback.rating ? "#FBBF24" : "#CBD5E1"}
+                              strokeWidth="2"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" />
+                            </svg>
+                          ))}
+                        </div>
+                        <p className="text-[#45464D] text-sm leading-relaxed">{feedback.comment}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center text-wc-gray py-8 italic">Chưa có đánh giá nào cho sự kiện này.</p>
+                )}
               </div>
             </div>
+          </div>
 
-            {isEditing && event && (
-              <EditEventModal
-                event={mapEventOutToEditEvent(event)}
-                onClose={() => setIsEditing(false)}
-                onSave={(updated) => {
-                  updateMutation.mutate({
-                    title: updated.name,
-                    description: updated.description,
-                    location: updated.location,
-                    capacity: updated.maxAttendees,
-                    start_time: updated.date,
-                    // end_time: updated.date, // Need to handle end_time better
-                  });
-                }}
-                onCancel={() => {
-                  if (confirm("Bạn có chắc chắn muốn xoá sự kiện này?")) {
-                    apiFetch(`/api/v1/events/${id}`, { method: "DELETE" }).then(() => {
-                      window.location.href = "/events";
-                    });
-                  }
-                }}
-                onCloseRegistration={() => {
-                  updateMutation.mutate({ status: "CLOSED" });
-                }}
-              />
-            )}
-          </>
+          <div className="w-full lg:w-[380px] flex-shrink-0">
+            <div className="bg-white rounded-lg border border-[#E4E2E4] shadow-[0_8px_32px_0_rgba(0,0,0,0.04)] p-6">
+              <p className="text-[#1B1B1D] text-sm font-semibold mb-5">Chi tiết sự kiện</p>
+
+              <div className="flex items-start gap-3.5 mb-5">
+                <div className="w-[42px] h-[42px] rounded-lg bg-brand-icon-bg flex items-center justify-center flex-shrink-0">
+                  <CalendarIcon />
+                </div>
+                <div>
+                  <p className="text-[#57657B] text-[10px] font-bold tracking-[1px] uppercase mb-0.5">Thời gian</p>
+                  <p className="text-[#1B1B1D] text-sm font-semibold leading-5">
+                    {event.start_time ? new Date(event.start_time).toLocaleDateString("vi-VN", { year: "numeric", month: "long", day: "numeric", weekday: "long" }) : ""}
+                  </p>
+                  <p className="text-[#45464D] text-xs leading-4">
+                    {event.start_time ? new Date(event.start_time).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : ""}
+                    {event.end_time ? ` 〜 ${new Date(event.end_time).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}` : ""}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3.5 mb-6 pb-5 border-b border-[#F0EDEF]">
+                <div className="w-[42px] h-[42px] rounded-lg bg-brand-icon-bg flex items-center justify-center flex-shrink-0">
+                  <LocationIcon />
+                </div>
+                <div>
+                  <p className="text-[#57657B] text-[10px] font-bold tracking-[1px] uppercase mb-0.5">Địa điểm</p>
+                  <p className="text-[#1B1B1D] text-sm font-semibold leading-5">{event.location}</p>
+                </div>
+              </div>
+
+              <div className="mb-5">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[#1B1B1D] text-sm font-medium">Trạng thái tham gia</span>
+                  <span className="text-brand-green text-sm font-semibold">{registered} / {total} người</span>
+                </div>
+                <div className="w-full h-1.5 bg-[#F0EDEF] rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-brand-green rounded-full"
+                    style={{ width: `${progressPct}%` }}
+                  />
+                </div>
+                <div className="flex items-center justify-between mt-1.5">
+                  <span className="text-[#45464D] text-xs">Đã đăng ký {registered} người</span>
+                  <span className="text-[#45464D] text-xs">Còn trống {total - registered} chỗ</span>
+                </div>
+              </div>
+
+              {isOrganizer ? (
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="w-full bg-[#1B1B1D] hover:bg-[#2D2D2F] transition-colors text-white text-sm font-bold py-3.5 px-6 rounded-lg"
+                  >
+                    Chỉnh sửa sự kiện
+                  </button>
+                  <Link
+                    to={`/organizer/events/${id}/stats`}
+                    className="w-full bg-white border border-[#E4E2E4] hover:bg-slate-50 transition-colors text-[#1B1B1D] text-sm font-bold py-3.5 px-6 rounded-lg text-center"
+                  >
+                    Xem thống kê chi tiết
+                  </Link>
+                </div>
+              ) : event.is_full && !event.is_registered ? (
+                <button disabled className="w-full bg-gray-300 text-gray-500 text-sm font-bold py-3.5 px-6 rounded-lg cursor-not-allowed">
+                  Hết chỗ
+                </button>
+              ) : event.is_registered ? (
+                <button
+                  onClick={() => unregisterMutation.mutate()}
+                  disabled={unregisterMutation.isPending}
+                  className="w-full bg-red-600 hover:bg-red-700 transition-colors text-white text-sm font-bold py-3.5 px-6 rounded-lg disabled:opacity-60"
+                >
+                  {unregisterMutation.isPending ? "Đang xử lý..." : "Huỷ đăng ký"}
+                </button>
+              ) : (
+                <button
+                  onClick={() => registerMutation.mutate()}
+                  disabled={registerMutation.isPending}
+                  className="w-full bg-[#1B1B1D] hover:bg-[#2D2D2F] transition-colors text-white text-sm font-bold py-3.5 px-6 rounded-lg disabled:opacity-60"
+                >
+                  {registerMutation.isPending ? "Đang xử lý..." : "Đăng ký tham gia sự kiện này"}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {isEditing && event && (
+          <EditEventModal
+            event={mapEventOutToEditEvent(event)}
+            onClose={() => setIsEditing(false)}
+            onSave={(updated) => {
+              updateMutation.mutate({
+                title: updated.name,
+                description: updated.description,
+                location: updated.location,
+                capacity: updated.maxAttendees,
+                start_time: updated.date,
+                // end_time: updated.date, // Need to handle end_time better
+              });
+            }}
+            onCancel={() => {
+              if (confirm("Bạn có chắc chắn muốn xoá sự kiện này?")) {
+                apiFetch(`/api/v1/events/${id}`, { method: "DELETE" }).then(() => {
+                  window.location.href = "/events";
+                });
+              }
+            }}
+            onCloseRegistration={() => {
+              updateMutation.mutate({ status: "CLOSED" });
+            }}
+          />
         )}
       </main>
     </div>

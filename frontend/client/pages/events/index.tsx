@@ -112,64 +112,68 @@ function EventCard({ event, currentUserId }: { event: EventData & { organizer_id
   const badgeText = event.badge === "ONLINE" ? "TRỰC TUYẾN" : "TRỰC TIẾP";
   const isOrganizer = currentUserId === event.organizer_id;
   return (
-    <div className="flex flex-col rounded-2xl border border-wc-border bg-white overflow-hidden">
-      <div className="relative h-48 overflow-hidden">
-        <img
-          src={event.image}
-          alt={event.title}
-          className="w-full h-full object-cover"
-        />
-        <div
-          className={`absolute top-3 left-3 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${
-            event.badgeOnline
-              ? "bg-wc-green text-white"
-              : "bg-white/90 text-wc-dark backdrop-blur-sm shadow-sm"
-          }`}
-        >
-          {badgeText}
+    <div className="flex flex-col rounded-2xl border border-wc-border bg-white overflow-hidden hover:shadow-lg transition-shadow">
+      <Link to={`/events/${event.id}`} className="flex flex-col flex-1">
+        <div className="relative h-48 overflow-hidden">
+          <img
+            src={event.image}
+            alt={event.title}
+            className="w-full h-full object-cover transition-transform hover:scale-105 duration-500"
+          />
+          <div
+            className={`absolute top-3 left-3 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${
+              event.badgeOnline
+                ? "bg-wc-green text-white"
+                : "bg-white/90 text-wc-dark backdrop-blur-sm shadow-sm"
+            }`}
+          >
+            {badgeText}
+          </div>
         </div>
-      </div>
 
-      <div className="flex flex-col flex-1 p-4">
-        <h3 className="text-[18px] font-bold text-wc-dark leading-7 mb-2">
-          {event.title}
-        </h3>
+        <div className="flex flex-col flex-1 p-4">
+          <h3 className="text-[18px] font-bold text-wc-dark leading-7 mb-2 hover:text-wc-green transition-colors">
+            {event.title}
+          </h3>
 
-        <div className="flex flex-col gap-2 flex-1">
-          <div className="flex items-center gap-2">
-            <CalendarIcon />
-            <span className="text-xs text-wc-gray leading-4">{event.date}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <LocationIcon type={event.locationType} />
-            <span className="text-xs text-wc-gray leading-4 truncate">{event.location}</span>
-          </div>
-
-            <div className="flex items-center justify-between pt-3 mt-auto border-t border-slate-50">
-            <div className="flex items-center gap-1.5 bg-wc-light rounded-lg px-2 py-1">
-              <PeopleIcon />
-              <span className="text-xs font-bold text-wc-green">{event.participants}</span>
+          <div className="flex flex-col gap-2 flex-1">
+            <div className="flex items-center gap-2">
+              <CalendarIcon />
+              <span className="text-xs text-wc-gray leading-4">{event.date}</span>
             </div>
-            {isOrganizer ? (
-              <Link
-                to={`/events/${event.id}`}
-                className="px-3 py-1 rounded-full border border-wc-dark text-xs font-bold text-wc-dark hover:bg-slate-100 transition-colors"
-              >
-                Quản lý
-              </Link>
-            ) : event.isFull ? (
-              <button disabled className="px-3 py-1 rounded-full border border-gray-300 text-xs font-bold text-gray-400 cursor-not-allowed">
-                Hết chỗ
-              </button>
-            ) : (
-              <Link
-                to={`/events/${event.id}`}
-                className="px-3 py-1 rounded-full border border-wc-green text-xs font-bold text-wc-green hover:bg-wc-light transition-colors"
-              >
-                Tham gia
-              </Link>
-            )}
+            <div className="flex items-center gap-2">
+              <LocationIcon type={event.locationType} />
+              <span className="text-xs text-wc-gray leading-4 truncate">{event.location}</span>
+            </div>
           </div>
+        </div>
+      </Link>
+
+      <div className="p-4 pt-0">
+        <div className="flex items-center justify-between pt-3 mt-auto border-t border-slate-50">
+          <div className="flex items-center gap-1.5 bg-wc-light rounded-lg px-2 py-1">
+            <PeopleIcon />
+            <span className="text-xs font-bold text-wc-green">{event.participants}</span>
+          </div>
+          {isOrganizer ? (
+            <Link
+              to={`/events/${event.id}`}
+              className="px-3 py-1 rounded-full border border-wc-dark text-xs font-bold text-wc-dark hover:bg-slate-100 transition-colors"
+            >
+              Quản lý
+            </Link>
+          ) : event.isFull ? (
+            <button disabled className="px-3 py-1 rounded-full border border-gray-300 text-xs font-bold text-gray-400 cursor-not-allowed">
+              Hết chỗ
+            </button>
+          ) : (
+            <Link
+              to={`/events/${event.id}`}
+              className="px-3 py-1 rounded-full border border-wc-green text-xs font-bold text-wc-green hover:bg-wc-light transition-colors"
+            >
+              Tham gia
+            </Link>
+          )}
         </div>
       </div>
     </div>

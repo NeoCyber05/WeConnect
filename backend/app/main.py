@@ -22,6 +22,7 @@ app.add_middleware(
 
 # Serve ảnh upload
 app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
+app.mount("/static", StaticFiles(directory="/app/static"), name="static")
 
 # Routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
