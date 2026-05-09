@@ -68,6 +68,7 @@ const App = () => (
             <Route path="/game" element={<ProtectedRoute><GameRoom /></ProtectedRoute>} />
 
             {/* Organizer Routes */}
+            <Route path="/organizer/stats" element={<ProtectedRoute requireOrganizer><AdminStats /></ProtectedRoute>} />
             <Route path="/organizer/events" element={<ProtectedRoute requireOrganizer><EventManagement /></ProtectedRoute>} />
             <Route path="/organizer/events/:id/stats" element={<ProtectedRoute requireOrganizer><EventStats /></ProtectedRoute>} />
 

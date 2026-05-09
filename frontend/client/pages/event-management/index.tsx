@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import EditEventModal, { Event } from "@/components/EditEventModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -158,9 +159,26 @@ export default function Index() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Page title */}
         <div className="mb-6">
-          <h1 className="text-xl font-bold text-gray-900">
-            Quản lý Sự kiện
-          </h1>
+          <div className="flex items-center justify-between mb-1">
+            <h1 className="text-xl font-bold text-gray-900">
+              Quản lý Sự kiện
+            </h1>
+            <div className="flex items-center gap-2">
+              <Link
+                to="/organizer/stats"
+                className="text-sm font-semibold text-wc-green hover:underline"
+              >
+                ← Thống kê tổng quan
+              </Link>
+              <span className="text-gray-300">|</span>
+              <Link
+                to="/events"
+                className="text-sm font-semibold text-gray-500 hover:text-gray-700 hover:underline"
+              >
+                Thoát chế độ quản lý
+              </Link>
+            </div>
+          </div>
           <p className="text-sm text-gray-500 mt-0.5">
             Quản lý tất cả sự kiện của bạn
           </p>
