@@ -16,6 +16,7 @@ class Settings(BaseSettings):
 
     OTP_EXPIRE_MINUTES: int = 5
     RESEND_API_KEY: str | None = None
+    GEMINI_API_KEY: str | None = None
 
     UPLOAD_DIR: str = "/app/uploads"
     MAX_UPLOAD_SIZE_MB: int = 10

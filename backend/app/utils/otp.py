@@ -3,6 +3,7 @@ import string
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from app.config import settings
+from fastapi import HTTPException, status
 import resend
 
 def generate_otp(length: int = 6) -> str:
@@ -11,6 +12,24 @@ def generate_otp(length: int = 6) -> str:
 
 def save_otp(db: Session, identifier: str, purpose: str) -> str:
     from app.models.user import OTP
+
+    # Kiểm tra cooldown: 4 phút mới được gửi tiếp (SRS ID 3, 8)
+    last_otp = (
+        db.query(OTP)
+        .filter(OTP.identifier == identifier, OTP.purpose == purpose)
+        .order_by(OTP.created_at.desc())
+        .first()
+    )
+    if last_otp:
+        now = datetime.now(timezone.utc)
+        # created_at is stored in UTC
+        elapsed = now - last_otp.created_at.replace(tzinfo=timezone.utc)
+        if elapsed < timedelta(minutes=4):
+            remaining = 240 - int(elapsed.total_seconds())
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Vui lòng đợi {remaining} giây nữa trước khi yêu cầu mã mới."
+            )
 
     # Vô hiệu hoá OTP cũ cùng identifier + purpose còn pending
     db.query(OTP).filter(
