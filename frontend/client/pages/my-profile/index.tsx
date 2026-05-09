@@ -25,6 +25,9 @@ interface UserOut {
   bio?: string;
   location?: string;
   japanese_level?: string;
+  job_title?: string;
+  education?: string;
+  relationship_status?: string;
   preferred_language?: string;
   role: string;
   is_verified: boolean;
@@ -235,6 +238,51 @@ export default function Index() {
     if (file) coverMutation.mutate(file);
   };
 
+  const formatDateOfBirth = (value?: string) => {
+    if (!value) return "Chưa cập nhật";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return new Intl.DateTimeFormat("vi-VN").format(date);
+  };
+
+  const basicInfoItems = [
+    {
+      icon: basicInfo[0].icon,
+      title: data?.job_title || "Chưa cập nhật",
+      subtitle: "Công việc",
+    },
+    {
+      icon: basicInfo[1].icon,
+      title: data?.education || "Chưa cập nhật",
+      subtitle: "Học vấn",
+    },
+    {
+      icon: basicInfo[2].icon,
+      title: data?.relationship_status || "Chưa cập nhật",
+      subtitle: "Tình trạng quan hệ",
+    },
+    {
+      icon: basicInfo[3].icon,
+      title: data?.japanese_level || "Chưa cập nhật",
+      subtitle: "Trình độ tiếng Nhật",
+    },
+    {
+      icon: basicInfo[0].icon,
+      title: data?.gender || "Chưa cập nhật",
+      subtitle: "Giới tính",
+    },
+    {
+      icon: basicInfo[1].icon,
+      title: formatDateOfBirth(data?.date_of_birth),
+      subtitle: "Ngày sinh",
+    },
+    {
+      icon: basicInfo[2].icon,
+      title: data?.phone_number || "Chưa cập nhật",
+      subtitle: "Số điện thoại",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-wc-bg font-['Inter']">
       <Navbar />
@@ -433,38 +481,14 @@ export default function Index() {
                 <h3 className="text-wc-dark font-bold text-xl">Thông tin cơ bản</h3>
               </div>
               <div className="flex flex-col gap-6">
-                {basicInfo.map(({ icon, title, subtitle, friends }, i) => (
+                {basicInfoItems.map(({ icon, title, subtitle }, i) => (
                   <div key={i} className="flex items-start gap-4">
                     <div className="w-10 h-10 rounded-lg bg-wc-bg flex items-center justify-center shrink-0">
                       {icon}
                     </div>
                     <div className="flex flex-col gap-0.5">
                       <span className="text-wc-dark text-sm font-bold leading-snug">{title}</span>
-                      {subtitle && (
-                        <span className="text-wc-gray text-xs font-normal">{subtitle}</span>
-                      )}
-                      {friends && (
-                        <div className="flex items-center mt-1">
-                          <img
-                            src="https://api.builder.io/api/v1/image/assets/TEMP/c06c59c114b32c2acdc2a03ae6d0b71fbc7933ff?width=48"
-                            alt=""
-                            className="w-6 h-6 rounded-full ring-2 ring-white object-cover"
-                          />
-                          <img
-                            src="https://api.builder.io/api/v1/image/assets/TEMP/bad9adc086f0db6466f22386d5d55d7ccad9b12e?width=48"
-                            alt=""
-                            className="w-6 h-6 rounded-full ring-2 ring-white object-cover -ml-1.5"
-                          />
-                          <img
-                            src="https://api.builder.io/api/v1/image/assets/TEMP/0e18d60ee4edee40724cf9bb007b5c159285bdfb?width=48"
-                            alt=""
-                            className="w-6 h-6 rounded-full ring-2 ring-white object-cover -ml-1.5"
-                          />
-                          <div className="w-6 h-6 rounded-full bg-wc-slate ring-2 ring-white flex items-center justify-center -ml-1.5">
-                            <span className="text-wc-gray text-[8px] font-bold">+1k</span>
-                          </div>
-                        </div>
-                      )}
+                      <span className="text-wc-gray text-xs font-normal">{subtitle}</span>
                     </div>
                   </div>
                 ))}
@@ -481,6 +505,13 @@ export default function Index() {
           full_name: data?.full_name || "",
           location: data?.location,
           bio: data?.bio,
+          japanese_level: data?.japanese_level,
+          job_title: data?.job_title,
+          education: data?.education,
+          relationship_status: data?.relationship_status,
+          gender: data?.gender,
+          date_of_birth: data?.date_of_birth,
+          phone_number: data?.phone_number,
         }}
       />
 

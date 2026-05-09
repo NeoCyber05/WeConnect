@@ -201,32 +201,33 @@ export default function Index() {
               </div>
             </div>
 
-            {/* OTP field */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-[#334155] text-[11px] font-bold uppercase tracking-wide">
-                  Mã xác thực OTP
-                </label>
-                <button type="button" onClick={handleRegister} disabled={loading} className="text-[#10B981] text-xs font-bold hover:text-[#059669] transition-colors disabled:opacity-60">
-                  Gửi lại mã
-                </button>
+            {step === "otp_sent" && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-[#334155] text-[11px] font-bold uppercase tracking-wide">
+                    Mã xác thực OTP
+                  </label>
+                  <button type="button" onClick={handleRegister} disabled={loading} className="text-[#10B981] text-xs font-bold hover:text-[#059669] transition-colors disabled:opacity-60">
+                    Gửi lại mã
+                  </button>
+                </div>
+                <div className="flex gap-[10px]">
+                  {otp.map((digit, i) => (
+                    <input
+                      key={i}
+                      ref={(el) => { otpRefs.current[i] = el; }}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleOtpChange(i, e.target.value)}
+                      onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                      className="flex-1 aspect-square max-w-[58px] text-center bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg text-[18px] font-bold text-[#0F172A] outline-none focus:border-[#4EDEA3] focus:ring-2 focus:ring-[#4EDEA3]/20 transition-all"
+                    />
+                  ))}
+                </div>
               </div>
-              <div className="flex gap-[10px]">
-                {otp.map((digit, i) => (
-                  <input
-                    key={i}
-                    ref={(el) => { otpRefs.current[i] = el; }}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => handleOtpChange(i, e.target.value)}
-                    onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                    className="flex-1 aspect-square max-w-[58px] text-center bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg text-[18px] font-bold text-[#0F172A] outline-none focus:border-[#4EDEA3] focus:ring-2 focus:ring-[#4EDEA3]/20 transition-all"
-                  />
-                ))}
-              </div>
-            </div>
+            )}
 
             {/* Submit button */}
             <button

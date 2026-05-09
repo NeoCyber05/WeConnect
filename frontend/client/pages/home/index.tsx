@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
+import { useAuth } from "@/hooks/useAuth";
 
 const NAV_LINKS = [
   {
@@ -189,6 +190,9 @@ function FriendSuggestion({ avatar, matchPercent, name, meta, tags }: FriendSugg
 }
 
 export default function Index() {
+  const { user } = useAuth();
+  const displayName = user?.full_name?.trim() || "bạn";
+
   const events: EventCardProps[] = [
     {
       image: "https://api.builder.io/api/v1/image/assets/TEMP/7270c5d43d0bb4d77617e259546378d82d9521e3?width=261",
@@ -288,7 +292,7 @@ export default function Index() {
                   <span className="text-white text-[10px] font-bold uppercase tracking-[1px]">CHÀO MỪNG TRỞ LẠI</span>
                 </div>
                 <h1 className="text-white text-[30px] font-black leading-9 tracking-[-0.75px]">
-                  Konnichiwa, An-san!
+                  Konnichiwa, {displayName}-san!
                 </h1>
                 <p className="text-[#CBD5E1] text-[14px] font-light leading-[22.75px] max-w-xl">
                   Khám phá những sự kiện văn hóa Nhật Bản mới nhất và kết nối với cộng đồng yêu thích Xứ sở Mặt trời

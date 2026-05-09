@@ -23,6 +23,9 @@ class UserOut(BaseModel):
     bio: Optional[str] = None
     location: Optional[str] = None
     japanese_level: Optional[str] = None
+    job_title: Optional[str] = None
+    education: Optional[str] = None
+    relationship_status: Optional[str] = None
     preferred_language: Optional[str] = None
     role: str
     is_verified: bool
@@ -39,6 +42,9 @@ class UserPublicOut(BaseModel):
     bio: Optional[str] = None
     location: Optional[str] = None
     japanese_level: Optional[str] = None
+    job_title: Optional[str] = None
+    education: Optional[str] = None
+    relationship_status: Optional[str] = None
     role: str
     hobbies: List[HobbyOut] = []
 
@@ -50,6 +56,9 @@ class UpdateProfileRequest(BaseModel):
     bio: Optional[str] = None
     location: Optional[str] = None
     japanese_level: Optional[str] = None
+    job_title: Optional[str] = None
+    education: Optional[str] = None
+    relationship_status: Optional[str] = None
     gender: Optional[str] = None
     date_of_birth: Optional[date] = None
     phone_number: Optional[str] = None
