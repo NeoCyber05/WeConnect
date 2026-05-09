@@ -148,7 +148,7 @@ activemq-data/
 *.sage.py
 
 # Environments
-.env
+# .env
 .envrc
 .venv
 env/
@@ -216,3 +216,35 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+software_design_guide.md
+
+
+ITSSNhat1/
+
+
+node_modules/
+fe/
+SETUP.md
+TÀI LIỆU ĐẶC TẢ - HỆ THỐNG WECONNECT.pdf
+dac_ta.md
+gen_tree/
+
+# Environment files (contain secrets)
+.env
+.env.local
+.env.*.local
+
+# Vite build cache
+.vite/
+dist/
+
+# User-uploaded files (keep directory structure)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Docs build output
+docs/
+.claude/
+CLASS_DIAGRAM_overview.md
+USECASE_DIAGRAM_overview.md
+objects/
