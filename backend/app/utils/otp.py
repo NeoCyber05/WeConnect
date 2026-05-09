@@ -3,7 +3,7 @@ import string
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from app.config import settings
-
+import resend
 
 def generate_otp(length: int = 6) -> str:
     return "".join(random.choices(string.digits, k=length))
@@ -31,12 +31,28 @@ def save_otp(db: Session, identifier: str, purpose: str) -> str:
 
 
 def _send_otp(identifier: str, code: str, purpose: str) -> None:
-    """Development: in ra console. Production: tích hợp Twilio/SendGrid."""
+    """Gửi OTP qua email bằng Resend."""
     label = "Đăng ký" if purpose == "REGISTER" else "Quên mật khẩu"
     print(f"\n{'='*50}")
     print(f"[OTP] {label} | {identifier}")
     print(f"      Mã OTP: {code} (hết hạn sau {settings.OTP_EXPIRE_MINUTES} phút)")
     print(f"{'='*50}\n")
+
+    if settings.RESEND_API_KEY:
+        try:
+            resend.api_key = settings.RESEND_API_KEY
+            subject = f"WeConnect - Mã OTP {label}"
+            html_content = f"<p>Mã OTP của bạn là: <strong>{code}</strong></p><p>Mã này sẽ hết hạn sau {settings.OTP_EXPIRE_MINUTES} phút.</p>"
+            
+            r = resend.Emails.send({
+                "from": "onboarding@resend.dev",
+                "to": identifier,
+                "subject": subject,
+                "html": html_content
+            })
+            print(f"[Resend] Gửi email thành công: {r}")
+        except Exception as e:
+            print(f"[Resend] Lỗi khi gửi email: {e}")
 
 
 def verify_otp(db: Session, identifier: str, code: str, purpose: str) -> bool:

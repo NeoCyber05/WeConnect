@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     RESET_TOKEN_EXPIRE_MINUTES: int = 10
 
     OTP_EXPIRE_MINUTES: int = 5
+    RESEND_API_KEY: str | None = None
 
     UPLOAD_DIR: str = "/app/uploads"
     MAX_UPLOAD_SIZE_MB: int = 10
