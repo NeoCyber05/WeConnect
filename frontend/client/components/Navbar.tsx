@@ -4,7 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 
 interface UserOut {
+  user_id: number;
+  full_name: string;
   avatar_url?: string;
+  role: string;
 }
 
 const WeConnectLogo = () => (
@@ -67,20 +70,32 @@ export default function Navbar() {
     queryFn: () => apiFetch<UserOut>("/api/v1/users/me"),
   });
 
+  const displayLinks = [...navLinks];
+  if (user?.role === "ORGANIZER") {
+    displayLinks.push({ href: "/organizer/events", label: "Quản lý", icon: EventIcon });
+  }
+
   return (
     <header className="bg-white border-b border-wc-border sticky top-0 z-50">
       <div className="max-w-[1280px] mx-auto px-4 flex items-center justify-between h-16 gap-6">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 shrink-0">
           <WeConnectLogo />
-          <span className="text-wc-dark font-extrabold text-[20px] tracking-tight leading-none">
-            WeConnect
-          </span>
+          <div className="flex flex-col leading-none">
+            <span className="text-wc-dark font-extrabold text-[18px] tracking-tight">
+              WeConnect
+            </span>
+            {user?.role === "ORGANIZER" && (
+              <span className="text-[10px] font-bold text-wc-green uppercase tracking-wider mt-0.5">
+                ORGANIZER
+              </span>
+            )}
+          </div>
         </Link>
 
         {/* Nav links */}
         <nav className="hidden md:flex items-stretch h-16 gap-1">
-          {navLinks.map(({ href, label, icon: Icon }) => {
+          {displayLinks.map(({ href, label, icon: Icon }) => {
             const active = href === "/" 
               ? location.pathname === "/" 
               : location.pathname.startsWith(href);

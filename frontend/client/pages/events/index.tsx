@@ -70,7 +70,12 @@ interface EventOut {
   organizer: { user_id: number; full_name: string; avatar_url?: string };
 }
 
-function mapEventOut(event: EventOut): EventData {
+interface UserOut {
+  user_id: number;
+  role: string;
+}
+
+function mapEventOut(event: EventOut): EventData & { organizer_id: number } {
   const isOnline = event.location?.toLowerCase().includes("online") ||
     event.location?.toLowerCase().includes("zoom") ||
     event.location?.toLowerCase().includes("meet");
@@ -93,6 +98,7 @@ function mapEventOut(event: EventOut): EventData {
     locationType: isOnline ? "video" : "physical",
     participants: event.registered_count,
     isFull: event.is_full,
+    organizer_id: event.organizer.user_id,
   };
 }
 
@@ -102,8 +108,9 @@ function LocationIcon({ type }: { type: LocationType }) {
   return <LocationPinIcon />;
 }
 
-function EventCard({ event }: { event: EventData }) {
+function EventCard({ event, currentUserId }: { event: EventData & { organizer_id: number }, currentUserId?: number }) {
   const badgeText = event.badge === "ONLINE" ? "TRỰC TUYẾN" : "TRỰC TIẾP";
+  const isOrganizer = currentUserId === event.organizer_id;
   return (
     <div className="flex flex-col rounded-2xl border border-wc-border bg-white overflow-hidden">
       <div className="relative h-48 overflow-hidden">
@@ -138,19 +145,29 @@ function EventCard({ event }: { event: EventData }) {
             <span className="text-xs text-wc-gray leading-4 truncate">{event.location}</span>
           </div>
 
-          <div className="flex items-center justify-between pt-3 mt-auto border-t border-slate-50">
+            <div className="flex items-center justify-between pt-3 mt-auto border-t border-slate-50">
             <div className="flex items-center gap-1.5 bg-wc-light rounded-lg px-2 py-1">
               <PeopleIcon />
               <span className="text-xs font-bold text-wc-green">{event.participants}</span>
             </div>
-            {event.isFull ? (
+            {isOrganizer ? (
+              <Link
+                to={`/events/${event.id}`}
+                className="px-3 py-1 rounded-full border border-wc-dark text-xs font-bold text-wc-dark hover:bg-slate-100 transition-colors"
+              >
+                Quản lý
+              </Link>
+            ) : event.isFull ? (
               <button disabled className="px-3 py-1 rounded-full border border-gray-300 text-xs font-bold text-gray-400 cursor-not-allowed">
                 Hết chỗ
               </button>
             ) : (
-              <button className="px-3 py-1 rounded-full border border-wc-green text-xs font-bold text-wc-green hover:bg-wc-light transition-colors">
+              <Link
+                to={`/events/${event.id}`}
+                className="px-3 py-1 rounded-full border border-wc-green text-xs font-bold text-wc-green hover:bg-wc-light transition-colors"
+              >
                 Tham gia
-              </button>
+              </Link>
             )}
           </div>
         </div>
@@ -160,12 +177,17 @@ function EventCard({ event }: { event: EventData }) {
 }
 
 export default function Index() {
+  const { data: user } = useQuery({
+    queryKey: ["me"],
+    queryFn: () => apiFetch<UserOut>("/api/v1/users/me"),
+  });
+
   const { data: apiEvents, isLoading, isError } = useQuery({
     queryKey: ["events"],
     queryFn: () => apiFetch<EventOut[]>("/api/v1/events"),
   });
 
-  const events: EventData[] = (apiEvents ?? []).map(mapEventOut);
+  const events = (apiEvents ?? []).map(mapEventOut);
 
   return (
     <div className="min-h-screen bg-wc-bg font-inter">
@@ -182,12 +204,25 @@ export default function Index() {
             </p>
           </div>
 
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-wc-border bg-white text-wc-dark text-sm font-semibold hover:bg-wc-bg transition-colors shrink-0">
-            <svg width="18" height="12" viewBox="0 0 18 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M7 12V10H11V12H7ZM3 7V5H15V7H3ZM0 2V0H18V2H0Z" fill="#2D3A3A"/>
-            </svg>
-            Lọc
-          </button>
+          <div className="flex items-center gap-3">
+            {user?.role === "ORGANIZER" && (
+              <Link
+                to="/organizer/events"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-wc-green text-white text-sm font-bold hover:bg-wc-green/90 transition-colors shrink-0"
+              >
+                <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
+                  <path d="M6 1V11M1 6H11" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+                Tạo sự kiện
+              </Link>
+            )}
+            <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-wc-border bg-white text-wc-dark text-sm font-semibold hover:bg-wc-bg transition-colors shrink-0">
+              <svg width="18" height="12" viewBox="0 0 18 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M7 12V10H11V12H7ZM3 7V5H15V7H3ZM0 2V0H18V2H0Z" fill="#2D3A3A"/>
+              </svg>
+              Lọc
+            </button>
+          </div>
         </div>
 
         {isLoading && (
@@ -201,7 +236,7 @@ export default function Index() {
         {!isLoading && !isError && (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
             {events.map((event) => (
-              <EventCard key={event.id} event={event} />
+              <EventCard key={event.id} event={event} currentUserId={user?.user_id} />
             ))}
           </div>
         )}

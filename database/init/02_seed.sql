@@ -241,4 +241,4 @@ INSERT INTO OTPS (identifier, code, purpose, expire_at, used, created_at) VALUES
 -- OTP đã dùng (forgot password Trần Linh)
 ('tran.linh@gmail.com','739201', 'FORGOT_PASSWORD',  '2024-11-05 14:05:00', TRUE,  '2024-11-05 14:00:00'),
 -- OTP còn hiệu lực (chưa dùng – dùng để test)
-('test.user@gmail.com','123456', 'REGISTER',        '2099-12-31 23:59:59', FALSE, NOW());
+('test.user@gmail.com','123456', 'REGISTER',        '2037-12-31 23:59:59', FALSE, NOW());

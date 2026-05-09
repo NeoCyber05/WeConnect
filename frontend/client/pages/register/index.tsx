@@ -1,8 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { saveTokens } from "@/lib/auth";
+import { useAuth } from "@/hooks/useAuth";
 
 const WeConnectIcon = () => (
   <svg width="28" height="28" viewBox="0 0 30 28.75" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -20,7 +21,15 @@ export default function Index() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      navigate("/", { replace: true });
+    }
+  }, [isLoggedIn, navigate]);
 
   const handleRegister = async () => {
     setError("");

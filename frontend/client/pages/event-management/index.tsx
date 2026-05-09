@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Navbar from "@/components/Navbar";
 import EditEventModal, { Event } from "@/components/EditEventModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
@@ -39,86 +40,6 @@ function mapEventOutToEvent(e: EventOut): Event {
   };
 }
 
-const initialEvents: Event[] = [
-  {
-    id: 1,
-    name: "Hội thảo Công nghệ Blockchain 2024",
-    category: "Công nghệ",
-    maxAttendees: 200,
-    date: "24/05/2024, 08:30 AM",
-    location: "Trung tâm Hội nghị Quốc gia",
-    description:
-      "Hội thảo chuyên sâu về công nghệ Blockchain và ứng dụng trong các lĩnh vực kinh tế, tài chính.",
-    coverImage:
-      "https://api.builder.io/api/v1/image/assets/TEMP/aece6927bc5f80fe28ed9c9383395a5207764768?width=125",
-    status: "active",
-  },
-  {
-    id: 2,
-    name: "Ngày hội Khởi nghiệp Đổi mới Sáng tạo",
-    category: "Kinh doanh",
-    maxAttendees: 500,
-    date: "10/06/2024, 09:00 AM",
-    location: "Cung Văn hóa Lao động TP.HCM",
-    description:
-      "Sự kiện kết nối các startup, nhà đầu tư và doanh nghiệp trong hệ sinh thái khởi nghiệp Việt Nam.",
-    coverImage:
-      "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=200&fit=crop",
-    status: "active",
-  },
-  {
-    id: 3,
-    name: "Hội nghị Giáo dục Quốc tế 2024",
-    category: "Giáo dục",
-    maxAttendees: 300,
-    date: "15/07/2024, 08:00 AM",
-    location: "Đại học Quốc gia Hà Nội",
-    description:
-      "Diễn đàn trao đổi kinh nghiệm và xu hướng giáo dục hiện đại giữa các chuyên gia trong và ngoài nước.",
-    coverImage:
-      "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=400&h=200&fit=crop",
-    status: "closed",
-  },
-  {
-    id: 4,
-    name: "Workshop Thiết kế UX/UI Nâng cao",
-    category: "Công nghệ",
-    maxAttendees: 80,
-    date: "20/05/2024, 13:00 PM",
-    location: "Toà nhà Keangnam, Hà Nội",
-    description:
-      "Workshop thực hành chuyên sâu về thiết kế giao diện người dùng với các công cụ hiện đại.",
-    coverImage:
-      "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&h=200&fit=crop",
-    status: "cancelled",
-  },
-  {
-    id: 5,
-    name: "Triển lãm Văn hóa Nghệ thuật Đương đại",
-    category: "Văn hóa",
-    maxAttendees: 1000,
-    date: "01/08/2024, 10:00 AM",
-    location: "Bảo tàng Mỹ thuật Việt Nam",
-    description:
-      "Triển lãm quy mô lớn trưng bày các tác phẩm nghệ thuật đương đại của nghệ sĩ Việt Nam và quốc tế.",
-    coverImage:
-      "https://images.unsplash.com/photo-1536924940846-227afb31e2a5?w=400&h=200&fit=crop",
-    status: "active",
-  },
-  {
-    id: 6,
-    name: "Giải Chạy Marathon TP.HCM 2024",
-    category: "Thể thao",
-    maxAttendees: 5000,
-    date: "18/08/2024, 05:30 AM",
-    location: "Phố đi bộ Nguyễn Huệ, TP.HCM",
-    description:
-      "Giải chạy marathon quy mô lớn nhất miền Nam với các cự ly 5km, 10km, 21km và 42km.",
-    coverImage:
-      "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=400&h=200&fit=crop",
-    status: "active",
-  },
-];
 
 const statusConfig = {
   active: {
@@ -161,14 +82,22 @@ export default function Index() {
     queryFn: () => apiFetch<EventOut[]>("/api/v1/events/managed"),
   });
 
+  const createMutation = useMutation({
+    mutationFn: (data: any) => apiFetch("/api/v1/events", { method: "POST", body: JSON.stringify(data) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["managed-events"] }),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => apiFetch(`/api/v1/events/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["managed-events"] }),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id: number) => apiFetch(`/api/v1/events/${id}`, { method: "DELETE" }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["managed-events"] }),
   });
 
-  const events: Event[] = (apiEvents ?? initialEvents.map ? initialEvents : []).map(
-    (e: EventOut | Event) => "event_id" in e ? mapEventOutToEvent(e as EventOut) : e as Event
-  );
+  const events: Event[] = (apiEvents ?? []).map(mapEventOutToEvent);
 
   const filtered = events.filter((e) => {
     const matchesSearch =
@@ -180,19 +109,39 @@ export default function Index() {
   });
 
   const handleSave = (updated: Event) => {
+    const payload = {
+      title: updated.name,
+      description: updated.description,
+      location: updated.location,
+      capacity: updated.maxAttendees,
+      start_time: updated.date,
+      end_time: updated.date, // Needs proper end time handling
+    };
+
+    if (updated.id === 0) {
+      createMutation.mutate(payload);
+    } else {
+      updateMutation.mutate({ id: updated.id, data: payload });
+    }
     setEditingEvent(null);
-    queryClient.invalidateQueries({ queryKey: ["managed-events"] });
   };
 
   const handleCancel = () => {
-    if (!editingEvent) return;
-    deleteMutation.mutate(editingEvent.id);
-    setEditingEvent(null);
+    if (!editingEvent || editingEvent.id === 0) {
+      setEditingEvent(null);
+      return;
+    }
+    if (confirm("Bạn có chắc chắn muốn xoá sự kiện này?")) {
+      deleteMutation.mutate(editingEvent.id);
+      setEditingEvent(null);
+    }
   };
 
   const handleCloseRegistration = () => {
+    if (editingEvent) {
+      updateMutation.mutate({ id: editingEvent.id, data: { status: "CLOSED" } });
+    }
     setEditingEvent(null);
-    queryClient.invalidateQueries({ queryKey: ["managed-events"] });
   };
 
   const stats = {
@@ -204,82 +153,7 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-slate-50 font-inter">
-      {/* Nav */}
-      <header className="bg-[#131B2E] text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                >
-                  <rect
-                    x="2"
-                    y="2"
-                    width="5"
-                    height="5"
-                    rx="1"
-                    fill="white"
-                  />
-                  <rect
-                    x="9"
-                    y="2"
-                    width="5"
-                    height="5"
-                    rx="1"
-                    fill="white"
-                    opacity="0.7"
-                  />
-                  <rect
-                    x="2"
-                    y="9"
-                    width="5"
-                    height="5"
-                    rx="1"
-                    fill="white"
-                    opacity="0.7"
-                  />
-                  <rect
-                    x="9"
-                    y="9"
-                    width="5"
-                    height="5"
-                    rx="1"
-                    fill="white"
-                  />
-                </svg>
-              </div>
-              <span className="font-bold text-[15px] tracking-tight">
-                EventHub
-              </span>
-            </div>
-            <nav className="hidden md:flex items-center gap-1">
-              {["Dashboard", "Sự kiện", "Người dùng", "Báo cáo"].map(
-                (item, i) => (
-                  <button
-                    key={item}
-                    className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
-                      i === 1
-                        ? "bg-white/10 text-white font-medium"
-                        : "text-white/60 hover:text-white hover:bg-white/5"
-                    }`}
-                  >
-                    {item}
-                  </button>
-                )
-              )}
-            </nav>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold">
-                AD
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Page title */}
@@ -374,7 +248,20 @@ export default function Index() {
               <option value="closed">Đóng đăng ký</option>
               <option value="cancelled">Đã hủy</option>
             </select>
-            <button className="h-9 px-4 text-sm font-medium text-white bg-[#131B2E] hover:bg-[#1e2d4a] rounded-lg transition-colors flex items-center gap-1.5">
+            <button
+              onClick={() => setEditingEvent({
+                id: 0,
+                name: "",
+                category: "",
+                maxAttendees: 50,
+                date: new Date().toISOString(),
+                location: "",
+                description: "",
+                coverImage: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=200&fit=crop",
+                status: "active"
+              })}
+              className="h-9 px-4 text-sm font-medium text-white bg-wc-green hover:bg-wc-green/90 rounded-lg transition-colors flex items-center gap-1.5"
+            >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                 <path
                   d="M6 1V11M1 6H11"

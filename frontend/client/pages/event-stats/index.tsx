@@ -1,4 +1,7 @@
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
+import Navbar from "@/components/Navbar";
+import { useQuery } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/api";
 
 const StarFull = () => (
   <svg width="22" height="21" viewBox="0 0 22 21" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -18,19 +21,87 @@ const StarSmall = ({ filled }: { filled?: boolean }) => (
   </svg>
 );
 
+interface EventStats {
+  event_id: number;
+  title: string;
+  total_registrations: number;
+  capacity: number;
+  registration_rate: number;
+  average_rating: number;
+  feedback_count: number;
+  rating_distribution: {
+    one: number;
+    two: number;
+    three: number;
+    four: number;
+    five: number;
+  };
+}
+
+interface Participant {
+  user_id: number;
+  full_name: string;
+  avatar_url?: string;
+  registered_at: string;
+}
+
+interface EventOut {
+  event_id: number;
+  title: string;
+  description: string;
+  start_time: string;
+  location: string;
+  image_url?: string;
+  status: string;
+}
+
 export default function Index() {
+  const { id } = useParams<{ id: string }>();
+
+  const { data: event } = useQuery({
+    queryKey: ["event", id],
+    queryFn: () => apiFetch<EventOut>(`/api/v1/events/${id}`),
+    enabled: !!id,
+  });
+
+  const { data: stats } = useQuery({
+    queryKey: ["event-stats", id],
+    queryFn: () => apiFetch<EventStats>(`/api/v1/events/${id}/statistics`),
+    enabled: !!id,
+  });
+
+  const { data: participants } = useQuery({
+    queryKey: ["event-participants", id],
+    queryFn: () => apiFetch<Participant[]>(`/api/v1/events/${id}/participants`),
+    enabled: !!id,
+  });
+
+  if (!event || !stats) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FA]">
+        <Navbar />
+        <div className="flex items-center justify-center py-20">
+          <div className="w-8 h-8 border-4 border-wc-green border-t-transparent rounded-full animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  const attendanceRate = Math.round(stats.registration_rate * 100);
+
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
+      <Navbar />
       <div className="max-w-[1180px] mx-auto px-4 sm:px-6 py-8">
         {/* Page header */}
         <div className="flex items-center gap-3 mb-6">
-          <Link to="/" className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-slate-100 transition-colors flex-shrink-0">
+          <Link to="/organizer/events" className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-slate-100 transition-colors flex-shrink-0">
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M9 14.25L3.75 9L9 3.75" stroke="#1B1B1D" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M14.25 9H3.75" stroke="#1B1B1D" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </Link>
-          <h1 className="text-xl font-bold leading-[30px] text-black">Chi tiết sự kiện</h1>
+          <h1 className="text-xl font-bold leading-[30px] text-black">Thống kê sự kiện</h1>
         </div>
 
         {/* Event card */}
@@ -38,21 +109,21 @@ export default function Index() {
           <div className="flex flex-col sm:flex-row items-start gap-5">
             <div className="w-full sm:w-[140px] flex-shrink-0">
               <img
-                src="https://api.builder.io/api/v1/image/assets/TEMP/803c3de7ce411d9f4e7d4bc98154a2da6da183bc?width=280"
-                alt="Gala Dinner Doanh nhân Trẻ"
+                src={event.image_url || "https://api.builder.io/api/v1/image/assets/TEMP/803c3de7ce411d9f4e7d4bc98154a2da6da183bc?width=280"}
+                alt={event.title}
                 className="w-full sm:w-[140px] h-[100px] object-cover rounded-lg"
               />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2 mb-2">
-                <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-800 text-white text-[11px] font-semibold tracking-wide">
-                  Đã kết thúc
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-800 text-white text-[11px] font-semibold tracking-wide uppercase">
+                  {event.status}
                 </span>
                 <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-500 text-[11px] font-semibold tracking-wide">
-                  Kinh doanh
+                  Sự kiện
                 </span>
               </div>
-              <h2 className="text-2xl font-bold leading-8 text-black mb-2">Gala Dinner Doanh nhân Trẻ</h2>
+              <h2 className="text-2xl font-bold leading-8 text-black mb-2">{event.title}</h2>
               <div className="flex items-center gap-1.5 text-[#45464D] text-sm">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
                   <g clipPath="url(#clip0_date)">
@@ -63,7 +134,7 @@ export default function Index() {
                   </g>
                   <defs><clipPath id="clip0_date"><rect width="14" height="14" fill="white"/></clipPath></defs>
                 </svg>
-                <span>10/05/2024 • 19:00 PM</span>
+                <span>{new Date(event.start_time).toLocaleString("vi-VN")}</span>
               </div>
             </div>
             <div className="flex items-center gap-3 flex-shrink-0 self-start">
@@ -73,49 +144,22 @@ export default function Index() {
                   <path d="M11.3337 5.33333L8.00033 2L4.66699 5.33333" stroke="#475569" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
                   <path d="M8 2V10" stroke="#475569" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-                Import form đánh giá
-              </button>
-              <button className="flex items-center justify-center w-10 h-10 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors flex-shrink-0">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 5.33331C13.1046 5.33331 14 4.43788 14 3.33331C14 2.22874 13.1046 1.33331 12 1.33331C10.8954 1.33331 10 2.22874 10 3.33331C10 4.43788 10.8954 5.33331 12 5.33331Z" stroke="#475569" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M4 10C5.10457 10 6 9.10457 6 8C6 6.89543 5.10457 6 4 6C2.89543 6 2 6.89543 2 8C2 9.10457 2.89543 10 4 10Z" stroke="#475569" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M12 14.6667C13.1046 14.6667 14 13.7713 14 12.6667C14 11.5621 13.1046 10.6667 12 10.6667C10.8954 10.6667 10 11.5621 10 12.6667C10 13.7713 10.8954 14.6667 12 14.6667Z" stroke="#475569" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M5.72656 9.00665L10.2799 11.66" stroke="#475569" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M10.2732 4.34003L5.72656 6.99336" stroke="#475569" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+                Xuất báo cáo
               </button>
             </div>
           </div>
-        </div>
-
-        {/* Description */}
-        <div className="bg-white rounded-lg border border-slate-200 shadow-sm px-6 py-5 mb-6">
-          <h3 className="text-base font-bold text-black mb-3">Mô tả</h3>
-          <p className="text-slate-600 text-sm leading-6">
-            Buổi tiệc gala dành cho các doanh nhân trẻ, tạo cơ hội kết nối, giao lưu và chia sẻ kinh nghiệm kinh doanh.
-          </p>
         </div>
 
         {/* Stats row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
           {/* Attendance rate */}
           <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6">
-            <p className="text-[12px] font-semibold text-[#515F74] tracking-[0.7px] uppercase mb-4">Tỷ lệ tham dự</p>
+            <p className="text-[12px] font-semibold text-[#515F74] tracking-[0.7px] uppercase mb-4">Tỷ lệ đăng ký</p>
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-[36px] font-black leading-10 text-emerald-600">86%</span>
-              <div className="flex items-center gap-1">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <g clipPath="url(#clip0_trend)">
-                    <path d="M12.8337 4.08333L7.87533 9.04166L4.95866 6.12499L1.16699 9.91666" stroke="#059669" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M9.33301 4.08333H12.833V7.58333" stroke="#059669" strokeWidth="1.16667" strokeLinecap="round" strokeLinejoin="round"/>
-                  </g>
-                  <defs><clipPath id="clip0_trend"><rect width="14" height="14" fill="white"/></clipPath></defs>
-                </svg>
-                <span className="text-sm font-medium text-emerald-600">+12%</span>
-              </div>
+              <span className="text-[36px] font-black leading-10 text-emerald-600">{attendanceRate}%</span>
             </div>
             <div className="w-full h-1.5 bg-slate-200 rounded-full mb-4 overflow-hidden">
-              <div className="h-full bg-emerald-600 rounded-full" style={{ width: "86%" }} />
+              <div className="h-full bg-emerald-600 rounded-full" style={{ width: `${attendanceRate}%` }} />
             </div>
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
@@ -124,14 +168,12 @@ export default function Index() {
                     <g clipPath="url(#clip0_reg)">
                       <path d="M8 10.5V9.5C8 8.96957 7.78929 8.46086 7.41421 8.08579C7.03914 7.71071 6.53043 7.5 6 7.5H3C2.46957 7.5 1.96086 7.71071 1.58579 8.08579C1.21071 8.46086 1 8.96957 1 9.5V10.5" stroke="#3B82F6" strokeLinecap="round" strokeLinejoin="round"/>
                       <path d="M4.5 5.5C5.60457 5.5 6.5 4.60457 6.5 3.5C6.5 2.39543 5.60457 1.5 4.5 1.5C3.39543 1.5 2.5 2.39543 2.5 3.5C2.5 4.60457 3.39543 5.5 4.5 5.5Z" stroke="#3B82F6" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M11 10.5V9.5C10.9997 9.05687 10.8522 8.62639 10.5807 8.27616C10.3092 7.92593 9.92906 7.67579 9.5 7.565" stroke="#3B82F6" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M8 1.565C8.43021 1.67515 8.81152 1.92535 9.08382 2.27616C9.35612 2.62696 9.50392 3.05842 9.50392 3.5025C9.50392 3.94659 9.35612 4.37804 9.08382 4.72885C8.81152 5.07965 8.43021 5.32985 8 5.44" stroke="#3B82F6" strokeLinecap="round" strokeLinejoin="round"/>
                     </g>
                     <defs><clipPath id="clip0_reg"><rect width="12" height="12" fill="white"/></clipPath></defs>
                   </svg>
                   <span className="text-xs font-medium text-slate-500">Số người đăng ký</span>
                 </div>
-                <span className="text-[13px] font-bold text-blue-500">350 người</span>
+                <span className="text-[13px] font-bold text-blue-500">{stats.total_registrations} người</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
@@ -139,13 +181,12 @@ export default function Index() {
                     <g clipPath="url(#clip0_att)">
                       <path d="M8 10.5V9.5C8 8.96957 7.78929 8.46086 7.41421 8.08579C7.03914 7.71071 6.53043 7.5 6 7.5H3C2.46957 7.5 1.96086 7.71071 1.58579 8.08579C1.21071 8.46086 1 8.96957 1 9.5V10.5" stroke="#059669" strokeLinecap="round" strokeLinejoin="round"/>
                       <path d="M4.5 5.5C5.60457 5.5 6.5 4.60457 6.5 3.5C6.5 2.39543 5.60457 1.5 4.5 1.5C3.39543 1.5 2.5 2.39543 2.5 3.5C2.5 4.60457 3.39543 5.5 4.5 5.5Z" stroke="#059669" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M8 5.5L9 6.5L11 4.5" stroke="#059669" strokeLinecap="round" strokeLinejoin="round"/>
                     </g>
                     <defs><clipPath id="clip0_att"><rect width="12" height="12" fill="white"/></clipPath></defs>
                   </svg>
-                  <span className="text-xs font-medium text-slate-500">Số người tham gia</span>
+                  <span className="text-xs font-medium text-slate-500">Sức chứa tối đa</span>
                 </div>
-                <span className="text-[13px] font-bold text-emerald-600">300 người</span>
+                <span className="text-[13px] font-bold text-emerald-600">{stats.capacity} người</span>
               </div>
             </div>
           </div>
@@ -156,7 +197,7 @@ export default function Index() {
               ĐÁNH GIÁ TRUNG BÌNH
             </p>
             <div className="flex items-center gap-2">
-              <span className="text-[40px] font-black leading-12 text-white">4.6</span>
+              <span className="text-[40px] font-black leading-12 text-white">{stats.average_rating}</span>
               <div className="flex items-center gap-1">
                 <StarFull />
                 <StarFull />
@@ -165,47 +206,30 @@ export default function Index() {
                 <StarHalf />
               </div>
             </div>
-            <p className="text-[13px] text-slate-400">21 Đánh giá & Phản hồi</p>
+            <p className="text-[13px] text-slate-400">{stats.feedback_count} Đánh giá & Phản hồi</p>
           </div>
 
           {/* Participants list */}
-          <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-3">
+          <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-3 overflow-y-auto max-h-[220px]">
             <div className="flex items-center justify-between mb-3 px-1">
               <span className="text-[13px] font-bold text-black">Danh sách tham gia</span>
-              <span className="text-[13px] font-bold text-black">300</span>
+              <span className="text-[13px] font-bold text-black">{participants?.length ?? 0}</span>
             </div>
             <div className="flex flex-col gap-1.5 mb-3">
-              <div className="flex items-center gap-2">
-                <img
-                  src="https://api.builder.io/api/v1/image/assets/TEMP/1aa6cda7cbb8af6978846088580c88c40f54f3f7?width=48"
-                  alt="Hoàng Anh Tuấn"
-                  className="w-6 h-6 rounded-full object-cover flex-shrink-0"
-                />
-                <div>
-                  <p className="text-[11px] font-medium text-black leading-[14px]">Hoàng Anh Tuấn</p>
-                  <p className="text-[9px] font-medium text-slate-400 uppercase tracking-[0.4px]">CEO</p>
+              {(participants ?? []).map(p => (
+                <div key={p.user_id} className="flex items-center gap-2">
+                  <img
+                    src={p.avatar_url || "https://api.builder.io/api/v1/image/assets/TEMP/1aa6cda7cbb8af6978846088580c88c40f54f3f7?width=48"}
+                    alt={p.full_name}
+                    className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                  />
+                  <div>
+                    <p className="text-[11px] font-medium text-black leading-[14px]">{p.full_name}</p>
+                    <p className="text-[9px] font-medium text-slate-400 tracking-[0.4px]">Tham gia lúc: {new Date(p.registered_at).toLocaleDateString()}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <img
-                  src="https://api.builder.io/api/v1/image/assets/TEMP/01e7bac1e46ac8394654a664bca21eea3741c11d?width=48"
-                  alt="Lê Thị Hương"
-                  className="w-6 h-6 rounded-full object-cover flex-shrink-0"
-                />
-                <div>
-                  <p className="text-[11px] font-medium text-black leading-[14px]">Lê Thị Hương</p>
-                  <p className="text-[9px] font-medium text-slate-400 uppercase tracking-[0.4px]">CFO</p>
-                </div>
-              </div>
+              ))}
             </div>
-            <button className="w-full flex items-center justify-center gap-2 border border-slate-200 rounded-lg py-2 text-[11px] font-medium text-slate-600 hover:bg-slate-50 transition-colors">
-              <svg width="11" height="11" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9.625 6.875V8.70833C9.625 8.95145 9.52842 9.18461 9.35651 9.35651C9.18461 9.52842 8.95145 9.625 8.70833 9.625H2.29167C2.04855 9.625 1.81539 9.52842 1.64349 9.35651C1.47158 9.18461 1.375 8.95145 1.375 8.70833V6.875" stroke="#475569" strokeWidth="0.916667" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M3.20801 4.58333L5.49967 6.87499L7.79134 4.58333" stroke="#475569" strokeWidth="0.916667" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M5.5 6.875V1.375" stroke="#475569" strokeWidth="0.916667" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Danh sách tham gia (.csv)
-            </button>
           </div>
         </div>
 

@@ -8,7 +8,7 @@ from app.models.event import Event, EventRegistration, EventFeedback
 from app.schemas.event import (
     EventCreate, EventUpdate, EventOut, FeedbackCreate, FeedbackOut,
     EventStatistics, EventOverviewStatistics, RatingDistribution,
-    OrganizerBrief, UserBrief,
+    OrganizerBrief, UserBrief, ParticipantOut,
 )
 
 router = APIRouter()
@@ -373,3 +373,29 @@ def event_statistics(
             one=dist[1], two=dist[2], three=dist[3], four=dist[4], five=dist[5]
         ),
     )
+
+
+# ── GET /{id}/participants — Danh sách tham gia (Organizer) ──────────────────
+@router.get("/{event_id}/participants", response_model=list[ParticipantOut])
+def list_event_participants(
+    event_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_organizer),
+):
+    """SRS ID 7: Organizer xem danh sách người dùng đã đăng ký tham gia sự kiện."""
+    event = db.query(Event).filter(Event.event_id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sự kiện không tồn tại")
+    if event.organizer_id != current_user.user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Bạn không có quyền xem danh sách tham gia sự kiện này")
+
+    registrations = db.query(EventRegistration).filter(EventRegistration.event_id == event_id).all()
+    return [
+        {
+            "user_id": r.user.user_id,
+            "full_name": r.user.full_name,
+            "avatar_url": r.user.avatar_url,
+            "registered_at": r.registered_at,
+        }
+        for r in registrations
+    ]

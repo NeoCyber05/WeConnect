@@ -128,3 +128,12 @@ class EventOverviewStatistics(BaseModel):
     finished_events: int
     total_registrations: int
     average_satisfaction: float
+
+
+class ParticipantOut(BaseModel):
+    user_id: int
+    full_name: str
+    avatar_url: Optional[str] = None
+    registered_at: datetime
+
+    model_config = {"from_attributes": True}

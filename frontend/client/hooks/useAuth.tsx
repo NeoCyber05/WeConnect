@@ -17,7 +17,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CurrentUser | null>(getCurrentUser);
   const navigate = useNavigate();
 
-  const login = useCallback(async (identifier: string, password: string) => {
+  const login = useCallback(async (identifier: string, password: string, from?: string) => {
     console.log("[useAuth] Starting login for:", identifier);
     const res = await apiFetch<{ data: { access_token: string; refresh_token: string; expires_in: number; user: CurrentUser } }>(
       "/api/v1/auth/login",
@@ -27,8 +27,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log("[useAuth] Login response successful, saving tokens...");
     saveTokens(res.data.access_token, res.data.refresh_token, res.data.user);
     setUser(res.data.user);
-    console.log("[useAuth] Tokens saved, navigating to home...");
-    navigate("/");
+    console.log("[useAuth] Tokens saved, navigating to:", from || "/");
+    navigate(from || "/");
   }, [navigate]);
 
   const logout = useCallback(async () => {

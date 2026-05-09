@@ -1,8 +1,8 @@
-import { Link, useParams } from "react-router-dom";
+import { useState } from "react";
 import Navbar from "@/components/Navbar";
+import EditEventModal, { Event } from "@/components/EditEventModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
-
 interface EventOut {
   event_id: number;
   title: string;
@@ -17,6 +17,30 @@ interface EventOut {
   is_full: boolean;
   is_registered: boolean;
   organizer: { user_id: number; full_name: string; avatar_url?: string };
+}
+
+interface UserOut {
+  user_id: number;
+  role: string;
+}
+
+function mapEventOutToEditEvent(e: EventOut): Event {
+  const apiStatus = e.status?.toUpperCase();
+  let status: "active" | "closed" | "cancelled" = "active";
+  if (apiStatus === "FINISHED") status = "closed";
+  else if (apiStatus === "CANCELLED") status = "cancelled";
+  
+  return {
+    id: e.event_id,
+    name: e.title,
+    category: "Sự kiện", // Default or map if available
+    maxAttendees: e.capacity,
+    date: e.start_time,
+    location: e.location,
+    description: e.description,
+    coverImage: e.image_url || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=200&fit=crop",
+    status,
+  };
 }
 
 const CalendarIcon = () => (
@@ -46,6 +70,12 @@ const BackArrowIcon = () => (
 export default function Index() {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
+  const [isEditing, setIsEditing] = useState(false);
+
+  const { data: user } = useQuery({
+    queryKey: ["me"],
+    queryFn: () => apiFetch<UserOut>("/api/v1/users/me"),
+  });
 
   const { data: event, isLoading, isError } = useQuery({
     queryKey: ["event", id],
@@ -62,6 +92,16 @@ export default function Index() {
     mutationFn: () => apiFetch(`/api/v1/events/${id}/register`, { method: "DELETE" }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["event", id] }),
   });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: Partial<EventOut>) => apiFetch(`/api/v1/events/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["event", id] });
+      setIsEditing(false);
+    },
+  });
+
+  const isOrganizer = user?.user_id === event?.organizer.user_id;
 
   const registered = event?.registered_count ?? 0;
   const total = event?.capacity ?? 1;
@@ -168,7 +208,22 @@ export default function Index() {
                     </div>
                   </div>
 
-                  {event.is_full && !event.is_registered ? (
+                  {isOrganizer ? (
+                    <div className="flex flex-col gap-3">
+                      <button
+                        onClick={() => setIsEditing(true)}
+                        className="w-full bg-[#1B1B1D] hover:bg-[#2D2D2F] transition-colors text-white text-sm font-bold py-3.5 px-6 rounded-lg"
+                      >
+                        Chỉnh sửa sự kiện
+                      </button>
+                      <Link
+                        to={`/organizer/events/${id}/stats`}
+                        className="w-full bg-white border border-[#E4E2E4] hover:bg-slate-50 transition-colors text-[#1B1B1D] text-sm font-bold py-3.5 px-6 rounded-lg text-center"
+                      >
+                        Xem thống kê chi tiết
+                      </Link>
+                    </div>
+                  ) : event.is_full && !event.is_registered ? (
                     <button disabled className="w-full bg-gray-300 text-gray-500 text-sm font-bold py-3.5 px-6 rounded-lg cursor-not-allowed">
                       Hết chỗ
                     </button>
@@ -192,6 +247,33 @@ export default function Index() {
                 </div>
               </div>
             </div>
+
+            {isEditing && event && (
+              <EditEventModal
+                event={mapEventOutToEditEvent(event)}
+                onClose={() => setIsEditing(false)}
+                onSave={(updated) => {
+                  updateMutation.mutate({
+                    title: updated.name,
+                    description: updated.description,
+                    location: updated.location,
+                    capacity: updated.maxAttendees,
+                    start_time: updated.date,
+                    // end_time: updated.date, // Need to handle end_time better
+                  });
+                }}
+                onCancel={() => {
+                  if (confirm("Bạn có chắc chắn muốn xoá sự kiện này?")) {
+                    apiFetch(`/api/v1/events/${id}`, { method: "DELETE" }).then(() => {
+                      window.location.href = "/events";
+                    });
+                  }
+                }}
+                onCloseRegistration={() => {
+                  updateMutation.mutate({ status: "CLOSED" });
+                }}
+              />
+            )}
           </>
         )}
       </main>
