@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -118,8 +119,8 @@ const searchResults: SearchResult[] = [
     level: "N2",
     levelTextColor: "text-[#4A6741]",
     levelBg: "bg-[#F1F5F0]",
-    relation: "Bạn bè",
-    age: 22,
+    relation: "friends.friend",
+    age: 24,
     personality: "Hướng ngoại",
     avatar:
       "https://api.builder.io/api/v1/image/assets/TEMP/26982b5d03d04105c9c8d651554b7c0e4f06b327?width=80",
@@ -466,6 +467,7 @@ function SearchDropdown({
   results: SearchResult[];
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const [ageFilter, setAgeFilter] = useState("Tất cả");
   const [genderFilter, setGenderFilter] = useState("Tất cả");
   const [interestFilter, setInterestFilter] = useState("Tất cả");
@@ -492,7 +494,7 @@ function SearchDropdown({
           onChange={(e) => onChange(e.target.value)}
           className="w-full h-[38px] border border-[#E2E8E2] rounded-lg bg-white text-[11px] font-semibold text-[#2D3A3A] pl-2 pr-7 appearance-none outline-none cursor-pointer"
         >
-          <option>Tất cả</option>
+          <option>{t("chat.all") || "Tất cả"}</option>
         </select>
         <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
           <IconChevronDown />
@@ -508,27 +510,27 @@ function SearchDropdown({
         <div className="flex items-center gap-1.5">
           <IconFilter />
           <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-[0.5px]">
-            Bộ lọc tìm kiếm
+            {t("chat.searchFilters")}
           </span>
         </div>
         <div className="flex items-end gap-2">
           <FilterSelect
-            label="Độ tuổi"
+            label={t("chat.age")}
             value={ageFilter}
             onChange={setAgeFilter}
           />
           <FilterSelect
-            label="Giới tính"
+            label={t("chat.gender")}
             value={genderFilter}
             onChange={setGenderFilter}
           />
           <FilterSelect
-            label="Sở thích"
+            label={t("chat.interests")}
             value={interestFilter}
             onChange={setInterestFilter}
           />
           <FilterSelect
-            label="Trình độ Tiếng Nhật"
+            label={t("chat.japaneseLevel")}
             value={levelFilter}
             onChange={setLevelFilter}
           />
@@ -538,7 +540,7 @@ function SearchDropdown({
       {/* Results header */}
       <div className="px-4 py-2 border-b border-[rgba(226,232,226,0.3)] bg-white">
         <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-[1px]">
-          Kết quả ({results.length})
+          {t("chat.results", { count: results.length })}
         </span>
       </div>
 
@@ -565,11 +567,11 @@ function SearchDropdown({
                 />
               </div>
               <span className="text-[11px] text-[#6B7280]">
-                {r.relation} • {r.age} tuổi • {r.personality}
+                {t(r.relation)} • {r.age} tuổi • {r.personality}
               </span>
             </div>
             <button className="text-[11px] font-bold text-[#4A6741] hover:underline shrink-0">
-              Xem hồ sơ
+              {t("chat.viewProfile")}
             </button>
           </div>
         ))}
@@ -577,7 +579,7 @@ function SearchDropdown({
         {/* Scroll hint */}
         <div className="px-4 py-4 border-t border-[rgba(226,232,226,0.3)] text-center">
           <span className="text-[11px] font-medium text-[rgba(107,114,128,0.6)]">
-            Cuộn để xem thêm kết quả...
+            {t("chat.scrollMore")}
           </span>
         </div>
       </div>
@@ -588,14 +590,15 @@ function SearchDropdown({
 // ─── Header ───────────────────────────────────────────────────────────────────
 
 const navItems = [
-  { label: "Trang chủ", icon: <IconHome />, active: false },
-  { label: "Bạn bè", icon: <IconFriends />, active: false },
-  { label: "Trò chuyện", icon: <IconChat />, active: true },
-  { label: "Sự kiện", icon: <IconCalendar />, active: false },
-  { label: "Chơi trò chơi", icon: <IconGame />, active: false },
+  { label: "navbar.home", icon: <IconHome />, active: false },
+  { label: "navbar.friends", icon: <IconFriends />, active: false },
+  { label: "navbar.chat", icon: <IconChat />, active: true },
+  { label: "navbar.events", icon: <IconCalendar />, active: false },
+  { label: "navbar.games", icon: <IconGame />, active: false },
 ];
 
 function Header() {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -662,7 +665,7 @@ function Header() {
                 value={searchQuery}
                 onChange={handleSearchChange}
                 onFocus={() => searchQuery.length > 0 && setShowDropdown(true)}
-                placeholder="Tìm kiếm..."
+                placeholder={t("navbar.searchPlaceholder")}
                 className="w-48 sm:w-64 pl-9 pr-4 py-1.5 rounded-full bg-[rgba(241,245,249,0.8)] text-sm text-[#2D3A3A] placeholder-[#6B7280] outline-none focus:ring-2 focus:ring-[#4A6741]/20 transition-all"
               />
             </div>
@@ -748,11 +751,12 @@ function ConversationSidebar({
   activeId: string;
   onSelect: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <aside className="w-80 xl:w-96 flex flex-col border-r border-[#E2E8E2] bg-white shrink-0">
       {/* Sidebar header */}
       <div className="flex items-center justify-between px-4 pt-4 pb-3">
-        <h2 className="text-lg font-bold text-[#2D3A3A]">Trò chuyện</h2>
+        <h2 className="text-lg font-bold text-[#2D3A3A]">{t("chat.chat")}</h2>
         <button className="p-1 text-[#6B7280] hover:text-[#2D3A3A] transition-colors">
           <IconComposeChat />
         </button>
@@ -771,7 +775,7 @@ function ConversationSidebar({
           </div>
           <input
             type="text"
-            placeholder="Tìm kiếm hội thoại..."
+            placeholder={t("chat.searchConversations")}
             className="w-full pl-8 pr-4 py-2.5 rounded-lg bg-[rgba(241,245,249,0.8)] text-sm text-[#2D3A3A] placeholder-[#6B7280] outline-none focus:ring-2 focus:ring-[#4A6741]/20"
           />
         </div>
@@ -795,6 +799,7 @@ function ConversationSidebar({
 // ─── Chat Message ─────────────────────────────────────────────────────────────
 
 function ChatMessage({ msg }: { msg: Message }) {
+  const { t } = useTranslation();
   const [showTranslation, setShowTranslation] = useState(
     msg.translation !== undefined
   );
@@ -824,7 +829,7 @@ function ChatMessage({ msg }: { msg: Message }) {
             {showTranslation && msg.translation && (
               <div className="mt-2 pt-2 border-t border-[#F1F5F9] flex items-start gap-1.5">
                 <span className="text-[9px] font-bold text-[#4A6741] uppercase shrink-0 mt-0.5">
-                  [Tiếng Việt]
+                  [{t("profile.japaneseLevel") === "日本語レベル" ? "ベトナム語" : "Tiếng Việt"}]
                 </span>
                 <p className="text-[11px] text-[#6B7280] leading-[1.5]">
                   {msg.translation}
@@ -841,7 +846,7 @@ function ChatMessage({ msg }: { msg: Message }) {
               >
                 <IconTranslate />
                 <span className="text-[10px] font-bold text-[#4A6741]">
-                  {showTranslation ? "Ẩn bản dịch" : "Dịch"}
+                  {showTranslation ? t("chat.hideTranslation") : t("chat.translate")}
                 </span>
               </button>
             )}
@@ -868,6 +873,7 @@ function ChatMessage({ msg }: { msg: Message }) {
 // ─── Chat Window ──────────────────────────────────────────────────────────────
 
 function ChatWindow({ conv }: { conv: Conversation }) {
+  const { t } = useTranslation();
   const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -890,7 +896,7 @@ function ChatWindow({ conv }: { conv: Conversation }) {
             <h3 className="text-sm font-bold text-[#2D3A3A]">{conv.name}</h3>
             {conv.isOnline && (
               <p className="text-xs text-[#22C55E] font-medium">
-                Đang hoạt động
+                {t("chat.active")}
               </p>
             )}
           </div>
@@ -910,7 +916,7 @@ function ChatWindow({ conv }: { conv: Conversation }) {
         {/* Date divider */}
         <div className="flex justify-center">
           <span className="px-3 py-1 rounded-full bg-[#F1F5F9] text-[10px] font-bold text-[#6B7280] uppercase tracking-[0.5px]">
-            Hôm nay
+            {t("chat.today")}
           </span>
         </div>
 
@@ -942,7 +948,7 @@ function ChatWindow({ conv }: { conv: Conversation }) {
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Nhập tin nhắn..."
+              placeholder={t("chat.typeMessage")}
               className="w-full py-2.5 pl-4 pr-12 rounded-full bg-[rgba(241,245,249,0.8)] text-sm text-[#2D3A3A] placeholder-[#6B7280] outline-none focus:ring-2 focus:ring-[#4A6741]/20 transition-all"
             />
             <button className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A6741] hover:opacity-80 transition-opacity">

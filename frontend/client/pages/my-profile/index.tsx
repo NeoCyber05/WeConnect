@@ -6,7 +6,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-
+import { useTranslation } from "react-i18next";
+import { Globe } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 interface HobbyOut {
   hobby_id: number;
   name: string;
@@ -176,6 +183,7 @@ const basicInfo = [
 ];
 
 export default function Index() {
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { logout } = useAuth();
@@ -200,10 +208,10 @@ export default function Index() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["me"] });
-      toast({ title: "Thành công", description: "Ảnh đại diện đã được cập nhật." });
+      toast({ title: t("profile.success"), description: t("profile.avatarUpdated") });
     },
     onError: (error: Error) => {
-      toast({ title: "Lỗi", description: error.message, variant: "destructive" });
+      toast({ title: t("profile.error"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -218,10 +226,10 @@ export default function Index() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["me"] });
-      toast({ title: "Thành công", description: "Ảnh bìa đã được cập nhật." });
+      toast({ title: t("profile.success"), description: t("profile.coverUpdated") });
     },
     onError: (error: Error) => {
-      toast({ title: "Lỗi", description: error.message, variant: "destructive" });
+      toast({ title: t("profile.error"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -239,7 +247,7 @@ export default function Index() {
   };
 
   const formatDateOfBirth = (value?: string) => {
-    if (!value) return "Chưa cập nhật";
+    if (!value) return t("profile.notUpdated");
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
     return new Intl.DateTimeFormat("vi-VN").format(date);
@@ -248,38 +256,38 @@ export default function Index() {
   const basicInfoItems = [
     {
       icon: basicInfo[0].icon,
-      title: data?.job_title || "Chưa cập nhật",
-      subtitle: "Công việc",
+      title: data?.job_title || t("profile.notUpdated"),
+      subtitle: t("profile.job"),
     },
     {
       icon: basicInfo[1].icon,
-      title: data?.education || "Chưa cập nhật",
-      subtitle: "Học vấn",
+      title: data?.education || t("profile.notUpdated"),
+      subtitle: t("profile.education"),
     },
     {
       icon: basicInfo[2].icon,
-      title: data?.relationship_status || "Chưa cập nhật",
-      subtitle: "Tình trạng quan hệ",
+      title: data?.relationship_status || t("profile.notUpdated"),
+      subtitle: t("profile.relationshipStatus"),
     },
     {
       icon: basicInfo[3].icon,
-      title: data?.japanese_level || "Chưa cập nhật",
-      subtitle: "Trình độ tiếng Nhật",
+      title: data?.japanese_level || t("profile.notUpdated"),
+      subtitle: t("profile.japaneseLevel"),
     },
     {
       icon: basicInfo[0].icon,
-      title: data?.gender || "Chưa cập nhật",
-      subtitle: "Giới tính",
+      title: data?.gender || t("profile.notUpdated"),
+      subtitle: t("profile.gender"),
     },
     {
       icon: basicInfo[1].icon,
       title: formatDateOfBirth(data?.date_of_birth),
-      subtitle: "Ngày sinh",
+      subtitle: t("profile.dateOfBirth"),
     },
     {
       icon: basicInfo[2].icon,
-      title: data?.phone_number || "Chưa cập nhật",
-      subtitle: "Số điện thoại",
+      title: data?.phone_number || t("profile.notUpdated"),
+      subtitle: t("profile.phoneNumber"),
     },
   ];
 
@@ -337,7 +345,7 @@ export default function Index() {
               <CameraIcon />
             )}
             <span className="hidden sm:inline">
-              {coverMutation.isPending ? "Đang tải..." : "Thay đổi ảnh bìa"}
+              {coverMutation.isPending ? t("profile.loading") : t("profile.changeCover")}
             </span>
           </button>
         </div>
@@ -385,21 +393,36 @@ export default function Index() {
                 </h1>
                 <div className="flex items-center gap-2">
                   <LocationIcon />
-                  <span className="text-wc-gray text-base font-medium">{data?.location ?? "Chưa cập nhật vị trí"}</span>
+                  <span className="text-wc-gray text-base font-medium">{data?.location ?? t("profile.locationNotUpdated")}</span>
                   <div className="w-1 h-1 rounded-full bg-wc-gray/40" />
                 </div>
               </div>
               <div className="flex items-center gap-3 self-start sm:self-auto">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="p-3 rounded-2xl border border-wc-dark/10 bg-white/10 backdrop-blur-sm shadow-sm text-wc-dark hover:bg-wc-light-green transition-colors" title="Change Language">
+                      <Globe className="w-[18px] h-[18px]" strokeWidth={2.5} />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-40 font-['Inter']">
+                    <DropdownMenuItem onClick={() => i18n.changeLanguage('vi')} className={i18n.language === 'vi' ? "bg-wc-light-green text-wc-green font-bold" : ""}>
+                      Tiếng Việt
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => i18n.changeLanguage('ja')} className={i18n.language === 'ja' ? "bg-wc-light-green text-wc-green font-bold" : ""}>
+                      日本語
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <button 
                   onClick={() => setIsEditProfileOpen(true)}
                   className="px-6 py-3 rounded-2xl border border-wc-dark/10 bg-white/10 backdrop-blur-sm shadow-sm text-wc-dark font-bold text-base hover:bg-wc-light-green transition-colors"
                 >
-                  Chỉnh sửa hồ sơ
+                  {t("profile.editProfile")}
                 </button>
                 <button 
                   onClick={() => logout()}
                   className="p-3 rounded-2xl border border-red-100 bg-red-50/50 text-red-500 hover:bg-red-50 transition-colors shadow-sm"
-                  title="Đăng xuất"
+                  title={t("profile.logout")}
                 >
                   <LogoutIcon />
                 </button>
@@ -419,7 +442,7 @@ export default function Index() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <BioIcon />
-                  <h3 className="text-wc-dark font-bold text-xl">Giới thiệu</h3>
+                  <h3 className="text-wc-dark font-bold text-xl">{t("profile.bio")}</h3>
                 </div>
                 <button 
                   onClick={() => setIsEditProfileOpen(true)}
@@ -431,7 +454,7 @@ export default function Index() {
                 </button>
               </div>
               <p className="text-wc-gray text-base leading-relaxed">
-                {data?.bio ?? "Bạn chưa có lời giới thiệu nào. Hãy chia sẻ về bản thân để mọi người hiểu rõ hơn về bạn nhé!"}
+                {data?.bio ?? t("profile.bioPlaceholder")}
               </p>
             </div>
 
@@ -440,7 +463,7 @@ export default function Index() {
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
                   <StarIcon />
-                  <h3 className="text-wc-dark font-bold text-xl">Sở thích</h3>
+                  <h3 className="text-wc-dark font-bold text-xl">{t("profile.hobbies")}</h3>
                 </div>
                 <button 
                   onClick={() => setIsEditHobbiesOpen(true)}
@@ -478,7 +501,7 @@ export default function Index() {
             <div className="bg-white rounded-2xl border border-wc-border shadow-sm p-6">
               <div className="flex items-center gap-2 mb-6">
                 <InfoIcon />
-                <h3 className="text-wc-dark font-bold text-xl">Thông tin cơ bản</h3>
+                <h3 className="text-wc-dark font-bold text-xl">{t("profile.basicInfo")}</h3>
               </div>
               <div className="flex flex-col gap-6">
                 {basicInfoItems.map(({ icon, title, subtitle }, i) => (

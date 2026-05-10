@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
+import { useTranslation } from "react-i18next";
 import {
   getReceivedRequests,
   getFriendSuggestions,
@@ -142,6 +143,7 @@ function FriendRequestCard({
   isRejecting?: boolean;
 }) {
   const { user } = request;
+  const { t } = useTranslation();
 
   return (
     <div className="flex-shrink-0 w-[300px] sm:w-[310px] flex items-center gap-4 p-4 rounded-2xl border border-[#E2E8E2] bg-white">
@@ -164,14 +166,14 @@ function FriendRequestCard({
             disabled={isAccepting || isRejecting}
             className="px-3 py-1 rounded-md bg-[#4A6741] text-white text-xs font-semibold hover:bg-[#3a5232] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {isAccepting ? "Đang xử lý..." : "Chấp nhận"}
+            {isAccepting ? t("friends.processing") : t("friends.accept")}
           </button>
           <button
             onClick={() => onReject(request.request_id)}
             disabled={isAccepting || isRejecting}
             className="px-3 py-1 rounded-md bg-[#F1F5F9] text-[#6B7280] text-xs font-semibold hover:bg-[#E2E8E2] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Bỏ qua
+            {t("friends.ignore")}
           </button>
         </div>
       </div>
@@ -189,6 +191,7 @@ function SuggestionCard({
   onAdd: (userId: number) => void;
   isAdding?: boolean;
 }) {
+  const { t } = useTranslation();
   const isSent = user.friendship_status === "REQUEST_SENT";
   const isFriend = user.friendship_status === "FRIEND";
 
@@ -224,11 +227,11 @@ function SuggestionCard({
 
       {isFriend ? (
         <span className="shrink-0 text-[10px] font-semibold text-[#4A6741] bg-[#F1F5F0] px-2 py-1 rounded-lg">
-          Bạn bè
+          {t("friends.friend")}
         </span>
       ) : isSent ? (
         <span className="shrink-0 text-[10px] font-semibold text-[#6B7280] bg-[#F1F5F9] px-2 py-1 rounded-lg">
-          Đã gửi
+          {t("friends.sent")}
         </span>
       ) : (
         <button
@@ -245,6 +248,7 @@ function SuggestionCard({
 
 // ── Friends Page ──────────────────────────────────────────────────────────────
 export default function FriendsPage() {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [processingRequestId, setProcessingRequestId] = useState<number | null>(null);
   const [sendingToUserId, setSendingToUserId] = useState<number | null>(null);
@@ -276,12 +280,12 @@ export default function FriendsPage() {
       return acceptFriendRequest(requestId);
     },
     onSuccess: () => {
-      toast.success("Đã chấp nhận lời mời kết bạn!");
+      toast.success(t("friends.acceptSuccess"));
       queryClient.invalidateQueries({ queryKey: ["receivedRequests"] });
       queryClient.invalidateQueries({ queryKey: ["friends"] });
     },
     onError: (err: Error) => {
-      toast.error(err.message || "Không thể chấp nhận lời mời");
+      toast.error(err.message || t("friends.acceptError"));
     },
     onSettled: () => setProcessingRequestId(null),
   });
@@ -292,11 +296,11 @@ export default function FriendsPage() {
       return rejectFriendRequest(requestId);
     },
     onSuccess: () => {
-      toast.success("Đã từ chối lời mời kết bạn");
+      toast.success(t("friends.rejectSuccess"));
       queryClient.invalidateQueries({ queryKey: ["receivedRequests"] });
     },
     onError: (err: Error) => {
-      toast.error(err.message || "Không thể từ chối lời mời");
+      toast.error(err.message || t("friends.rejectError"));
     },
     onSettled: () => setProcessingRequestId(null),
   });
@@ -307,11 +311,11 @@ export default function FriendsPage() {
       return sendFriendRequest(userId);
     },
     onSuccess: () => {
-      toast.success("Đã gửi lời mời kết bạn!");
+      toast.success(t("friends.requestSentSuccess"));
       queryClient.invalidateQueries({ queryKey: ["suggestions"] });
     },
     onError: (err: Error) => {
-      toast.error(err.message || "Không thể gửi lời mời kết bạn");
+      toast.error(err.message || t("friends.requestSentError"));
     },
     onSettled: () => setSendingToUserId(null),
   });
@@ -322,12 +326,12 @@ export default function FriendsPage() {
       return unfriend(userId);
     },
     onSuccess: () => {
-      toast.success("Đã hủy kết bạn");
+      toast.success(t("friends.unfriendSuccess"));
       queryClient.invalidateQueries({ queryKey: ["friends"] });
       queryClient.invalidateQueries({ queryKey: ["suggestions"] });
     },
     onError: (err: Error) => {
-      toast.error(err.message || "Không thể hủy kết bạn");
+      toast.error(err.message || t("friends.unfriendError"));
     },
     onSettled: () => setUnfriendingId(null),
   });
@@ -338,7 +342,7 @@ export default function FriendsPage() {
   const friendsTotal = friendsData?.pagination?.total ?? 0;
 
   const handleUnfriend = (userId: number, name: string) => {
-    if (!window.confirm(`Bạn có chắc muốn hủy kết bạn với ${name}?`)) return;
+    if (!window.confirm(t("friends.unfriendConfirm", { name }))) return;
     unfriendMutation.mutate(userId);
   };
 
@@ -356,18 +360,18 @@ export default function FriendsPage() {
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-6 rounded-full bg-[#4A6741]" />
                   <h2 className="text-xl font-bold text-[#2D3A3A]">
-                    Lời mời kết bạn
+                    {t("friends.friendRequests")}
                   </h2>
                 </div>
                 {receivedRequests.length > 0 && (
                   <span className="text-[11px] italic text-[#6B7280] opacity-75">
-                    (Cuộn ngang để xem thêm)
+                    {t("friends.scrollHint")}
                   </span>
                 )}
               </div>
               {receivedRequests.length > 0 && (
                 <span className="px-[10px] py-1 rounded-full bg-[#4A6741]/10 text-[11px] font-bold text-[#4A6741]">
-                  {receivedRequests.length} yêu cầu mới
+                  {t("friends.newRequests", { count: receivedRequests.length })}
                 </span>
               )}
             </div>
@@ -383,7 +387,7 @@ export default function FriendsPage() {
               </div>
             ) : receivedRequests.length === 0 ? (
               <div className="py-8 text-center text-sm text-[#6B7280] bg-white rounded-2xl border border-[#E2E8E2]">
-                Không có lời mời kết bạn nào
+                {t("friends.noRequests")}
               </div>
             ) : (
               <div className="relative overflow-hidden">
@@ -421,7 +425,7 @@ export default function FriendsPage() {
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-6 rounded-full bg-[#4A6741]" />
                   <h2 className="text-xl font-bold text-[#2D3A3A]">
-                    Bạn bè của tôi
+                    {t("friends.myFriends")}
                   </h2>
                   {friendsTotal > 0 && (
                     <span className="text-sm text-[#6B7280]">
@@ -430,14 +434,14 @@ export default function FriendsPage() {
                   )}
                 </div>
                 <p className="text-xs text-[#6B7280] mt-0.5 ml-4">
-                  Danh sách những người bạn đã kết nối
+                  {t("friends.connectedList")}
                 </p>
               </div>
 
               <div className="relative w-full sm:w-80">
                 <input
                   type="text"
-                  placeholder="Tìm kiếm trong danh sách bạn bè..."
+                  placeholder={t("friends.searchPlaceholder")}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full pl-10 pr-4 py-[9px] rounded-lg border border-[#E2E8E2] bg-white text-sm text-[#6B7280] placeholder-[#6B7280] outline-none focus:ring-2 focus:ring-[#4A6741]/20"
@@ -467,8 +471,8 @@ export default function FriendsPage() {
               ) : friends.length === 0 ? (
                 <div className="py-12 text-center text-sm text-[#6B7280]">
                   {search
-                    ? "Không tìm thấy bạn bè nào"
-                    : "Bạn chưa có bạn bè nào"}
+                    ? t("friends.noFriendsFound")
+                    : t("friends.noFriends")}
                 </div>
               ) : (
                 friends.map((friend, i) => (
@@ -526,13 +530,12 @@ export default function FriendsPage() {
         <div className="lg:col-span-4 flex flex-col gap-6">
           {/* Friend Suggestions */}
           <div className="rounded-2xl border border-[#E2E8E2] bg-white shadow-sm p-6 flex flex-col gap-6">
-            <h2 className="text-lg font-bold text-[#2D3A3A]">Gợi ý kết bạn</h2>
+            <h2 className="text-lg font-bold text-[#2D3A3A]">{t("friends.suggestions")}</h2>
 
             {suggestionsData?.warning && (
               <div className="px-3 py-2 rounded-lg bg-[#FFF7ED] border border-[#FED7AA]">
                 <p className="text-xs text-[#EA580C]">
-                  Hãy cập nhật trình độ và sở thích trong hồ sơ để nhận gợi ý
-                  phù hợp hơn!
+                  {t("friends.updateProfileHint")}
                 </p>
               </div>
             )}
@@ -551,7 +554,7 @@ export default function FriendsPage() {
               </div>
             ) : suggestions.length === 0 ? (
               <p className="text-sm text-[#6B7280] text-center py-4">
-                Không có gợi ý nào lúc này
+                {t("friends.noSuggestions")}
               </p>
             ) : (
               <div className="flex flex-col gap-6">
@@ -571,7 +574,7 @@ export default function FriendsPage() {
                 to="/search"
                 className="text-center text-sm text-[#4A6741] font-semibold hover:underline"
               >
-                Tìm thêm người dùng
+                {t("friends.searchMore")}
               </Link>
             )}
           </div>
@@ -581,7 +584,7 @@ export default function FriendsPage() {
             <div className="flex items-center gap-2">
               <QuoteIcon />
               <h3 className="text-sm font-bold text-[#4A6741]">
-                Lời khuyên từ cộng đồng
+                {t("friends.communityQuote")}
               </h3>
             </div>
             <div className="flex flex-col gap-4">
@@ -592,7 +595,7 @@ export default function FriendsPage() {
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full bg-[#4A6741]/20 shrink-0" />
                 <span className="text-[10px] text-[#6B7280]">
-                  — Thành viên từ 2021
+                  {t("friends.memberSince")}
                 </span>
               </div>
             </div>

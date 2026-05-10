@@ -2,6 +2,7 @@ import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
+import { useTranslation } from "react-i18next";
 import {
   getUserProfile,
   sendFriendRequest,
@@ -22,27 +23,28 @@ function FriendActionButton({
   status: "FRIEND" | "REQUEST_SENT" | "REQUEST_RECEIVED" | "NONE";
   userId: number;
 }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const sendMutation = useMutation({
     mutationFn: () => sendFriendRequest(userId),
     onSuccess: () => {
-      toast.success("Đã gửi lời mời kết bạn!");
+      toast.success(t("friends.requestSentSuccess"));
       queryClient.invalidateQueries({ queryKey: ["userProfile", userId] });
     },
     onError: (err: Error) => {
-      toast.error(err.message || "Không thể gửi lời mời kết bạn");
+      toast.error(err.message || t("friends.requestSentError"));
     },
   });
 
   const unfriendMutation = useMutation({
     mutationFn: () => unfriend(userId),
     onSuccess: () => {
-      toast.success("Đã hủy kết bạn");
+      toast.success(t("friends.unfriendSuccess"));
       queryClient.invalidateQueries({ queryKey: ["userProfile", userId] });
     },
     onError: (err: Error) => {
-      toast.error(err.message || "Không thể hủy kết bạn");
+      toast.error(err.message || t("friends.unfriendError"));
     },
   });
 
@@ -50,18 +52,18 @@ function FriendActionButton({
     return (
       <div className="flex gap-2 self-start sm:self-auto flex-shrink-0">
         <span className="px-5 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-[#F1F5F0] text-[#4A6741] text-sm sm:text-base font-bold">
-          Bạn bè
+          {t("friends.friend")}
         </span>
         <button
           onClick={() => {
-            if (window.confirm("Bạn có chắc muốn hủy kết bạn?")) {
+            if (window.confirm(t("friends.unfriendConfirmSimple"))) {
               unfriendMutation.mutate();
             }
           }}
           disabled={unfriendMutation.isPending}
           className="px-4 py-2.5 rounded-2xl border border-[#DC2626]/20 bg-[#FEF2F2] text-[#DC2626] text-sm font-bold hover:bg-red-100 transition-colors disabled:opacity-60"
         >
-          Hủy kết bạn
+          {t("friends.unfriend")}
         </button>
       </div>
     );
@@ -70,7 +72,7 @@ function FriendActionButton({
   if (status === "REQUEST_SENT") {
     return (
       <span className="self-start sm:self-auto flex-shrink-0 px-5 sm:px-6 py-2.5 sm:py-3 rounded-2xl bg-[#F1F5F9] text-[#6B7280] text-sm sm:text-base font-bold">
-        Đã gửi lời mời
+        {t("friends.sent")}
       </span>
     );
   }
@@ -81,7 +83,7 @@ function FriendActionButton({
         to="/friends"
         className="self-start sm:self-auto flex-shrink-0 px-5 sm:px-6 py-2.5 sm:py-3 rounded-2xl border border-[#4A6741]/20 bg-[#F1F5F0] text-[#4A6741] text-sm sm:text-base font-bold hover:bg-[#E8F0E8] transition-colors"
       >
-        Xem lời mời → Bạn bè
+        {t("friends.viewRequests")}
       </Link>
     );
   }
@@ -92,12 +94,13 @@ function FriendActionButton({
       disabled={sendMutation.isPending}
       className="self-start sm:self-auto flex-shrink-0 px-5 sm:px-6 py-2.5 sm:py-3 rounded-2xl border border-[#2D3A3A]/10 bg-white/10 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] backdrop-blur-sm text-[#2D3A3A] text-sm sm:text-base font-bold hover:bg-[#F1F5F0] transition-colors disabled:opacity-60"
     >
-      {sendMutation.isPending ? "Đang gửi..." : "Yêu cầu kết bạn"}
+      {sendMutation.isPending ? t("friends.processing") : t("friends.add")}
     </button>
   );
 }
 
 export default function UserProfilePage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
 
   const { data, isLoading, isError } = useQuery({
@@ -113,7 +116,7 @@ export default function UserProfilePage() {
       <div className="min-h-screen bg-[#F9FAF9] font-inter">
         <Navbar />
         <div className="flex justify-center items-center py-24">
-          <div className="text-[#6B7280]">Đang tải hồ sơ...</div>
+          <div className="text-[#6B7280]">{t("profile.loading")}</div>
         </div>
       </div>
     );
@@ -124,9 +127,9 @@ export default function UserProfilePage() {
       <div className="min-h-screen bg-[#F9FAF9] font-inter">
         <Navbar />
         <div className="flex flex-col justify-center items-center py-24 gap-4">
-          <p className="text-[#6B7280]">Không tìm thấy người dùng này</p>
+          <p className="text-[#6B7280]">{t("profile.userNotFound")}</p>
           <Link to="/search" className="text-[#4A6741] font-semibold hover:underline">
-            Quay lại tìm kiếm
+            {t("profile.backToSearch")}
           </Link>
         </div>
       </div>
@@ -240,7 +243,7 @@ export default function UserProfilePage() {
                       />
                     </svg>
                     <h2 className="text-lg sm:text-xl font-bold text-[#2D3A3A]">
-                      Giới thiệu
+                      {t("profile.bio")}
                     </h2>
                   </div>
                   <p className="text-sm sm:text-base text-[#6B7280] leading-relaxed">
@@ -260,7 +263,7 @@ export default function UserProfilePage() {
                       />
                     </svg>
                     <h2 className="text-lg sm:text-xl font-bold text-[#2D3A3A]">
-                      Sở thích
+                      {t("profile.interests")}
                     </h2>
                   </div>
                   <div className="flex flex-wrap gap-3">
@@ -282,7 +285,7 @@ export default function UserProfilePage() {
               {!user.bio && user.hobbies.length === 0 && (
                 <div className="bg-white rounded-2xl border border-[#E2E8E2] shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-5 sm:p-6 text-center">
                   <p className="text-sm text-[#6B7280]">
-                    Người dùng chưa cập nhật thông tin hồ sơ
+                    {t("profile.noInfo")}
                   </p>
                 </div>
               )}
@@ -299,7 +302,7 @@ export default function UserProfilePage() {
                     />
                   </svg>
                   <h2 className="text-lg sm:text-xl font-bold text-[#2D3A3A]">
-                    Thông tin
+                    {t("profile.info")}
                   </h2>
                 </div>
 
@@ -316,7 +319,7 @@ export default function UserProfilePage() {
                       </div>
                       <div>
                         <p className="text-sm font-bold text-[#2D3A3A]">
-                          Trình độ tiếng Nhật
+                          {t("profile.japaneseLevel")}
                         </p>
                         <p className="text-xs text-[#6B7280]">
                           {user.japanese_level}
@@ -337,7 +340,7 @@ export default function UserProfilePage() {
                       </div>
                       <div>
                         <p className="text-sm font-bold text-[#2D3A3A]">
-                          Địa điểm
+                          {t("profile.location")}
                         </p>
                         <p className="text-xs text-[#6B7280]">{user.location}</p>
                       </div>
@@ -356,7 +359,7 @@ export default function UserProfilePage() {
                       </div>
                       <div>
                         <p className="text-sm font-bold text-[#2D3A3A] mb-1">
-                          Sở thích
+                          {t("profile.interests")}
                         </p>
                         <div className="flex flex-wrap gap-1">
                           {user.hobbies.slice(0, 4).map((h) => (
@@ -374,7 +377,7 @@ export default function UserProfilePage() {
 
                   {!user.japanese_level && !user.location && user.hobbies.length === 0 && (
                     <p className="text-sm text-[#6B7280] text-center py-2">
-                      Chưa có thông tin
+                      {t("profile.noInfoSimple")}
                     </p>
                   )}
                 </div>

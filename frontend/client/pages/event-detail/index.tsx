@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import EditEventModal, { Event } from "@/components/EditEventModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import { useTranslation } from "react-i18next";
 
 interface FeedbackOut {
   feedback_id: number;
@@ -81,6 +82,7 @@ const BackArrowIcon = () => (
 );
 
 export default function Index() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
@@ -159,7 +161,7 @@ export default function Index() {
       <div className="min-h-screen bg-background font-inter">
         <Navbar />
         <main className="max-w-[1180px] mx-auto px-6 py-6 pb-12">
-          <p className="text-center text-red-500 py-10">Không thể tải sự kiện.</p>
+          <p className="text-center text-red-500 py-10">{t("events.loadError")}</p>
         </main>
       </div>
     );
@@ -175,7 +177,7 @@ export default function Index() {
           className="inline-flex items-center gap-2 text-brand-dark-green text-sm font-semibold mb-6 hover:opacity-80 transition-opacity"
         >
           <BackArrowIcon />
-          <span>Quay lại danh sách sự kiện</span>
+          <span>{t("events.backToList")}</span>
         </Link>
 
         <div className="relative rounded-lg overflow-hidden h-[280px] sm:h-[360px] lg:h-[450px] bg-[#F6F3F5] mb-6">
@@ -199,7 +201,7 @@ export default function Index() {
           <div className="flex-1 min-w-0">
             <div className="bg-white rounded-lg border border-[#E4E2E4] shadow-[0_8px_32px_0_rgba(0,0,0,0.04)] p-6">
               <div className="pb-4 mb-5 border-b border-[#F0EDEF]">
-                <h2 className="text-[#1B1B1D] text-xl font-bold leading-7 tracking-[-0.5px]">Thông tin sự kiện</h2>
+                <h2 className="text-[#1B1B1D] text-xl font-bold leading-7 tracking-[-0.5px]">{t("events.eventInfo")}</h2>
               </div>
               <div className="space-y-4 text-[#45464D] text-[15px] leading-[26px]">
                 <p>{event.description}</p>
@@ -207,7 +209,7 @@ export default function Index() {
 
               <div className="mt-8 pt-8 border-t border-[#F0EDEF]">
                 <div className="flex items-center gap-4 mb-6">
-                  <h3 className="text-[#1B1B1D] text-lg font-bold">Người tổ chức</h3>
+                  <h3 className="text-[#1B1B1D] text-lg font-bold">{t("events.organizer")}</h3>
                 </div>
                 <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
                   <img
@@ -223,7 +225,7 @@ export default function Index() {
                     to={`/users/${event.organizer.user_id}`}
                     className="ml-auto text-wc-green text-sm font-semibold hover:underline"
                   >
-                    Xem hồ sơ
+                    {t("events.viewProfile")}
                   </Link>
                 </div>
               </div>
@@ -231,13 +233,13 @@ export default function Index() {
 
             <div className="mt-6 bg-white rounded-lg border border-[#E4E2E4] shadow-[0_8px_32px_0_rgba(0,0,0,0.04)] p-6">
               <div className="pb-4 mb-6 border-b border-[#F0EDEF] flex items-center justify-between">
-                <h2 className="text-[#1B1B1D] text-xl font-bold leading-7 tracking-[-0.5px]">Đánh giá & Phản hồi</h2>
-                <span className="text-wc-gray text-sm font-medium">{feedbackList?.length || 0} lượt đánh giá</span>
+                <h2 className="text-[#1B1B1D] text-xl font-bold leading-7 tracking-[-0.5px]">{t("events.feedback")}</h2>
+                <span className="text-wc-gray text-sm font-medium">{feedbackList?.length || 0} {t("events.reviews")}</span>
               </div>
 
               {canFeedback && (
                 <div className="mb-8 p-6 rounded-xl bg-wc-light border border-wc-border">
-                  <h4 className="text-[#1B1B1D] font-bold mb-4">Để lại đánh giá của bạn</h4>
+                  <h4 className="text-[#1B1B1D] font-bold mb-4">{t("events.leaveFeedback")}</h4>
                   <div className="flex items-center gap-2 mb-4">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
@@ -262,7 +264,7 @@ export default function Index() {
                   <textarea
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Chia sẻ cảm nghĩ của bạn về sự kiện này..."
+                    placeholder={t("events.feedbackPlaceholder")}
                     className="w-full h-24 p-4 rounded-lg border border-slate-200 outline-none focus:border-wc-green transition-colors resize-none text-sm mb-4"
                   />
                   <button
@@ -270,7 +272,7 @@ export default function Index() {
                     disabled={feedbackMutation.isPending || !newComment.trim()}
                     className="bg-wc-green hover:bg-wc-green/90 text-white font-bold py-2 px-6 rounded-lg transition-colors disabled:opacity-50"
                   >
-                    Gửi đánh giá
+                    {t("events.sendFeedback")}
                   </button>
                 </div>
               )}
@@ -312,7 +314,7 @@ export default function Index() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-center text-wc-gray py-8 italic">Chưa có đánh giá nào cho sự kiện này.</p>
+                  <p className="text-center text-wc-gray py-8 italic">{t("events.noFeedback")}</p>
                 )}
               </div>
             </div>
@@ -320,14 +322,14 @@ export default function Index() {
 
           <div className="w-full lg:w-[380px] flex-shrink-0">
             <div className="bg-white rounded-lg border border-[#E4E2E4] shadow-[0_8px_32px_0_rgba(0,0,0,0.04)] p-6">
-              <p className="text-[#1B1B1D] text-sm font-semibold mb-5">Chi tiết sự kiện</p>
+              <p className="text-[#1B1B1D] text-sm font-semibold mb-5">{t("events.eventDetails")}</p>
 
               <div className="flex items-start gap-3.5 mb-5">
                 <div className="w-[42px] h-[42px] rounded-lg bg-brand-icon-bg flex items-center justify-center flex-shrink-0">
                   <CalendarIcon />
                 </div>
                 <div>
-                  <p className="text-[#57657B] text-[10px] font-bold tracking-[1px] uppercase mb-0.5">Thời gian</p>
+                  <p className="text-[#57657B] text-[10px] font-bold tracking-[1px] uppercase mb-0.5">{t("events.time")}</p>
                   <p className="text-[#1B1B1D] text-sm font-semibold leading-5">
                     {event.start_time ? new Date(event.start_time).toLocaleDateString("vi-VN", { year: "numeric", month: "long", day: "numeric", weekday: "long" }) : ""}
                   </p>
@@ -343,15 +345,15 @@ export default function Index() {
                   <LocationIcon />
                 </div>
                 <div>
-                  <p className="text-[#57657B] text-[10px] font-bold tracking-[1px] uppercase mb-0.5">Địa điểm</p>
+                  <p className="text-[#57657B] text-[10px] font-bold tracking-[1px] uppercase mb-0.5">{t("events.location")}</p>
                   <p className="text-[#1B1B1D] text-sm font-semibold leading-5">{event.location}</p>
                 </div>
               </div>
 
               <div className="mb-5">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[#1B1B1D] text-sm font-medium">Trạng thái tham gia</span>
-                  <span className="text-brand-green text-sm font-semibold">{registered} / {total} người</span>
+                  <span className="text-[#1B1B1D] text-sm font-medium">{t("events.participationStatus")}</span>
+                  <span className="text-brand-green text-sm font-semibold">{registered} / {total} {t("events.people")}</span>
                 </div>
                 <div className="w-full h-1.5 bg-[#F0EDEF] rounded-full overflow-hidden">
                   <div
@@ -360,8 +362,8 @@ export default function Index() {
                   />
                 </div>
                 <div className="flex items-center justify-between mt-1.5">
-                  <span className="text-[#45464D] text-xs">Đã đăng ký {registered} người</span>
-                  <span className="text-[#45464D] text-xs">Còn trống {total - registered} chỗ</span>
+                  <span className="text-[#45464D] text-xs">{t("events.registeredCount", { count: registered })}</span>
+                  <span className="text-[#45464D] text-xs">{t("events.emptySpots", { count: total - registered })}</span>
                 </div>
               </div>
 
@@ -371,13 +373,13 @@ export default function Index() {
                     onClick={() => setIsEditing(true)}
                     className="w-full bg-[#1B1B1D] hover:bg-[#2D2D2F] transition-colors text-white text-sm font-bold py-3.5 px-6 rounded-lg"
                   >
-                    Chỉnh sửa sự kiện
+                    {t("events.editEvent")}
                   </button>
                   <Link
                     to={`/organizer/events/${id}/stats`}
                     className="w-full bg-white border border-[#E4E2E4] hover:bg-slate-50 transition-colors text-[#1B1B1D] text-sm font-bold py-3.5 px-6 rounded-lg text-center"
                   >
-                    Xem thống kê chi tiết
+                    {t("events.viewStats")}
                   </Link>
                 </div>
               ) : event.is_full && !event.is_registered ? (
@@ -390,7 +392,7 @@ export default function Index() {
                   disabled={unregisterMutation.isPending}
                   className="w-full bg-red-600 hover:bg-red-700 transition-colors text-white text-sm font-bold py-3.5 px-6 rounded-lg disabled:opacity-60"
                 >
-                  {unregisterMutation.isPending ? "Đang xử lý..." : "Huỷ đăng ký"}
+                  {unregisterMutation.isPending ? t("events.processing") : t("events.cancelRegistration")}
                 </button>
               ) : (
                 <button
@@ -398,7 +400,7 @@ export default function Index() {
                   disabled={registerMutation.isPending}
                   className="w-full bg-[#1B1B1D] hover:bg-[#2D2D2F] transition-colors text-white text-sm font-bold py-3.5 px-6 rounded-lg disabled:opacity-60"
                 >
-                  {registerMutation.isPending ? "Đang xử lý..." : "Đăng ký tham gia sự kiện này"}
+                  {registerMutation.isPending ? t("events.processing") : t("events.registerNow")}
                 </button>
               )}
             </div>
@@ -420,7 +422,7 @@ export default function Index() {
               });
             }}
             onCancel={() => {
-              if (confirm("Bạn có chắc chắn muốn xoá sự kiện này?")) {
+              if (confirm(t("events.deleteConfirm"))) {
                 apiFetch(`/api/v1/events/${id}`, { method: "DELETE" }).then(() => {
                   window.location.href = "/events";
                 });

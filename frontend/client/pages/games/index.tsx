@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
+import { useTranslation } from "react-i18next";
 
 const games = [
   {
@@ -54,20 +55,21 @@ const games = [
   },
 ];
 
-const categories = ["Tất cả", "Chiến thuật", "Học tập", "Giải đố"];
+const categories = ["all", "strategy", "learning", "puzzle"];
 
 export default function Index() {
+  const { t } = useTranslation();
   const [expandedGame, setExpandedGame] = useState<string>("chess");
-  const [activeCategory, setActiveCategory] = useState("Tất cả");
+  const [activeCategory, setActiveCategory] = useState("all");
   const [gameSearch, setGameSearch] = useState("");
   const [roomCode, setRoomCode] = useState("");
 
   const filteredGames = games.filter((g) => {
     const matchSearch = g.name.toLowerCase().includes(gameSearch.toLowerCase());
-    if (activeCategory === "Tất cả") return matchSearch;
-    if (activeCategory === "Chiến thuật") return matchSearch && g.id === "chess";
-    if (activeCategory === "Học tập") return matchSearch && g.id === "kanji";
-    if (activeCategory === "Giải đố") return matchSearch && g.id === "nihon";
+    if (activeCategory === "all") return matchSearch;
+    if (activeCategory === "strategy") return matchSearch && g.id === "chess";
+    if (activeCategory === "learning") return matchSearch && g.id === "kanji";
+    if (activeCategory === "puzzle") return matchSearch && g.id === "nihon";
     return matchSearch;
   });
 
@@ -85,33 +87,33 @@ export default function Index() {
               <div className="rounded-2xl border border-[#E2E8E2] bg-white shadow-sm p-5 flex flex-col gap-6">
                 {/* Actions */}
                 <div className="flex flex-col gap-4">
-                  <p className="text-xs font-bold uppercase tracking-[0.7px] text-gray-500">Hành động</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.7px] text-gray-500">{t("games.actions")}</p>
                   <div className="flex flex-col gap-3">
                     <button className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl text-white text-sm font-medium shadow-sm transition-opacity hover:opacity-90 active:opacity-80" style={{ background: "#4A6741" }}>
                       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                         <path d="M9 15H11V11H15V9H11V5H9V9H5V11H9V15ZM10 20C8.61667 20 7.31667 19.7375 6.1 19.2125C4.88333 18.6875 3.825 17.975 2.925 17.075C2.025 16.175 1.3125 15.1167 0.7875 13.9C0.2625 12.6833 0 11.3833 0 10C0 8.61667 0.2625 7.31667 0.7875 6.1C1.3125 4.88333 2.025 3.825 2.925 2.925C3.825 2.025 4.88333 1.3125 6.1 0.7875C7.31667 0.2625 8.61667 0 10 0C11.3833 0 12.6833 0.2625 13.9 0.7875C15.1167 1.3125 16.175 2.025 17.075 2.925C17.975 3.825 18.6875 4.88333 19.2125 6.1C19.7375 7.31667 20 8.61667 20 10C20 11.3833 19.7375 12.6833 19.2125 13.9C18.6875 15.1167 17.975 16.175 17.075 17.075C16.175 17.975 15.1167 18.6875 13.9 19.2125C12.6833 19.7375 11.3833 20 10 20ZM10 18C12.2333 18 14.125 17.225 15.675 15.675C17.225 14.125 18 12.2333 18 10C18 7.76667 17.225 5.875 15.675 4.325C14.125 2.775 12.2333 2 10 2C7.76667 2 5.875 2.775 4.325 4.325C2.775 5.875 2 7.76667 2 10C2 12.2333 2.775 14.125 4.325 15.675C5.875 17.225 7.76667 18 10 18Z" fill="white"/>
                       </svg>
-                      Tạo phòng
+                      {t("games.createRoom")}
                     </button>
                     <button className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl text-white text-sm font-medium shadow-sm transition-opacity hover:opacity-90 active:opacity-80" style={{ background: "#4A6741" }}>
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <path d="M10 16V14H12.6L9.425 10.825L10.85 9.4L14 12.55V10H16V16H10ZM1.4 16L0 14.6L12.6 2H10V0H16V6H14V3.4L1.4 16ZM5.175 6.575L0 1.4L1.4 0L6.575 5.175L5.175 6.575Z" fill="white"/>
                       </svg>
-                      Ngẫu nhiên
+                      {t("games.random")}
                     </button>
                   </div>
                 </div>
 
                 {/* Room Code */}
                 <div className="flex flex-col gap-2 pt-4 border-t border-[#E2E8E2]">
-                  <p className="text-xs font-bold uppercase tracking-[0.7px] text-gray-500">Nhập mã phòng</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.7px] text-gray-500">{t("games.enterRoomCode")}</p>
                   <div className="relative mt-1">
                     <svg className="absolute left-3 top-1/2 -translate-y-1/2" width="22" height="12" viewBox="0 0 22 12" fill="none">
                       <path d="M6 12C4.33333 12 2.91667 11.4167 1.75 10.25C0.583333 9.08333 0 7.66667 0 6C0 4.33333 0.583333 2.91667 1.75 1.75C2.91667 0.583333 4.33333 0 6 0C7.1 0 8.10833 0.275 9.025 0.825C9.94167 1.375 10.6667 2.1 11.2 3H22V9H20V12H14V9H11.2C10.6667 9.9 9.94167 10.625 9.025 11.175C8.10833 11.725 7.1 12 6 12ZM6 10C7.1 10 7.98333 9.6625 8.65 8.9875C9.31667 8.3125 9.71667 7.65 9.85 7H16V10H18V7H20V5H9.85C9.71667 4.35 9.31667 3.6875 8.65 3.0125C7.98333 2.3375 7.1 2 6 2C4.9 2 3.95833 2.39167 3.175 3.175C2.39167 3.95833 2 4.9 2 6C2 7.1 2.39167 8.04167 3.175 8.825C3.95833 9.60833 4.9 10 6 10ZM6 8C6.55 8 7.02083 7.80417 7.4125 7.4125C7.80417 7.02083 8 6.55 8 6C8 5.45 7.80417 4.97917 7.4125 4.5875C7.02083 4.19583 6.55 4 6 4C5.45 4 4.97917 4.19583 4.5875 4.5875C4.19583 4.97917 4 5.45 4 6C4 6.55 4.19583 7.02083 4.5875 7.4125C4.97917 7.80417 5.45 8 6 8Z" fill="#94A3B8"/>
                     </svg>
                     <input
                       type="text"
-                      placeholder="VD: 123456"
+                      placeholder={t("games.roomCodePlaceholder")}
                       value={roomCode}
                       onChange={(e) => setRoomCode(e.target.value)}
                       className="w-full pl-10 pr-4 py-3 rounded-2xl border border-[#E2E8E2] bg-[#F8FAFC] text-sm text-gray-500 placeholder-gray-400 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40"
@@ -130,7 +132,7 @@ export default function Index() {
                 style={{ background: "rgba(241,245,240,0.5)", borderColor: "rgba(74,103,65,0.1)" }}
               >
                 <p className="text-lg italic font-medium leading-relaxed" style={{ color: "#2D3A3A" }}>
-                  "Cuộc đời là một trò chơi lớn, và mỗi người là một kỳ thủ tài ba. Hãy cùng nhau kết nối, học hỏi và chinh phục những đỉnh cao mới!"
+                  {t("games.gameQuote")}
                 </p>
               </div>
 
@@ -140,7 +142,7 @@ export default function Index() {
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-6 rounded-full" style={{ background: "#4A6741" }} />
-                    <h2 className="text-xl font-bold" style={{ color: "#2D3A3A" }}>Danh sách trò chơi</h2>
+                    <h2 className="text-xl font-bold" style={{ color: "#2D3A3A" }}>{t("games.gameList")}</h2>
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
@@ -151,7 +153,7 @@ export default function Index() {
                       </svg>
                       <input
                         type="text"
-                        placeholder="Tìm trò chơi..."
+                        placeholder={t("games.searchPlaceholder")}
                         value={gameSearch}
                         onChange={(e) => setGameSearch(e.target.value)}
                         className="pl-10 pr-4 py-2 rounded-full text-sm text-gray-500 placeholder-gray-400 outline-none focus:ring-2 focus:ring-primary/30 w-full sm:w-[200px]"
@@ -172,7 +174,7 @@ export default function Index() {
                           }`}
                           style={activeCategory === cat ? { background: "#4A6741" } : {}}
                         >
-                          {cat}
+                          {t(`games.${cat}`)}
                         </button>
                       ))}
                     </div>
@@ -207,7 +209,7 @@ export default function Index() {
                             <span
                               className={`px-3 py-1 rounded-full text-xs font-bold ${game.badgeBg} ${game.badgeText}`}
                             >
-                              {game.badgeLabel || `${game.openCount} phòng mở`}
+                              {game.badgeLabel === "0 phòng chờ" ? t("games.noWaitingRooms") : (game.badgeLabel || t("games.roomsOpen", { count: game.openCount }))}
                             </span>
                             <svg
                               width="12"
@@ -231,15 +233,15 @@ export default function Index() {
                               >
                                 <div className="flex items-center gap-6 flex-wrap">
                                   <div>
-                                    <p className="text-[10px] font-bold uppercase tracking-[-0.5px] text-gray-500">ID</p>
+                                    <p className="text-[10px] font-bold uppercase tracking-[-0.5px] text-gray-500">{t("games.id")}</p>
                                     <p className="text-sm font-bold mt-0.5" style={{ color: "#2D3A3A" }}>{room.id}</p>
                                   </div>
                                   <div>
-                                    <p className="text-[10px] font-bold uppercase tracking-[-0.5px] text-gray-500">Trạng thái</p>
-                                    <p className={`text-[11px] font-bold mt-0.5 ${room.statusColor}`}>{room.status}</p>
+                                    <p className="text-[10px] font-bold uppercase tracking-[-0.5px] text-gray-500">{t("games.status")}</p>
+                                    <p className={`text-[11px] font-bold mt-0.5 ${room.statusColor}`}>{room.status === "Đang chờ" ? t("games.waiting") : (room.status === "Đang đấu" ? t("games.playing") : room.status)}</p>
                                   </div>
                                   <div>
-                                    <p className="text-[10px] font-bold uppercase tracking-[-0.5px] text-gray-500">Người chơi</p>
+                                    <p className="text-[10px] font-bold uppercase tracking-[-0.5px] text-gray-500">{t("games.players")}</p>
                                     <p className="text-sm font-medium mt-0.5" style={{ color: "#2D3A3A" }}>{room.players}</p>
                                   </div>
                                 </div>
@@ -248,7 +250,7 @@ export default function Index() {
                                     className="px-6 py-2 rounded-lg text-white text-xs font-bold shadow-sm transition-opacity hover:opacity-90 shrink-0"
                                     style={{ background: "#4A6741" }}
                                   >
-                                    Tham gia
+                                    {t("games.join")}
                                   </button>
                                 )}
                               </div>

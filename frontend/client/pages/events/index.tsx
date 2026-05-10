@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import { useTranslation } from "react-i18next";
 
 const CalendarIcon = () => (
   <svg width="18" height="20" viewBox="0 0 18 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
@@ -109,7 +110,8 @@ function LocationIcon({ type }: { type: LocationType }) {
 }
 
 function EventCard({ event, currentUserId }: { event: EventData & { organizer_id: number }, currentUserId?: number }) {
-  const badgeText = event.badge === "ONLINE" ? "TRỰC TUYẾN" : "TRỰC TIẾP";
+  const { t } = useTranslation();
+  const badgeText = event.badge === "ONLINE" ? t("events.online") : t("events.offline");
   const isOrganizer = currentUserId === event.organizer_id;
   return (
     <div className="flex flex-col rounded-2xl border border-wc-border bg-white overflow-hidden hover:shadow-lg transition-shadow">
@@ -160,18 +162,18 @@ function EventCard({ event, currentUserId }: { event: EventData & { organizer_id
               to={`/events/${event.id}`}
               className="px-3 py-1 rounded-full border border-wc-dark text-xs font-bold text-wc-dark hover:bg-slate-100 transition-colors"
             >
-              Quản lý
+              {t("events.manage")}
             </Link>
           ) : event.isFull ? (
             <button disabled className="px-3 py-1 rounded-full border border-gray-300 text-xs font-bold text-gray-400 cursor-not-allowed">
-              Hết chỗ
+              {t("events.full")}
             </button>
           ) : (
             <Link
               to={`/events/${event.id}`}
               className="px-3 py-1 rounded-full border border-wc-green text-xs font-bold text-wc-green hover:bg-wc-light transition-colors"
             >
-              Tham gia
+              {t("events.join")}
             </Link>
           )}
         </div>
@@ -181,6 +183,7 @@ function EventCard({ event, currentUserId }: { event: EventData & { organizer_id
 }
 
 export default function Index() {
+  const { t } = useTranslation();
   const { data: user } = useQuery({
     queryKey: ["me"],
     queryFn: () => apiFetch<UserOut>("/api/v1/users/me"),
@@ -201,10 +204,10 @@ export default function Index() {
         <div className="flex items-end justify-between mb-8">
           <div className="flex flex-col gap-2">
             <h1 className="text-3xl font-black text-wc-dark uppercase tracking-tight leading-9">
-              Khám phá Sự kiện
+              {t("events.exploreEvents")}
             </h1>
             <p className="text-base font-medium text-wc-gray">
-              Gặp gỡ, kết nối và học hỏi từ cộng đồng
+              {t("events.meetConnect")}
             </p>
           </div>
 
@@ -218,7 +221,7 @@ export default function Index() {
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                     <path d="M0 14V11.5L2 9.5V14H0ZM3.5 14V8L5.5 6V14H3.5ZM7 14V6L9 8.025V14H7ZM10.5 14V8.025L12.5 6.025V14H10.5ZM14 14V3.5L12 5.5V0L14 2V14H14ZM0 8.825V6L5.25 0.75L8.25 3.75L14 0V2.825L8.25 6.575L5.25 3.575L0 8.825Z" fill="currentColor"/>
                   </svg>
-                  Chế độ quản lý
+                  {t("events.manageMode")}
                 </Link>
                 <Link
                   to="/organizer/events"
@@ -227,7 +230,7 @@ export default function Index() {
                   <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
                     <path d="M6 1V11M1 6H11" stroke="white" strokeWidth="2" strokeLinecap="round" />
                   </svg>
-                  Tạo sự kiện
+                  {t("events.createEvent")}
                 </Link>
               </>
             )}
@@ -235,7 +238,7 @@ export default function Index() {
               <svg width="18" height="12" viewBox="0 0 18 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M7 12V10H11V12H7ZM3 7V5H15V7H3ZM0 2V0H18V2H0Z" fill="#2D3A3A"/>
               </svg>
-              Lọc
+              {t("events.filter")}
             </button>
           </div>
         </div>
@@ -243,10 +246,11 @@ export default function Index() {
         {isLoading && (
           <div className="flex items-center justify-center py-20">
             <div className="w-8 h-8 border-4 border-wc-green border-t-transparent rounded-full animate-spin" />
+            <span className="ml-3 text-sm text-wc-gray">{t("events.loading")}</span>
           </div>
         )}
         {isError && (
-          <p className="text-center text-red-500 py-10">Không thể tải sự kiện. Vui lòng thử lại.</p>
+          <p className="text-center text-red-500 py-10">{t("events.loadError")}</p>
         )}
         {!isLoading && !isError && (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">

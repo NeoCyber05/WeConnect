@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "react-i18next";
 
 const NAV_LINKS = [
   {
@@ -108,7 +109,8 @@ interface EventCardProps {
 }
 
 function EventCard({ image, badge, title, location, locationIcon = "map", attendees, extraCount }: EventCardProps) {
-  const badgeText = badge === "OFFLINE" ? "TRỰC TIẾP" : "TRỰC TUYẾN";
+  const { t } = useTranslation();
+  const badgeText = badge === "OFFLINE" ? t("home.offline") : t("home.online");
   return (
     <div className="flex h-40 items-stretch rounded-2xl border border-[#E2E8E2] bg-white overflow-hidden">
       <div className="relative w-[130px] shrink-0 overflow-hidden">
@@ -146,7 +148,7 @@ function EventCard({ image, badge, title, location, locationIcon = "map", attend
             )}
           </div>
           <button className="flex items-center justify-center px-3 py-1 rounded border border-[rgba(74,103,65,0.2)] bg-[#F1F5F0] text-[#4A6741] text-[9px] font-bold uppercase tracking-wide">
-            Tham gia
+            {t("home.join")}
           </button>
         </div>
       </div>
@@ -190,6 +192,7 @@ function FriendSuggestion({ avatar, matchPercent, name, meta, tags }: FriendSugg
 }
 
 export default function Index() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const displayName = user?.full_name?.trim() || "bạn";
 
@@ -289,14 +292,13 @@ export default function Index() {
               {/* Content */}
               <div className="relative z-10 flex flex-col gap-2">
                 <div className="inline-flex self-start items-center px-2.5 py-1 rounded bg-[rgba(74,103,65,0.3)] backdrop-blur-md">
-                  <span className="text-white text-[10px] font-bold uppercase tracking-[1px]">CHÀO MỪNG TRỞ LẠI</span>
+                  <span className="text-white text-[10px] font-bold uppercase tracking-[1px]">{t("home.welcomeBack")}</span>
                 </div>
                 <h1 className="text-white text-[30px] font-black leading-9 tracking-[-0.75px]">
-                  Konnichiwa, {displayName}-san!
+                  {t("home.heroTitle", { name: displayName })}
                 </h1>
                 <p className="text-[#CBD5E1] text-[14px] font-light leading-[22.75px] max-w-xl">
-                  Khám phá những sự kiện văn hóa Nhật Bản mới nhất và kết nối với cộng đồng yêu thích Xứ sở Mặt trời
-                  mọc ngay hôm nay.
+                  {t("home.heroDescription")}
                 </p>
               </div>
             </div>
@@ -306,9 +308,9 @@ export default function Index() {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <div className="w-2 h-6 rounded-full bg-[#4A6741]" />
-                  <h2 className="text-[#2D3A3A] text-[20px] font-bold leading-7">Sự kiện nổi bật</h2>
+                  <h2 className="text-[#2D3A3A] text-[20px] font-bold leading-7">{t("home.featuredEvents")}</h2>
                 </div>
-                <p className="text-[#6B7280] text-[12px] leading-4 ml-4">Gợi ý dựa trên sở thích của bạn</p>
+                <p className="text-[#6B7280] text-[12px] leading-4 ml-4">{t("home.suggestionsTitle")}</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -323,7 +325,7 @@ export default function Index() {
           <div className="w-full lg:w-[340px] xl:w-[380px] shrink-0 flex flex-col gap-6">
             {/* Friend Suggestions */}
             <div className="rounded-2xl border border-[#E2E8E2] bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-6 flex flex-col gap-6">
-              <h3 className="text-[#2D3A3A] text-[18px] font-bold leading-7">Gợi ý kết bạn</h3>
+              <h3 className="text-[#2D3A3A] text-[18px] font-bold leading-7">{t("home.friendSuggestions")}</h3>
               <div className="flex flex-col gap-6">
                 {friends.map((friend) => (
                   <FriendSuggestion key={friend.name} {...friend} />
@@ -342,17 +344,16 @@ export default function Index() {
                       fill="#4A6741"
                     />
                   </svg>
-                  <span className="text-[#4A6741] text-[14px] font-bold leading-5">Mẹo tìm bạn đồng hành</span>
+                  <span className="text-[#4A6741] text-[14px] font-bold leading-5">{t("home.companionTip")}</span>
                 </div>
                 <p className="text-[#2D3A3A] text-[12px] italic leading-[19.5px] opacity-80">
-                  "Những người có cùng trình độ ngôn ngữ hoặc chung niềm đam mê văn hóa thường có tỉ lệ kết nối bền
-                  vững hơn 70%."
+                  {t("home.companionTipText")}
                 </p>
                 <Link
-                  to="/ho-so"
+                  to="/profile"
                   className="text-[#4A6741] text-[10px] font-bold uppercase tracking-[0.5px] leading-[15px] hover:underline"
                 >
-                  CẬP NHẬT HỒ SƠ →
+                  {t("home.updateProfile")}
                 </Link>
               </div>
             </div>
@@ -367,16 +368,15 @@ export default function Index() {
                       fill="#4A6741"
                     />
                   </svg>
-                  <span className="text-[#4A6741] text-[14px] font-bold leading-5">Lời khuyên từ cộng đồng</span>
+                  <span className="text-[#4A6741] text-[14px] font-bold leading-5">{t("home.communityQuote")}</span>
                 </div>
                 <div className="flex flex-col gap-4">
                   <p className="text-[#2D3A3A] text-[12px] italic font-medium leading-[19.5px]">
-                    "Sự kiên nhẫn trong việc học ngôn ngữ cũng giống như việc pha một ấm trà ngon; vội vàng sẽ làm mất
-                    đi hương vị tinh túy."
+                    {t("home.quoteText")}
                   </p>
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-[rgba(74,103,65,0.2)]" />
-                    <span className="text-[#6B7280] text-[10px] leading-[15px]">— Thành viên từ 2021</span>
+                    <span className="text-[#6B7280] text-[10px] leading-[15px]">{t("home.memberSince")}</span>
                   </div>
                 </div>
               </div>

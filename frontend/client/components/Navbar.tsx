@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import SearchPopup from "./SearchPopup";
+import { useTranslation } from "react-i18next";
 
 interface UserOut {
   user_id: number;
@@ -54,14 +55,15 @@ const SearchIcon = () => (
 );
 
 const navLinks = [
-  { href: "/", label: "Trang chủ", icon: HomeIcon },
-  { href: "/friends", label: "Bạn bè", icon: FriendsIcon },
-  { href: "/chat", label: "Trò chuyện", icon: MessageIcon },
-  { href: "/events", label: "Sự kiện", icon: EventIcon },
-  { href: "/games", label: "Trò chơi", icon: GameIcon },
+  { href: "/", label: "navbar.home", icon: HomeIcon },
+  { href: "/friends", label: "navbar.friends", icon: FriendsIcon },
+  { href: "/chat", label: "navbar.chat", icon: MessageIcon },
+  { href: "/events", label: "navbar.events", icon: EventIcon },
+  { href: "/games", label: "navbar.games", icon: GameIcon },
 ];
 
 export default function Navbar() {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
@@ -86,7 +88,7 @@ export default function Navbar() {
 
   const displayLinks = [...navLinks];
   if (user?.role === "ORGANIZER") {
-    displayLinks.push({ href: "/organizer/events", label: "Quản lý", icon: EventIcon });
+    displayLinks.push({ href: "/organizer/events", label: "navbar.manage", icon: EventIcon });
   }
 
   return (
@@ -126,7 +128,7 @@ export default function Navbar() {
                 <span className={active ? "text-wc-green" : "text-wc-gray"}>
                   <Icon />
                 </span>
-                {label}
+                {t(label)}
               </Link>
             );
           })}
@@ -153,7 +155,7 @@ export default function Navbar() {
                   setSearchQuery(e.target.value);
                   setIsSearchOpen(true);
                 }}
-                placeholder="Tìm kiếm người dùng hoặc bạn bè"
+                placeholder={t("navbar.searchPlaceholder")}
                 className="w-72 pl-9 pr-4 py-1.5 rounded-lg border border-wc-border bg-wc-bg text-xs text-wc-gray placeholder-wc-gray outline-none focus:ring-2 focus:ring-wc-green/20"
               />
             </form>
