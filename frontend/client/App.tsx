@@ -18,7 +18,6 @@ import ResetPassword from "@/pages/reset-password/index";
 // Main app
 import Home from "@/pages/home/index";
 import Search from "@/pages/search/index";
-import SearchPopup from "@/pages/search-popup/index";
 import UserProfile from "@/pages/user-profile/index";
 import MyProfile from "@/pages/my-profile/index";
 import Friends from "@/pages/friends/index";
@@ -56,7 +55,6 @@ const App = () => (
             {/* Protected Main App Routes */}
             <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
             <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
-            <Route path="/search-popup" element={<ProtectedRoute><SearchPopup /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
             <Route path="/profile/:id" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
             <Route path="/friends" element={<ProtectedRoute><Friends /></ProtectedRoute>} />

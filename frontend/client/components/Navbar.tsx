@@ -1,7 +1,8 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import SearchPopup from "./SearchPopup";
 
 interface UserOut {
   user_id: number;
@@ -64,6 +65,19 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Handle click outside to close search popup
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setIsSearchOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const { data: user } = useQuery({
     queryKey: ["me"],
@@ -120,24 +134,36 @@ export default function Navbar() {
 
         {/* Search + avatar */}
         <div className="flex items-center gap-3 shrink-0">
-          <form
-            className="relative hidden lg:block"
-            onSubmit={(e) => {
-              e.preventDefault();
-              navigate(`/search${searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ""}`);
-            }}
-          >
-            <div className="absolute left-3 top-1/2 -translate-y-1/2">
-              <SearchIcon />
-            </div>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm kiếm người dùng hoặc bạn bè"
-              className="w-72 pl-9 pr-4 py-1.5 rounded-lg border border-wc-border bg-wc-bg text-xs text-wc-gray placeholder-wc-gray outline-none focus:ring-2 focus:ring-wc-green/20"
+          <div className="relative hidden lg:block" ref={searchRef}>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                navigate(`/search${searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ""}`);
+                setIsSearchOpen(false);
+              }}
+            >
+              <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                <SearchIcon />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onFocus={() => setIsSearchOpen(true)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setIsSearchOpen(true);
+                }}
+                placeholder="Tìm kiếm người dùng hoặc bạn bè"
+                className="w-72 pl-9 pr-4 py-1.5 rounded-lg border border-wc-border bg-wc-bg text-xs text-wc-gray placeholder-wc-gray outline-none focus:ring-2 focus:ring-wc-green/20"
+              />
+            </form>
+            
+            <SearchPopup 
+              searchQuery={searchQuery} 
+              isOpen={isSearchOpen} 
+              onClose={() => setIsSearchOpen(false)} 
             />
-          </form>
+          </div>
           <div className="border-l border-wc-border pl-3">
             <Link to="/profile">
               <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-wc-green/10 bg-wc-slate">
