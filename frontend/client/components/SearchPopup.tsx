@@ -165,16 +165,32 @@ export default function SearchPopup({ searchQuery, isOpen, onClose }: SearchPopu
 
   const { data, isLoading } = useQuery({
     queryKey: ["searchPopup", searchQuery, genderFilter, levelFilter, hobbyFilter, min_age, max_age],
-    queryFn: () =>
-      searchUsers({
+    queryFn: () => {
+      // Map display values to DB values
+      const mappedGender = genderFilter === "Nam" ? "MALE" : genderFilter === "Nữ" ? "FEMALE" : genderFilter === "Khác" ? "OTHER" : undefined;
+      const mappedLevel = levelFilter === "Bản ngữ" ? "Native" : levelFilter !== "Tất cả" ? levelFilter : undefined;
+      
+      const hobbyMap: Record<string, string> = {
+        "Âm nhạc": "5",
+        "Đọc sách": "10",
+        "Nghệ thuật": "5,6,7",
+        "Nấu ăn": "8",
+        "Chơi game": "3",
+        "Du lịch": "9",
+        "Thể thao": "11",
+      };
+      const mappedHobby = hobbyFilter !== "Tất cả" ? hobbyMap[hobbyFilter] : undefined;
+
+      return searchUsers({
         q: searchQuery || undefined,
-        gender: genderFilter !== "Tất cả" ? genderFilter : undefined,
-        japanese_level: levelFilter !== "Tất cả" ? levelFilter : undefined,
-        hobbies: hobbyFilter !== "Tất cả" ? hobbyFilter : undefined,
+        gender: mappedGender,
+        japanese_level: mappedLevel,
+        hobbies: mappedHobby,
         min_age,
         max_age,
         page_size: 10,
-      }),
+      });
+    },
     enabled: isOpen && (!!searchQuery || genderFilter !== "Tất cả" || levelFilter !== "Tất cả" || ageFilter !== "Tất cả" || hobbyFilter !== "Tất cả"),
   });
 

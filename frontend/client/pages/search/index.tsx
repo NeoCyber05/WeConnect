@@ -217,16 +217,20 @@ export default function SearchPage() {
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ["userSearch", currentQ, gender, level, minAge, maxAge, page],
-    queryFn: () =>
-      searchUsers({
+    queryFn: () => {
+      const mappedGender = gender === "Nam" ? "MALE" : gender === "Nữ" ? "FEMALE" : gender === "Khác" ? "OTHER" : undefined;
+      const mappedLevel = level === "Bản ngữ" ? "Native" : level || undefined;
+
+      return searchUsers({
         q: currentQ || undefined,
-        gender: gender || undefined,
-        japanese_level: level || undefined,
+        gender: mappedGender,
+        japanese_level: mappedLevel,
         min_age: minAge ? Number(minAge) : undefined,
         max_age: maxAge ? Number(maxAge) : undefined,
         page,
         page_size: 12,
-      }),
+      });
+    },
   });
 
   const sendMutation = useMutation({
