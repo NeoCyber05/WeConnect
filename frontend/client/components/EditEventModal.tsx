@@ -17,6 +17,10 @@ interface Event {
   isCancelled: boolean;
 }
 
+type EventForm = Event & {
+  eventType?: string;
+};
+
 interface EditEventModalProps {
   event: Event;
   onClose: () => void;
@@ -32,6 +36,9 @@ const categories = [
   "Nghệ thuật",
 ];
 
+const defaultCreateCover =
+  "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=200&fit=crop";
+
 export default function EditEventModal({
   event,
   onClose,
@@ -39,16 +46,50 @@ export default function EditEventModal({
   onCancel,
   onCloseRegistration,
 }: EditEventModalProps) {
-  const [form, setForm] = useState({ ...event });
+  const [isCreateMode] = useState(event.id === 0);
+  const [form, setForm] = useState<EventForm>({
+    ...event,
+    eventType: "",
+    coverImage: event.coverImage || defaultCreateCover,
+  });
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const validateForm = () => {
+    if (!form.name.trim()) {
+      setValidationError("Tên sự kiện không được để trống");
+      return false;
+    }
+    if (!form.category) {
+      setValidationError("Danh mục không được để trống");
+      return false;
+    }
+    if (!form.date) {
+      setValidationError("Ngày tổ chức không được để trống");
+      return false;
+    }
+    if (!form.location.trim()) {
+      setValidationError("Địa điểm không được để trống");
+      return false;
+    }
+    if (!form.maxAttendees || form.maxAttendees <= 0) {
+      setValidationError("Số lượng tối đa phải lớn hơn 0");
+      return false;
+    }
+    if (!form.description.trim()) {
+      setValidationError("Mô tả không được để trống");
+      return false;
+    }
+    setValidationError(null);
+    return true;
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check size (10MB)
     if (file.size > 10 * 1024 * 1024) {
       setUploadError("Ảnh không được vượt quá 10MB");
       return;
@@ -73,7 +114,6 @@ export default function EditEventModal({
     }
   };
 
-
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -82,6 +122,238 @@ export default function EditEventModal({
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
+
+  const handleSave = () => {
+    if (!validateForm()) {
+      return;
+    }
+    onSave(form as Event);
+  };
+
+  if (isCreateMode) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-sm p-3 sm:p-4">
+        <div className="w-full max-w-[620px] overflow-hidden rounded-[16px] bg-white shadow-[0_20px_60px_rgba(15,23,42,0.18)]">
+          <div className="border-b border-slate-100 px-5 pb-3 pt-2.5 sm:px-6">
+            <div className="mb-2 flex justify-center">
+              <div className="flex items-center gap-1">
+                {[...Array(6)].map((_, index) => (
+                  <span key={index} className="h-1 w-1 rounded-full bg-slate-300" />
+                ))}
+              </div>
+            </div>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-[20px] font-bold leading-tight text-slate-900">
+                  Tạo sự kiện mới
+                </h2>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Điền thông tin để tạo sự kiện mới
+                </p>
+              </div>
+              <button
+                onClick={onClose}
+                className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                aria-label="Đóng"
+              >
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                  <path d="M15 5L5 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  <path d="M5 5L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div className="max-h-[calc(100vh-130px)] overflow-y-auto px-5 py-4 sm:px-6">
+            {validationError && (
+              <div className="mb-4 flex items-center gap-2 rounded-[8px] border border-rose-200 bg-rose-50 p-3">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-rose-600 flex-shrink-0">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                <span className="text-xs font-medium text-rose-600">{validationError}</span>
+              </div>
+            )}
+            <div className="grid grid-cols-1 gap-3">
+              <div>
+                <label className="mb-1.5 block text-[13px] font-semibold text-slate-900">
+                  Tên sự kiện <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={form.name}
+                  onChange={handleChange}
+                  placeholder="Vd: Hội thảo Digital Marketing 2024"
+                  className="h-10 w-full rounded-[8px] border border-slate-200 px-3 text-[13px] outline-none transition-colors placeholder:text-slate-350 focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-semibold text-slate-900">
+                    Danh mục <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    name="category"
+                    value={form.category}
+                    onChange={handleChange}
+                    className="h-10 w-full rounded-[8px] border border-slate-200 bg-white px-3 text-[13px] outline-none transition-colors focus:border-emerald-500"
+                  >
+                    <option value="">Chọn danh mục</option>
+                    {categories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-semibold text-slate-900">
+                    Loại sự kiện
+                  </label>
+                  <input
+                    type="text"
+                    name="eventType"
+                    value={form.eventType || ""}
+                    onChange={handleChange}
+                    placeholder="Nhập loại sự kiện"
+                    className="h-10 w-full rounded-[8px] border border-slate-200 px-3 text-[13px] outline-none transition-colors placeholder:text-slate-350 focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-semibold text-slate-900">
+                    Ngày tổ chức <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="4" width="18" height="17" rx="2" />
+                        <path d="M8 2v4M16 2v4M3 10h18" />
+                      </svg>
+                    </div>
+                    <input
+                      type="date"
+                      name="date"
+                      value={form.date ? form.date.slice(0, 10) : ""}
+                      onChange={handleChange}
+                      className="h-10 w-full rounded-[8px] border border-slate-200 bg-white pl-9 pr-3 text-[13px] outline-none transition-colors focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-semibold text-slate-900">
+                    Địa điểm <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11z" />
+                        <circle cx="12" cy="10" r="2.5" />
+                      </svg>
+                    </div>
+                    <input
+                      type="text"
+                      name="location"
+                      value={form.location}
+                      onChange={handleChange}
+                      placeholder="Nhập địa điểm..."
+                      className="h-10 w-full rounded-[8px] border border-slate-200 px-9 pr-3 text-[13px] outline-none transition-colors placeholder:text-slate-350 focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-[160px_minmax(0,1fr)]">
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-semibold text-slate-900">
+                    Số lượng tối đa <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="maxAttendees"
+                    value={form.maxAttendees}
+                    onChange={handleChange}
+                    placeholder="Vd: 100"
+                    className="h-10 w-full rounded-[8px] border border-slate-200 px-3 text-[13px] outline-none transition-colors placeholder:text-slate-350 focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[13px] font-semibold text-slate-900">
+                    Mô tả <span className="text-rose-500">*</span>
+                  </label>
+                  <textarea
+                    name="description"
+                    value={form.description}
+                    onChange={handleChange}
+                    rows={2}
+                    placeholder="Mô tả nội dung, mục đích sự kiện..."
+                    className="min-h-[64px] w-full resize-none rounded-[8px] border border-slate-200 px-3 py-2 text-[13px] outline-none transition-colors placeholder:text-slate-350 focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-[13px] font-semibold text-slate-900">
+                  Ảnh bìa sự kiện
+                </label>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-[10px] border border-dashed border-slate-200 bg-slate-50 text-[12px] font-medium text-slate-400 transition-colors hover:border-slate-300 hover:bg-slate-100 hover:text-slate-500 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="3" />
+                    <path d="M3 16l5-5 4 4 4-4 5 5" />
+                    <path d="M10 8h.01" />
+                  </svg>
+                  <span>{isUploading ? "Đang tải..." : "Tải lên ảnh bìa sự kiện"}</span>
+                </button>
+                {uploadError && (
+                  <p className="mt-1.5 text-xs text-rose-500">{uploadError}</p>
+                )}
+                <div className="mt-2.5 flex items-center gap-2 rounded-[10px] border border-slate-100 p-2">
+                  <div className="h-12 w-16 flex-shrink-0 overflow-hidden rounded-[8px] bg-slate-100">
+                    <img src={form.coverImage} alt="Ảnh bìa" className="h-full w-full object-cover" />
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    Ảnh bìa hiện tại sẽ được dùng khi tạo sự kiện.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-3 sm:px-6">
+            <button
+              onClick={onClose}
+              className="h-10 rounded-[8px] px-5 text-[13px] font-semibold text-slate-900 transition-colors hover:bg-slate-100"
+            >
+              Hủy
+            </button>
+            <button
+              onClick={handleSave}
+              className="h-10 rounded-[8px] bg-emerald-600 px-5 text-[13px] font-semibold text-white shadow-md shadow-emerald-600/20 transition-colors hover:bg-emerald-700"
+            >
+              Tạo sự kiện
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
@@ -378,7 +650,7 @@ export default function EditEventModal({
           {/* Save button */}
           <div className="flex justify-end">
             <button
-              onClick={() => onSave(form)}
+              onClick={() => onSave(form as Event)}
               className="h-[32px] px-4 flex items-center gap-1.5 bg-[#131B2E] hover:bg-[#1e2d4a] text-white text-[13px] font-medium rounded-[6px] transition-colors"
             >
               <svg width="13" height="13" viewBox="0 0 13 13" fill="none">

@@ -39,6 +39,14 @@ function formatDateTimeLocal(dateString?: string) {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
+function formatDateOnlyLocal(date?: Date) {
+  if (!date || isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function parseAPIDateTime(dateString?: string): Date {
   if (!dateString) return new Date(0);
   // Thêm 'Z' nếu chưa có timezone info — backend trả về UTC không có suffix
@@ -198,7 +206,9 @@ export default function Index() {
 
   const handleSave = (updated: Event) => {
     const startDate = updated.date ? new Date(updated.date) : new Date();
-    const endDate = updated.endDate ? new Date(updated.endDate) : new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
+    const endDate = updated.id === 0
+      ? new Date(startDate.getTime() + 2 * 60 * 60 * 1000)
+      : (updated.endDate ? new Date(updated.endDate) : new Date(startDate.getTime() + 2 * 60 * 60 * 1000));
 
     const payload: any = {
       title: updated.name,
@@ -247,15 +257,6 @@ export default function Index() {
     }
     updateMutation.mutate({ id: editingEvent.id, data: { status: "CLOSED" } });
     setEditingEvent(null);
-  };
-
-  const activeEvents = events.filter(e => !e.isCancelled);
-  const stats = {
-    total: activeEvents.length,
-    ongoing: activeEvents.filter(e => e.timeStatus === "ongoing").length,
-    upcoming: activeEvents.filter(e => e.timeStatus === "upcoming").length,
-    finished: activeEvents.filter(e => e.timeStatus === "finished").length,
-    cancelled: events.filter(e => e.isCancelled).length,
   };
 
   return (
@@ -375,16 +376,16 @@ export default function Index() {
               <button
                 onClick={() => {
                   const d = new Date();
-                  const startISO = formatDateTimeLocal(d.toISOString());
-                  const endISO = formatDateTimeLocal(new Date(d.getTime() + 2 * 60 * 60 * 1000).toISOString());
+                  const startDate = formatDateOnlyLocal(d);
+                  const endDate = formatDateOnlyLocal(new Date(d.getTime() + 2 * 60 * 60 * 1000));
                   
                   setEditingEvent({
                     id: 0,
                     name: "",
                     category: "Công nghệ",
                     maxAttendees: 50,
-                    date: startISO,
-                    endDate: endISO,
+                    date: startDate,
+                    endDate,
                     location: "",
                     description: "",
                     coverImage: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=200&fit=crop",
@@ -398,23 +399,6 @@ export default function Index() {
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                 Tạo sự kiện mới
               </button>
-            </div>
-
-            {/* Quick Stats Dashboard */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-              {[
-                { label: "Tổng số", value: stats.total, icon: "📊", color: "bg-blue-50 text-blue-600" },
-                { label: "Đang chạy", value: stats.ongoing, icon: "⚡", color: "bg-emerald-50 text-emerald-600" },
-                { label: "Sắp tới", value: stats.upcoming, icon: "📅", color: "bg-violet-50 text-violet-600" },
-                { label: "Hoàn thành", value: stats.finished, icon: "✅", color: "bg-slate-100 text-slate-600" },
-                { label: "Đã hủy", value: stats.cancelled, icon: "🚫", color: "bg-red-50 text-red-500" },
-              ].map(s => (
-                <div key={s.label} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-                  <div className={`w-10 h-10 ${s.color} rounded-xl flex items-center justify-center text-xl mb-3`}>{s.icon}</div>
-                  <div className="text-2xl font-black text-slate-900">{s.value}</div>
-                  <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">{s.label}</div>
-                </div>
-              ))}
             </div>
 
             {/* Event Grid */}

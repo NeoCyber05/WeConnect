@@ -148,22 +148,6 @@ export default function Index() {
               <h1 className="text-3xl sm:text-[36px] font-black leading-10 tracking-[-0.9px] text-black">
                 Chào mừng trở lại! 👋
               </h1>
-              {isOrganizerPath && (
-                <div className="flex items-center gap-3">
-                  <Link
-                    to="/organizer/events"
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-wc-green text-white text-sm font-bold hover:bg-wc-green/90 transition-colors"
-                  >
-                    Quản lý sự kiện →
-                  </Link>
-                  <Link
-                    to="/events"
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-colors"
-                  >
-                    ← Thoát chế độ quản lý
-                  </Link>
-                </div>
-              )}
             </div>
             <p className="text-[#45464D] text-base font-medium leading-6">
               Hôm nay có 4 sự kiện đang chờ bạn quản lý
