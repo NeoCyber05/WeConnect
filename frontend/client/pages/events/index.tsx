@@ -258,26 +258,7 @@ export default function Index() {
 
           <div className="flex items-center gap-3">
             {user?.role === "ORGANIZER" && (
-              <>
-                <Link
-                  to="/organizer/stats"
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg border border-wc-green text-wc-green text-sm font-bold hover:bg-wc-light transition-colors shrink-0"
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M0 14V11.5L2 9.5V14H0ZM3.5 14V8L5.5 6V14H3.5ZM7 14V6L9 8.025V14H7ZM10.5 14V8.025L12.5 6.025V14H10.5ZM14 14V3.5L12 5.5V0L14 2V14H14ZM0 8.825V6L5.25 0.75L8.25 3.75L14 0V2.825L8.25 6.575L5.25 3.575L0 8.825Z" fill="currentColor"/>
-                  </svg>
-                  {t("events.manageMode")}
-                </Link>
-                <Link
-                  to="/organizer/events"
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-wc-green text-white text-sm font-bold hover:bg-wc-green/90 transition-colors shrink-0"
-                >
-                  <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
-                    <path d="M6 1V11M1 6H11" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                  {t("events.createEvent")}
-                </Link>
-              </>
+              <></>
             )}
             <button 
               onClick={() => setShowFilters(!showFilters)}
