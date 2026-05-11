@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import Optional
@@ -8,8 +8,11 @@ from app.models.event import Event, EventRegistration, EventFeedback
 from app.schemas.event import (
     EventCreate, EventUpdate, EventOut, FeedbackCreate, FeedbackOut,
     EventStatistics, EventOverviewStatistics, RatingDistribution,
-    OrganizerBrief, UserBrief, ParticipantOut,
+    OrganizerBrief, UserBrief, ParticipantOut, EventImageUploadOut,
 )
+
+from app.utils.media import save_upload
+
 
 router = APIRouter()
 
@@ -33,6 +36,7 @@ def _build_event_out(event: Event, db: Session, current_user: User | None = None
     return {
         "event_id": event.event_id,
         "title": event.title,
+        "category": event.category,
         "description": event.description,
         "start_time": event.start_time,
         "end_time": event.end_time,
@@ -163,6 +167,7 @@ def create_event(
         location=body.location,
         capacity=body.capacity,
         image_url=body.image_url,
+        category=body.category,
         status="UPCOMING",
     )
     db.add(event)
@@ -208,6 +213,17 @@ def delete_event(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Bạn không có quyền xoá sự kiện này")
     db.delete(event)
     db.commit()
+
+
+# ── POST /upload-image — Upload ảnh sự kiện (Organizer) ─────────────────────
+@router.post("/upload-image", response_model=EventImageUploadOut)
+def upload_event_image(
+    file: UploadFile = File(...),
+    current_user: User = Depends(require_organizer),
+):
+    """SRS ID 7: Organizer upload ảnh cho sự kiện (≤ 10MB)."""
+    url = save_upload(file, "events", max_mb=10)
+    return EventImageUploadOut(url=url)
 
 
 # ── POST /{id}/register — Đăng ký tham gia ───────────────────────────────────

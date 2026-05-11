@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { useQuery } from "@tanstack/react-query";
@@ -53,6 +54,10 @@ interface EventData {
   locationType: LocationType;
   participants: number;
   isFull: boolean;
+  category: string;
+  status: string;
+  startTime: Date;
+  endTime: Date;
 }
 
 interface EventOut {
@@ -62,8 +67,7 @@ interface EventOut {
   start_time: string;
   end_time: string;
   location: string;
-  capacity: number;
-  image_url: string | null;
+  category: string | null;
   status: string;
   registered_count: number;
   is_full: boolean;
@@ -99,6 +103,10 @@ function mapEventOut(event: EventOut): EventData & { organizer_id: number } {
     locationType: isOnline ? "video" : "physical",
     participants: event.registered_count,
     isFull: event.is_full,
+    category: event.category || "Khác",
+    status: event.status,
+    startTime: new Date(event.start_time.endsWith('Z') ? event.start_time : event.start_time + 'Z'),
+    endTime: new Date(event.end_time.endsWith('Z') ? event.end_time : event.end_time + 'Z'),
     organizer_id: event.organizer.user_id,
   };
 }
@@ -184,6 +192,13 @@ function EventCard({ event, currentUserId }: { event: EventData & { organizer_id
 
 export default function Index() {
   const { t } = useTranslation();
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    search: "",
+    category: "all",
+    status: "all"
+  });
+
   const { data: user } = useQuery({
     queryKey: ["me"],
     queryFn: () => apiFetch<UserOut>("/api/v1/users/me"),
@@ -195,6 +210,36 @@ export default function Index() {
   });
 
   const events = (apiEvents ?? []).map(mapEventOut);
+
+  const filteredEvents = events.filter(event => {
+    // 1. Filter by search
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      const matchesSearch = 
+        event.title.toLowerCase().includes(searchLower) || 
+        event.location.toLowerCase().includes(searchLower);
+      if (!matchesSearch) return false;
+    }
+
+    // 2. Filter by category
+    if (filters.category !== "all") {
+      if (event.category !== filters.category) return false;
+    }
+
+    // 3. Filter by status
+    if (filters.status !== "all") {
+      const now = new Date();
+      if (filters.status === "upcoming") {
+        if (now >= event.startTime) return false;
+      } else if (filters.status === "ongoing") {
+        if (now < event.startTime || now > event.endTime) return false;
+      } else if (filters.status === "finished") {
+        if (now <= event.endTime) return false;
+      }
+    }
+
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-wc-bg font-inter">
@@ -234,14 +279,88 @@ export default function Index() {
                 </Link>
               </>
             )}
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-wc-border bg-white text-wc-dark text-sm font-semibold hover:bg-wc-bg transition-colors shrink-0">
+            <button 
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all shrink-0 font-semibold text-sm ${
+                showFilters 
+                  ? "bg-wc-dark text-white border-wc-dark shadow-md" 
+                  : "border-wc-border bg-white text-wc-dark hover:bg-wc-bg"
+              }`}
+            >
               <svg width="18" height="12" viewBox="0 0 18 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M7 12V10H11V12H7ZM3 7V5H15V7H3ZM0 2V0H18V2H0Z" fill="#2D3A3A"/>
+                <path d="M7 12V10H11V12H7ZM3 7V5H15V7H3ZM0 2V0H18V2H0Z" fill="currentColor"/>
               </svg>
               {t("events.filter")}
             </button>
           </div>
         </div>
+
+        {/* Filter Bar */}
+        {showFilters && (
+          <div className="bg-white p-6 rounded-2xl border border-wc-border mb-8 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Search */}
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-wc-gray uppercase tracking-wider">{t("events.search") || "Tìm kiếm"}</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder={t("events.searchPlaceholder") || "Tên sự kiện, địa điểm..."}
+                    value={filters.search}
+                    onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
+                    className="w-full pl-10 pr-4 py-2.5 bg-wc-bg border-none rounded-xl text-sm focus:ring-2 focus:ring-wc-green/20 transition-all"
+                  />
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 opacity-40">
+                    <SearchIcon />
+                  </div>
+                </div>
+              </div>
+
+              {/* Category */}
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-wc-gray uppercase tracking-wider">{t("events.category") || "Danh mục"}</label>
+                <select
+                  value={filters.category}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, category: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-wc-bg border-none rounded-xl text-sm focus:ring-2 focus:ring-wc-green/20 transition-all appearance-none cursor-pointer"
+                >
+                  <option value="all">Tất cả danh mục</option>
+                  <option value="Công nghệ">Công nghệ</option>
+                  <option value="Kinh doanh">Kinh doanh</option>
+                  <option value="Giáo dục">Giáo dục</option>
+                  <option value="Nghệ thuật">Nghệ thuật</option>
+                </select>
+              </div>
+
+              {/* Status */}
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-wc-gray uppercase tracking-wider">{t("events.status") || "Trạng thái"}</label>
+                <select
+                  value={filters.status}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-wc-bg border-none rounded-xl text-sm focus:ring-2 focus:ring-wc-green/20 transition-all appearance-none cursor-pointer"
+                >
+                  <option value="all">Tất cả trạng thái</option>
+                  <option value="upcoming">Sắp tới</option>
+                  <option value="ongoing">Đang diễn ra</option>
+                  <option value="finished">Đã kết thúc</option>
+                </select>
+              </div>
+            </div>
+            
+            {/* Clear filters button */}
+            {(filters.search || filters.category !== "all" || filters.status !== "all") && (
+              <div className="flex justify-end mt-4">
+                <button 
+                  onClick={() => setFilters({ search: "", category: "all", status: "all" })}
+                  className="text-xs font-bold text-wc-green hover:underline"
+                >
+                  Xóa tất cả bộ lọc
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {isLoading && (
           <div className="flex items-center justify-center py-20">
@@ -254,7 +373,7 @@ export default function Index() {
         )}
         {!isLoading && !isError && (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-            {events.map((event) => (
+            {filteredEvents.map((event) => (
               <EventCard key={event.id} event={event} currentUserId={user?.user_id} />
             ))}
           </div>

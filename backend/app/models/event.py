@@ -10,6 +10,7 @@ class Event(Base):
     event_id = Column(BigInteger, primary_key=True, autoincrement=True)
     organizer_id = Column(BigInteger, ForeignKey("USERS.user_id", ondelete="CASCADE"), nullable=False)
     title = Column(String(255), nullable=False)
+    category = Column(String(100))
     description = Column(Text)
     start_time = Column(TIMESTAMP, nullable=False)
     end_time = Column(TIMESTAMP, nullable=False)

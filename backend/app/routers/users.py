@@ -16,33 +16,7 @@ from app.config import settings
 
 router = APIRouter()
 
-ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
-
-
-def _save_upload(file: UploadFile, subfolder: str, max_mb: int = 10) -> str:
-    """Lưu file lên disk, trả về URL path."""
-    if file.content_type not in ALLOWED_IMAGE_TYPES:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Chỉ chấp nhận định dạng JPG, PNG, WebP",
-        )
-
-    content = file.file.read()
-    if len(content) > max_mb * 1024 * 1024:
-        raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"File không được vượt quá {max_mb}MB",
-        )
-
-    ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else "jpg"
-    filename = f"{uuid.uuid4().hex}.{ext}"
-    folder = os.path.join(settings.UPLOAD_DIR, subfolder)
-    os.makedirs(folder, exist_ok=True)
-
-    with open(os.path.join(folder, filename), "wb") as f:
-        f.write(content)
-
-    return f"/uploads/{subfolder}/{filename}"
+from app.utils.media import save_upload
 
 
 # ── GET /hobbies ─────────────────────────────────────────────────────────────
@@ -83,7 +57,7 @@ def update_avatar(
     current_user: User = Depends(get_current_user),
 ):
     """SRS ID 6: Cập nhật ảnh đại diện (≤ 5MB)."""
-    url = _save_upload(file, "avatars", max_mb=5)
+    url = save_upload(file, "avatars", max_mb=5)
     current_user.avatar_url = url
     db.commit()
     return MediaUploadOut(url=url)
@@ -97,7 +71,7 @@ def update_cover(
     current_user: User = Depends(get_current_user),
 ):
     """SRS ID 6: Cập nhật ảnh bìa (≤ 10MB)."""
-    url = _save_upload(file, "covers", max_mb=10)
+    url = save_upload(file, "covers", max_mb=10)
     current_user.cover_url = url
     db.commit()
     return MediaUploadOut(url=url)

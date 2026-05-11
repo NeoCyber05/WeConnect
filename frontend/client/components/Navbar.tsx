@@ -86,9 +86,17 @@ export default function Navbar() {
     queryFn: () => apiFetch<UserOut>("/api/v1/users/me"),
   });
 
-  const displayLinks = [...navLinks];
+  let displayLinks = [...navLinks];
   if (user?.role === "ORGANIZER") {
-    displayLinks.push({ href: "/organizer/events", label: "navbar.manage", icon: EventIcon });
+    displayLinks = [
+      { href: "/organizer/stats", label: "Thống kê", icon: HomeIcon },
+      { href: "/organizer/events", label: "Sự kiện", icon: EventIcon }
+    ];
+  } else if (user?.role === "admin") {
+    displayLinks = [
+      { href: "/admin/stats", label: "Thống kê", icon: HomeIcon },
+      { href: "/admin/events-management", label: "Sự kiện", icon: EventIcon }
+    ];
   }
 
   return (
@@ -101,9 +109,9 @@ export default function Navbar() {
             <span className="text-wc-dark font-extrabold text-[18px] tracking-tight">
               WeConnect
             </span>
-            {user?.role === "ORGANIZER" && (
+            {(user?.role === "ORGANIZER" || user?.role === "admin") && (
               <span className="text-[10px] font-bold text-wc-green uppercase tracking-wider mt-0.5">
-                ORGANIZER
+                {user?.role}
               </span>
             )}
           </div>
@@ -136,36 +144,38 @@ export default function Navbar() {
 
         {/* Search + avatar */}
         <div className="flex items-center gap-3 shrink-0">
-          <div className="relative hidden lg:block" ref={searchRef}>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                navigate(`/search${searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ""}`);
-                setIsSearchOpen(false);
-              }}
-            >
-              <div className="absolute left-3 top-1/2 -translate-y-1/2">
-                <SearchIcon />
-              </div>
-              <input
-                type="text"
-                value={searchQuery}
-                onFocus={() => setIsSearchOpen(true)}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setIsSearchOpen(true);
+          {user?.role !== "ORGANIZER" && user?.role !== "admin" && (
+            <div className="relative hidden lg:block" ref={searchRef}>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  navigate(`/search${searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ""}`);
+                  setIsSearchOpen(false);
                 }}
-                placeholder={t("navbar.searchPlaceholder")}
-                className="w-72 pl-9 pr-4 py-1.5 rounded-lg border border-wc-border bg-wc-bg text-xs text-wc-gray placeholder-wc-gray outline-none focus:ring-2 focus:ring-wc-green/20"
+              >
+                <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                  <SearchIcon />
+                </div>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onFocus={() => setIsSearchOpen(true)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setIsSearchOpen(true);
+                  }}
+                  placeholder={t("navbar.searchPlaceholder")}
+                  className="w-72 pl-9 pr-4 py-1.5 rounded-lg border border-wc-border bg-wc-bg text-xs text-wc-gray placeholder-wc-gray outline-none focus:ring-2 focus:ring-wc-green/20"
+                />
+              </form>
+              
+              <SearchPopup 
+                searchQuery={searchQuery} 
+                isOpen={isSearchOpen} 
+                onClose={() => setIsSearchOpen(false)} 
               />
-            </form>
-            
-            <SearchPopup 
-              searchQuery={searchQuery} 
-              isOpen={isSearchOpen} 
-              onClose={() => setIsSearchOpen(false)} 
-            />
-          </div>
+            </div>
+          )}
           <div className="border-l border-wc-border pl-3">
             <Link to="/profile">
               <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-wc-green/10 bg-wc-slate">

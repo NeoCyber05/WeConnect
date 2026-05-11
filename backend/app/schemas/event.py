@@ -21,6 +21,7 @@ class UserBrief(BaseModel):
 
 class EventCreate(BaseModel):
     title: str
+    category: Optional[str] = None
     description: Optional[str] = None
     start_time: datetime
     end_time: datetime
@@ -53,6 +54,7 @@ class EventCreate(BaseModel):
 
 class EventUpdate(BaseModel):
     title: Optional[str] = None
+    category: Optional[str] = None
     description: Optional[str] = None
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
@@ -65,6 +67,7 @@ class EventUpdate(BaseModel):
 class EventOut(BaseModel):
     event_id: int
     title: str
+    category: Optional[str] = None
     description: Optional[str] = None
     start_time: datetime
     end_time: datetime
@@ -137,3 +140,6 @@ class ParticipantOut(BaseModel):
     registered_at: datetime
 
     model_config = {"from_attributes": True}
+
+class EventImageUploadOut(BaseModel):
+    url: str

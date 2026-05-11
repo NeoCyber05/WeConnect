@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { apiFetch } from "@/lib/api";
 
 interface Event {
   id: number;
@@ -6,10 +7,14 @@ interface Event {
   category: string;
   maxAttendees: number;
   date: string;
+  endDate: string;
   location: string;
   description: string;
   coverImage: string;
-  status: "active" | "closed" | "cancelled";
+  status: "upcoming" | "ongoing" | "finished" | "closed" | "cancelled";
+  timeStatus: "upcoming" | "ongoing" | "finished";
+  isClosed: boolean;
+  isCancelled: boolean;
 }
 
 interface EditEventModalProps {
@@ -22,11 +27,9 @@ interface EditEventModalProps {
 
 const categories = [
   "Công nghệ",
-  "Giáo dục",
   "Kinh doanh",
-  "Văn hóa",
-  "Thể thao",
-  "Y tế",
+  "Giáo dục",
+  "Nghệ thuật",
 ];
 
 export default function EditEventModal({
@@ -37,6 +40,39 @@ export default function EditEventModal({
   onCloseRegistration,
 }: EditEventModalProps) {
   const [form, setForm] = useState({ ...event });
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError("Ảnh không được vượt quá 10MB");
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError(null);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await apiFetch<{ url: string }>("/api/v1/events/upload-image", {
+        method: "POST",
+        body: formData,
+      });
+      setForm((prev) => ({ ...prev, coverImage: res.url }));
+    } catch (err: any) {
+      setUploadError(err.message || "Upload ảnh thất bại");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -144,7 +180,7 @@ export default function EditEventModal({
             </div>
             <div className="flex flex-col gap-0.5 flex-1">
               <label className="text-xs font-medium text-black leading-[18px]">
-                Ngày & Giờ
+                Ngày & Giờ bắt đầu
               </label>
               <div className="relative">
                 <div className="absolute left-[10px] top-1/2 -translate-y-1/2 pointer-events-none">
@@ -159,7 +195,7 @@ export default function EditEventModal({
                   </svg>
                 </div>
                 <input
-                  type="text"
+                  type="datetime-local"
                   name="date"
                   value={form.date}
                   onChange={handleChange}
@@ -167,30 +203,74 @@ export default function EditEventModal({
                 />
               </div>
             </div>
+            <div className="flex flex-col gap-0.5 flex-1">
+              <label className="text-xs font-medium text-black leading-[18px]">
+                Thời gian kết thúc
+              </label>
+              <div className="relative">
+                <div className="absolute left-[10px] top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <g clipPath="url(#cal-clip-end)">
+                      <path d="M4 1V3" stroke="#94A3B8" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M8 1V3" stroke="#94A3B8" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M9.5 2H2.5C1.94772 2 1.5 2.44772 1.5 3V10C1.5 10.5523 1.94772 11 2.5 11H9.5C10.0523 11 10.5 10.5523 10.5 10V3C10.5 2.44772 10.0523 2 9.5 2Z" stroke="#94A3B8" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M1.5 5H10.5" stroke="#94A3B8" strokeLinecap="round" strokeLinejoin="round" />
+                    </g>
+                    <defs><clipPath id="cal-clip-end"><rect width="12" height="12" fill="white" /></clipPath></defs>
+                  </svg>
+                </div>
+                <input
+                  type="datetime-local"
+                  name="endDate"
+                  value={form.endDate}
+                  onChange={handleChange}
+                  className="h-[33px] w-full pl-7 pr-[10px] text-[13px] text-black border border-slate-200 rounded-[6px] outline-none focus:border-slate-400 transition-colors"
+                />
+              </div>
+            </div>
           </div>
 
-          {/* Location */}
-          <div className="flex flex-col gap-0.5">
-            <label className="text-xs font-medium text-black leading-[18px]">
-              Địa điểm
-            </label>
-            <div className="relative">
-              <div className="absolute left-[10px] top-1/2 -translate-y-1/2 pointer-events-none">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <g clipPath="url(#loc-clip)">
-                    <path d="M10 5C10 7.4965 7.2305 10.0965 6.3005 10.8995C6.21386 10.9646 6.1084 10.9999 6 10.9999C5.8916 10.9999 5.78614 10.9646 5.6995 10.8995C4.7695 10.0965 2 7.4965 2 5C2 3.93913 2.42143 2.92172 3.17157 2.17157C3.92172 1.42143 4.93913 1 6 1C7.06087 1 8.07828 1.42143 8.82843 2.17157C9.57857 2.92172 10 3.93913 10 5Z" stroke="#94A3B8" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M6 6.5C6.82843 6.5 7.5 5.82843 7.5 5C7.5 4.17157 6.82843 3.5 6 3.5C5.17157 3.5 4.5 4.17157 4.5 5C4.5 5.82843 5.17157 6.5 6 6.5Z" stroke="#94A3B8" strokeLinecap="round" strokeLinejoin="round" />
-                  </g>
-                  <defs><clipPath id="loc-clip"><rect width="12" height="12" fill="white" /></clipPath></defs>
-                </svg>
+          {/* Row 3: Location + Status */}
+          <div className="flex gap-2">
+            <div className="flex flex-col gap-0.5 flex-1">
+              <label className="text-xs font-medium text-black leading-[18px]">
+                Địa điểm
+              </label>
+              <div className="relative">
+                <div className="absolute left-[10px] top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <g clipPath="url(#loc-clip)">
+                      <path d="M10 5C10 7.4965 7.2305 10.0965 6.3005 10.8995C6.21386 10.9646 6.1084 10.9999 6 10.9999C5.8916 10.9999 5.78614 10.9646 5.6995 10.8995C4.7695 10.0965 2 7.4965 2 5C2 3.93913 2.42143 2.92172 3.17157 2.17157C3.92172 1.42143 4.93913 1 6 1C7.06087 1 8.07828 1.42143 8.82843 2.17157C9.57857 2.92172 10 3.93913 10 5Z" stroke="#94A3B8" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M6 6.5C6.82843 6.5 7.5 5.82843 7.5 5C7.5 4.17157 6.82843 3.5 6 3.5C5.17157 3.5 4.5 4.17157 4.5 5C4.5 5.82843 5.17157 6.5 6 6.5Z" stroke="#94A3B8" strokeLinecap="round" strokeLinejoin="round" />
+                    </g>
+                    <defs><clipPath id="loc-clip"><rect width="12" height="12" fill="white" /></clipPath></defs>
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  name="location"
+                  value={form.location}
+                  onChange={handleChange}
+                  className="h-[33px] w-full pl-7 pr-[10px] text-[13px] text-black border border-slate-200 rounded-[6px] outline-none focus:border-slate-400 transition-colors"
+                />
               </div>
-              <input
-                type="text"
-                name="location"
-                value={form.location}
-                onChange={handleChange}
-                className="h-[33px] w-full pl-7 pr-[10px] text-[13px] text-black border border-slate-200 rounded-[6px] outline-none focus:border-slate-400 transition-colors"
-              />
+            </div>
+            <div className="flex flex-col gap-0.5 w-[140px]">
+              <label className="text-xs font-medium text-black leading-[18px]">
+                Trạng thái
+              </label>
+              <select
+                name="status"
+                value={form.status === 'closed' ? 'closed' : 'active'}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setForm(prev => ({ ...prev, status: val === 'closed' ? 'closed' : 'upcoming' }));
+                }}
+                className="h-[33px] px-[10px] text-[13px] text-black border border-slate-200 rounded-[6px] bg-white outline-none focus:border-slate-400 transition-colors appearance-none cursor-pointer"
+              >
+                <option value="active">Hoạt động</option>
+                <option value="closed">Đã đóng đăng ký</option>
+              </select>
             </div>
           </div>
 
@@ -213,17 +293,52 @@ export default function EditEventModal({
             <label className="text-xs font-medium text-black leading-[18px]">
               Ảnh bìa
             </label>
-            <div className="flex items-center gap-2 h-[42px]">
-              <div className="w-16 h-[42px] border border-slate-200 rounded-[4px] overflow-hidden flex-shrink-0 p-[0.8px]">
+            <div className="flex items-center gap-3">
+              <div className="w-16 h-[42px] border border-slate-200 rounded-[6px] overflow-hidden flex-shrink-0 p-[0.5px] bg-slate-50">
                 <img
                   src={form.coverImage}
                   alt="Cover"
-                  className="w-full h-full object-cover rounded-sm"
+                  className="w-full h-full object-cover rounded-[4px]"
                 />
               </div>
-              <button className="flex-1 h-[34px] border border-dashed border-slate-200 rounded-[6px] flex items-center justify-center text-[11px] text-slate-400 hover:border-slate-300 hover:text-slate-500 transition-colors">
-                Thay đổi ảnh bìa
-              </button>
+              
+              <div className="flex-1 flex flex-col gap-1">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <button 
+                  type="button"
+                  disabled={isUploading}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full h-[34px] border border-dashed border-slate-300 rounded-[8px] flex items-center justify-center gap-2 text-[11px] font-medium text-slate-500 hover:border-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isUploading ? (
+                    <>
+                      <svg className="animate-spin h-3 w-3 text-slate-500" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Đang tải lên...
+                    </>
+                  ) : (
+                    <>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
+                      </svg>
+                      Chọn ảnh sự kiện (JPG, PNG, WebP)
+                    </>
+                  )}
+                </button>
+                {uploadError && (
+                  <span className="text-[10px] text-red-500 font-medium">{uploadError}</span>
+                )}
+              </div>
             </div>
           </div>
         </div>

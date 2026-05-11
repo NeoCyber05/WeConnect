@@ -118,6 +118,7 @@ erDiagram
         bigint event_id PK
         bigint organizer_id FK
         varchar title
+        varchar category
         text description
         timestamp start_time
         timestamp end_time

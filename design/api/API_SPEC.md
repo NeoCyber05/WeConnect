@@ -663,6 +663,7 @@ Hoặc với ảnh:
     {
       "event_id": 3001,
       "title": "Buoi giao luu Nhat-Viet",
+      "category": "Giáo dục",
       "description": "...",
       "start_time": "2026-05-15T18:00:00Z",
       "end_time": "2026-05-15T21:00:00Z",
@@ -733,6 +734,7 @@ Hoặc với ảnh:
 ```json
 {
   "title": "Buoi hoi thao",
+  "category": "Kinh doanh",
   "description": "...",
   "start_time": "2026-06-01T18:00:00Z",
   "end_time": "2026-06-01T21:00:00Z",

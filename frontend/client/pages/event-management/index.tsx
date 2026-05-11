@@ -8,6 +8,7 @@ import { apiFetch } from "@/lib/api";
 interface EventOut {
   event_id: number;
   title: string;
+  category: string | null;
   description: string;
   start_time: string;
   end_time: string;
@@ -21,62 +22,115 @@ interface EventOut {
   organizer: { user_id: number; full_name: string; avatar_url?: string };
 }
 
+function formatDateTimeLocal(dateString?: string) {
+  if (!dateString) return "";
+  const normalized = (dateString.endsWith('Z') || dateString.includes('+')) 
+    ? dateString 
+    : dateString + 'Z';
+    
+  const d = new Date(normalized);
+  if (isNaN(d.getTime())) return "";
+
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function parseAPIDateTime(dateString?: string): Date {
+  if (!dateString) return new Date(0);
+  // Thêm 'Z' nếu chưa có timezone info — backend trả về UTC không có suffix
+  const normalized = (dateString.endsWith('Z') || dateString.includes('+') || dateString.includes('-', 10))
+    ? dateString
+    : dateString + 'Z';
+  return new Date(normalized);
+}
+
 function mapEventOutToEvent(e: EventOut): Event {
   const apiStatus = e.status?.toUpperCase();
-  let status: "active" | "closed" | "cancelled" = "active";
-  if (apiStatus === "FINISHED") status = "closed";
-  else if (apiStatus === "CANCELLED") status = "cancelled";
-  else if (apiStatus === "UPCOMING" || apiStatus === "ONGOING") status = "active";
+  const now = new Date();
+  const start = parseAPIDateTime(e.start_time);
+  const end = parseAPIDateTime(e.end_time);
+
+  const isClosed = apiStatus === "CLOSED";
+  const isCancelled = apiStatus === "CANCELLED";
+  let timeStatus: "upcoming" | "ongoing" | "finished" = "upcoming";
+
+  if (now < start) {
+    timeStatus = "upcoming";
+  } else if (now >= start && now <= end) {
+    timeStatus = "ongoing";
+  } else {
+    timeStatus = "finished";
+  }
 
   return {
     id: e.event_id,
     name: e.title,
-    category: "Sự kiện",
+    category: e.category || "",
     maxAttendees: e.capacity,
-    date: e.start_time ? new Date(e.start_time).toLocaleString("vi-VN") : "",
-    location: e.location,
-    description: e.description,
+    date: formatDateTimeLocal(e.start_time),
+    endDate: formatDateTimeLocal(e.end_time),
+    location: e.location || "",
+    description: e.description || "",
     coverImage: e.image_url || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=200&fit=crop",
-    status,
+    status: isCancelled ? "cancelled" : (isClosed ? "closed" : timeStatus),
+    timeStatus,
+    isClosed,
+    isCancelled,
   };
 }
 
-
 const statusConfig = {
-  active: {
+  upcoming: {
+    label: "Sắp tới",
+    bg: "bg-blue-500/10",
+    text: "text-blue-500",
+    dot: "bg-blue-500",
+  },
+  ongoing: {
     label: "Đang diễn ra",
-    bg: "bg-emerald-50",
-    text: "text-emerald-700",
+    bg: "bg-emerald-500/10",
+    text: "text-emerald-500",
     dot: "bg-emerald-500",
+  },
+  finished: {
+    label: "Đã kết thúc",
+    bg: "bg-slate-500/10",
+    text: "text-slate-500",
+    dot: "bg-slate-500",
   },
   closed: {
     label: "Đóng đăng ký",
-    bg: "bg-amber-50",
-    text: "text-amber-700",
+    bg: "bg-amber-500/10",
+    text: "text-amber-500",
     dot: "bg-amber-500",
   },
   cancelled: {
     label: "Đã hủy",
-    bg: "bg-red-50",
-    text: "text-red-600",
+    bg: "bg-red-500/10",
+    text: "text-red-500",
     dot: "bg-red-500",
   },
 };
 
 const categoryColors: Record<string, string> = {
-  "Công nghệ": "bg-blue-100 text-blue-700",
-  "Giáo dục": "bg-indigo-100 text-indigo-700",
-  "Kinh doanh": "bg-purple-100 text-purple-700",
-  "Văn hóa": "bg-pink-100 text-pink-700",
-  "Thể thao": "bg-orange-100 text-orange-700",
-  "Y tế": "bg-teal-100 text-teal-700",
+  "Công nghệ": "bg-slate-900 text-white",
+  "Kinh doanh": "bg-slate-900 text-white",
+  "Giáo dục": "bg-slate-900 text-white",
+  "Nghệ thuật": "bg-slate-900 text-white",
 };
 
 export default function Index() {
   const queryClient = useQueryClient();
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedTime, setSelectedTime] = useState<string>("all");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   const { data: apiEvents, isLoading } = useQuery({
     queryKey: ["managed-events"],
@@ -93,31 +147,79 @@ export default function Index() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["managed-events"] }),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiFetch(`/api/v1/events/${id}`, { method: "DELETE" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["managed-events"] }),
-  });
 
   const events: Event[] = (apiEvents ?? []).map(mapEventOutToEvent);
+  
+  const CATEGORIES = ["Công nghệ", "Kinh doanh", "Giáo dục", "Nghệ thuật"];
 
   const filtered = events.filter((e) => {
-    const matchesSearch =
-      e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      e.location.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus =
-      filterStatus === "all" || e.status === filterStatus;
-    return matchesSearch && matchesStatus;
+    const matchesSearch = e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          e.location.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesStatus = selectedStatuses.length === 0 || 
+                          selectedStatuses.includes(e.status) || 
+                          selectedStatuses.includes(e.timeStatus);
+    
+    const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(e.category);
+    
+    let matchesTime = true;
+    if (selectedTime !== "all") {
+      const now = new Date();
+      const eventDate = new Date(e.date);
+
+      if (selectedTime === "today") {
+        matchesTime = eventDate.toDateString() === now.toDateString();
+      } else if (selectedTime === "week") {
+        // Tính toán Thứ 2 và Chủ nhật của tuần hiện tại
+        const curr = new Date(now);
+        const day = curr.getDay(); // 0 (CN) - 6 (T7)
+        const diffToMonday = curr.getDate() - day + (day === 0 ? -6 : 1);
+        
+        const monday = new Date(curr.setDate(diffToMonday));
+        monday.setHours(0, 0, 0, 0);
+        
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        sunday.setHours(23, 59, 59, 999);
+        
+        matchesTime = eventDate >= monday && eventDate <= sunday;
+      } else if (selectedTime === "month") {
+        // Từ ngày 1 đến ngày cuối cùng của tháng hiện tại
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        lastDay.setHours(23, 59, 59, 999);
+        
+        matchesTime = eventDate >= firstDay && eventDate <= lastDay;
+      }
+    }
+
+    return matchesSearch && matchesStatus && matchesCategory && matchesTime;
   });
 
   const handleSave = (updated: Event) => {
-    const payload = {
+    const startDate = updated.date ? new Date(updated.date) : new Date();
+    const endDate = updated.endDate ? new Date(updated.endDate) : new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
+
+    const payload: any = {
       title: updated.name,
       description: updated.description,
       location: updated.location,
-      capacity: updated.maxAttendees,
-      start_time: updated.date,
-      end_time: updated.date, // Needs proper end time handling
+      capacity: parseInt(updated.maxAttendees as any, 10) || 50,
+      start_time: startDate.toISOString(),
+      end_time: endDate.toISOString(),
+      image_url: updated.coverImage,
+      category: updated.category,
     };
+
+    // Chỉ gửi status nếu là tạo mới hoặc người dùng chọn đóng/mở lại
+    if (updated.id === 0) {
+      payload.status = 'UPCOMING';
+    } else if (updated.status === 'closed') {
+      payload.status = 'CLOSED';
+    } else if (updated.status === 'upcoming') {
+      // Trường hợp re-open sự kiện đang bị đóng
+      payload.status = 'UPCOMING';
+    }
 
     if (updated.id === 0) {
       createMutation.mutate(payload);
@@ -132,325 +234,267 @@ export default function Index() {
       setEditingEvent(null);
       return;
     }
-    if (confirm("Bạn có chắc chắn muốn xoá sự kiện này?")) {
-      deleteMutation.mutate(editingEvent.id);
+    if (confirm("Bạn có chắc chắn muốn hủy sự kiện này?")) {
+      updateMutation.mutate({ id: editingEvent.id, data: { status: "CANCELLED" } });
       setEditingEvent(null);
     }
   };
 
   const handleCloseRegistration = () => {
-    if (editingEvent) {
-      updateMutation.mutate({ id: editingEvent.id, data: { status: "CLOSED" } });
+    if (!editingEvent || editingEvent.id === 0) {
+      setEditingEvent(null);
+      return;
     }
+    updateMutation.mutate({ id: editingEvent.id, data: { status: "CLOSED" } });
     setEditingEvent(null);
   };
 
+  const activeEvents = events.filter(e => !e.isCancelled);
   const stats = {
-    total: events.length,
-    active: events.filter((e) => e.status === "active").length,
-    closed: events.filter((e) => e.status === "closed").length,
-    cancelled: events.filter((e) => e.status === "cancelled").length,
+    total: activeEvents.length,
+    ongoing: activeEvents.filter(e => e.timeStatus === "ongoing").length,
+    upcoming: activeEvents.filter(e => e.timeStatus === "upcoming").length,
+    finished: activeEvents.filter(e => e.timeStatus === "finished").length,
+    cancelled: events.filter(e => e.isCancelled).length,
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-inter">
+    <div className="min-h-screen bg-[#F8FAFC] font-inter pb-10">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Page title */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-1">
-            <h1 className="text-xl font-bold text-gray-900">
-              Quản lý Sự kiện
-            </h1>
-            <div className="flex items-center gap-2">
-              <Link
-                to="/organizer/stats"
-                className="text-sm font-semibold text-wc-green hover:underline"
-              >
-                ← Thống kê tổng quan
-              </Link>
-              <span className="text-gray-300">|</span>
-              <Link
-                to="/events"
-                className="text-sm font-semibold text-gray-500 hover:text-gray-700 hover:underline"
-              >
-                Thoát chế độ quản lý
-              </Link>
-            </div>
-          </div>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Quản lý tất cả sự kiện của bạn
-          </p>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          {[
-            {
-              label: "Tổng sự kiện",
-              value: stats.total,
-              color: "text-[#131B2E]",
-              bg: "bg-white",
-            },
-            {
-              label: "Đang diễn ra",
-              value: stats.active,
-              color: "text-emerald-600",
-              bg: "bg-white",
-            },
-            {
-              label: "Đóng đăng ký",
-              value: stats.closed,
-              color: "text-amber-600",
-              bg: "bg-white",
-            },
-            {
-              label: "Đã hủy",
-              value: stats.cancelled,
-              color: "text-red-500",
-              bg: "bg-white",
-            },
-          ].map((s) => (
-            <div
-              key={s.label}
-              className={`${s.bg} rounded-xl border border-slate-100 shadow-sm px-4 py-3`}
-            >
-              <div className={`text-2xl font-bold ${s.color}`}>
-                {s.value}
-              </div>
-              <div className="text-xs text-gray-500 mt-0.5">{s.label}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-5">
-          <div className="relative flex-1">
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              width="14"
-              height="14"
-              viewBox="0 0 14 14"
-              fill="none"
-            >
-              <path
-                d="M6.33333 11.6667C9.27885 11.6667 11.6667 9.27885 11.6667 6.33333C11.6667 3.38781 9.27885 1 6.33333 1C3.38781 1 1 3.38781 1 6.33333C1 9.27885 3.38781 11.6667 6.33333 11.6667Z"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M13 13L10.1 10.1"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <input
-              type="text"
-              placeholder="Tìm kiếm sự kiện..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-9 pl-9 pr-3 text-sm border border-slate-200 rounded-lg bg-white outline-none focus:border-slate-400 transition-colors"
-            />
-          </div>
-          <div className="flex gap-2">
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="h-9 px-3 text-sm border border-slate-200 rounded-lg bg-white outline-none focus:border-slate-400 transition-colors appearance-none cursor-pointer pr-8"
-            >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="active">Đang diễn ra</option>
-              <option value="closed">Đóng đăng ký</option>
-              <option value="cancelled">Đã hủy</option>
-            </select>
-            <button
-              onClick={() => setEditingEvent({
-                id: 0,
-                name: "",
-                category: "",
-                maxAttendees: 50,
-                date: new Date().toISOString(),
-                location: "",
-                description: "",
-                coverImage: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=200&fit=crop",
-                status: "active"
-              })}
-              className="h-9 px-4 text-sm font-medium text-white bg-wc-green hover:bg-wc-green/90 rounded-lg transition-colors flex items-center gap-1.5"
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path
-                  d="M6 1V11M1 6H11"
-                  stroke="white"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-              </svg>
-              Thêm mới
-            </button>
-          </div>
-        </div>
-
-        {/* Event grid */}
-        {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                className="text-slate-400"
-              >
-                <path
-                  d="M8 2V5M16 2V5M3.5 9.09H20.5M21 8.5V17C21 20 19.5 22 16 22H8C4.5 22 3 20 3 17V8.5C3 5.5 4.5 3.5 8 3.5H16C19.5 3.5 21 5.5 21 8.5Z"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </div>
-            <p className="text-gray-500 text-sm">
-              Không tìm thấy sự kiện nào
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map((event) => {
-              const status = statusConfig[event.status];
-              const catColor =
-                categoryColors[event.category] ||
-                "bg-gray-100 text-gray-700";
-              return (
-                <div
-                  key={event.id}
-                  className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow group"
-                >
-                  {/* Cover image */}
-                  <div className="relative h-36 overflow-hidden bg-slate-100">
-                    <img
-                      src={event.coverImage}
-                      alt={event.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-                    <div className="absolute top-2 left-2">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${catColor}`}
-                      >
-                        {event.category}
-                      </span>
-                    </div>
-                    <div className="absolute top-2 right-2">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${status.bg} ${status.text}`}
-                      >
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${status.dot}`}
-                        />
-                        {status.label}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Card body */}
-                  <div className="p-4">
-                    <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 mb-2 leading-snug">
-                      {event.name}
-                    </h3>
-                    <div className="flex flex-col gap-1 mb-3">
-                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                        <svg
-                          width="11"
-                          height="11"
-                          viewBox="0 0 12 12"
-                          fill="none"
-                        >
-                          <g clipPath="url(#cal2)">
-                            <path
-                              d="M4 1V3M8 1V3M9.5 2H2.5C1.94772 2 1.5 2.44772 1.5 3V10C1.5 10.5523 1.94772 11 2.5 11H9.5C10.0523 11 10.5 10.5523 10.5 10V3C10.5 2.44772 10.0523 2 9.5 2ZM1.5 5H10.5"
-                              stroke="#94A3B8"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </g>
-                          <defs>
-                            <clipPath id="cal2">
-                              <rect width="12" height="12" fill="white" />
-                            </clipPath>
-                          </defs>
-                        </svg>
-                        {event.date}
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                        <svg
-                          width="11"
-                          height="11"
-                          viewBox="0 0 12 12"
-                          fill="none"
-                        >
-                          <g clipPath="url(#loc2)">
-                            <path
-                              d="M10 5C10 7.4965 7.2305 10.0965 6.3005 10.8995C6.21386 10.9646 6.1084 10.9999 6 10.9999C5.8916 10.9999 5.78614 10.9646 5.6995 10.8995C4.7695 10.0965 2 7.4965 2 5C2 3.93913 2.42143 2.92172 3.17157 2.17157C3.92172 1.42143 4.93913 1 6 1C7.06087 1 8.07828 1.42143 8.82843 2.17157C9.57857 2.92172 10 3.93913 10 5ZM6 6.5C6.82843 6.5 7.5 5.82843 7.5 5C7.5 4.17157 6.82843 3.5 6 3.5C5.17157 3.5 4.5 4.17157 4.5 5C4.5 5.82843 5.17157 6.5 6 6.5Z"
-                              stroke="#94A3B8"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </g>
-                          <defs>
-                            <clipPath id="loc2">
-                              <rect width="12" height="12" fill="white" />
-                            </clipPath>
-                          </defs>
-                        </svg>
-                        <span className="truncate">{event.location}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                        <svg
-                          width="11"
-                          height="11"
-                          viewBox="0 0 12 12"
-                          fill="none"
-                        >
-                          <path
-                            d="M10 10C10 10 10 8 6 8C2 8 2 10 2 10M6 6C7.10457 6 8 5.10457 8 4C8 2.89543 7.10457 2 6 2C4.89543 2 4 2.89543 4 4C4 5.10457 4.89543 6 6 6Z"
-                            stroke="#94A3B8"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                        {event.maxAttendees.toLocaleString()} người
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => setEditingEvent(event)}
-                      className="w-full h-8 text-xs font-medium text-[#131B2E] border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors flex items-center justify-center gap-1.5"
-                    >
-                      <svg
-                        width="11"
-                        height="11"
-                        viewBox="0 0 12 12"
-                        fill="none"
-                      >
-                        <path
-                          d="M8.5 1.5L10.5 3.5L4 10H2V8L8.5 1.5Z"
-                          stroke="#131B2E"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      Chỉnh sửa
-                    </button>
-                  </div>
+      <main className="max-w-[1200px] mx-auto px-4 pt-8">
+        <div className="flex flex-col md:flex-row gap-8">
+          
+          {/* Sidebar Filters */}
+          <aside className="w-full md:w-[280px] flex-shrink-0">
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 sticky top-24">
+              <h2 className="text-lg font-bold text-slate-900 mb-6">Bộ lọc sự kiện</h2>
+              
+              {/* Search */}
+              <div className="mb-6">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Tìm kiếm</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Tên, địa điểm..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full h-10 pl-10 pr-3 text-sm bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-slate-200 transition-all"
+                  />
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 </div>
-              );
-            })}
+              </div>
+
+              {/* Status */}
+              <div className="mb-6">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">Trạng thái</label>
+                <div className="space-y-2">
+                  {[
+                    { id: "ongoing", label: "Đang diễn ra" },
+                    { id: "upcoming", label: "Sắp tới" },
+                    { id: "finished", label: "Đã kết thúc" },
+                    { id: "closed", label: "Đóng đăng ký" }
+                  ].map(s => (
+                    <label key={s.id} className="flex items-center group cursor-pointer">
+                      <div className="relative flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedStatuses.includes(s.id)}
+                          onChange={() => {
+                            setSelectedStatuses(prev => 
+                              prev.includes(s.id) ? prev.filter(x => x !== s.id) : [...prev, s.id]
+                            );
+                          }}
+                          className="peer appearance-none w-5 h-5 border-2 border-slate-200 rounded-md checked:bg-slate-900 checked:border-slate-900 transition-all"
+                        />
+                        <svg className="absolute w-3 h-3 text-white left-1 opacity-0 peer-checked:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                      </div>
+                      <span className="ml-3 text-sm font-medium text-slate-600 group-hover:text-slate-900 transition-colors">{s.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Time */}
+              <div className="mb-6">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">Thời gian</label>
+                <div className="space-y-2">
+                  {[
+                    { id: "all", label: "Tất cả" },
+                    { id: "today", label: "Hôm nay" },
+                    { id: "week", label: "Tuần này" },
+                    { id: "month", label: "Tháng này" }
+                  ].map(t => (
+                    <label key={t.id} className="flex items-center group cursor-pointer">
+                      <input
+                        type="radio"
+                        name="time"
+                        checked={selectedTime === t.id}
+                        onChange={() => setSelectedTime(t.id)}
+                        className="peer appearance-none w-5 h-5 border-2 border-slate-200 rounded-full checked:border-[6px] checked:border-slate-900 transition-all"
+                      />
+                      <span className="ml-3 text-sm font-medium text-slate-600 group-hover:text-slate-900 transition-colors">{t.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Categories */}
+              <div>
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">Danh mục</label>
+                <div className="flex flex-wrap gap-2">
+                  {CATEGORIES.map(c => (
+                    <button
+                      key={c}
+                      onClick={() => {
+                        setSelectedCategories(prev => 
+                          prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]
+                        );
+                      }}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                        selectedCategories.includes(c) 
+                          ? "bg-slate-900 text-white shadow-md shadow-slate-200" 
+                          : "bg-slate-50 text-slate-500 hover:bg-slate-100"
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {/* Main Content */}
+          <div className="flex-1">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+              <div>
+                <h1 className="text-3xl font-black text-slate-900 tracking-tight">Sự kiện của bạn</h1>
+                <p className="text-slate-500 font-medium mt-1">Quản lý và theo dõi hiệu quả các hoạt động</p>
+              </div>
+              <button
+                onClick={() => {
+                  const d = new Date();
+                  const startISO = formatDateTimeLocal(d.toISOString());
+                  const endISO = formatDateTimeLocal(new Date(d.getTime() + 2 * 60 * 60 * 1000).toISOString());
+                  
+                  setEditingEvent({
+                    id: 0,
+                    name: "",
+                    category: "Công nghệ",
+                    maxAttendees: 50,
+                    date: startISO,
+                    endDate: endISO,
+                    location: "",
+                    description: "",
+                    coverImage: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=200&fit=crop",
+                    status: "upcoming",
+                    timeStatus: "upcoming",
+                    isClosed: false,
+                  });
+                }}
+                className="h-12 px-6 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl transition-all flex items-center gap-2 shadow-lg shadow-slate-200 active:scale-95"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Tạo sự kiện mới
+              </button>
+            </div>
+
+            {/* Quick Stats Dashboard */}
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+              {[
+                { label: "Tổng số", value: stats.total, icon: "📊", color: "bg-blue-50 text-blue-600" },
+                { label: "Đang chạy", value: stats.ongoing, icon: "⚡", color: "bg-emerald-50 text-emerald-600" },
+                { label: "Sắp tới", value: stats.upcoming, icon: "📅", color: "bg-violet-50 text-violet-600" },
+                { label: "Hoàn thành", value: stats.finished, icon: "✅", color: "bg-slate-100 text-slate-600" },
+                { label: "Đã hủy", value: stats.cancelled, icon: "🚫", color: "bg-red-50 text-red-500" },
+              ].map(s => (
+                <div key={s.label} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                  <div className={`w-10 h-10 ${s.color} rounded-xl flex items-center justify-center text-xl mb-3`}>{s.icon}</div>
+                  <div className="text-2xl font-black text-slate-900">{s.value}</div>
+                  <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Event Grid */}
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[1,2,3,4].map(i => <div key={i} className="h-[400px] bg-slate-100 rounded-3xl animate-pulse" />)}
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="bg-white rounded-3xl p-12 border-2 border-dashed border-slate-100 text-center">
+                <div className="text-4xl mb-4">🔍</div>
+                <h3 className="text-xl font-bold text-slate-900">Không tìm thấy kết quả</h3>
+                <p className="text-slate-500 mt-2">Thử điều chỉnh bộ lọc hoặc từ khóa tìm kiếm của bạn</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {filtered.map((event) => {
+                  const status = statusConfig[event.status] || statusConfig.upcoming;
+                  const catColor = categoryColors[event.category] || "bg-slate-900 text-white";
+                  return (
+                    <div key={event.id} className="group bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500">
+                      <div className="relative h-48 overflow-hidden">
+                        <img src={event.coverImage} alt={event.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent" />
+                        <div className="absolute top-4 left-4">
+                          <span className={`px-3 py-1 ${catColor} text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg`}>
+                            {event.category}
+                          </span>
+                        </div>
+                        <div className="absolute top-4 right-4 flex flex-col items-end gap-1.5">
+                          {event.isCancelled ? (
+                            <span className={`px-2.5 py-1 ${statusConfig.cancelled.bg} ${statusConfig.cancelled.text} text-[10px] font-bold rounded-lg shadow-sm flex items-center gap-1.5`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.cancelled.dot}`} />
+                              {statusConfig.cancelled.label}
+                            </span>
+                          ) : (
+                            event.isClosed && (
+                              <span className={`px-2.5 py-1 ${statusConfig.closed.bg} ${statusConfig.closed.text} text-[10px] font-bold rounded-lg shadow-sm flex items-center gap-1.5`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.closed.dot}`} />
+                                {statusConfig.closed.label}
+                              </span>
+                            )
+                          )}
+                          {!event.isCancelled && (
+                            <span className={`px-2.5 py-1 ${statusConfig[event.timeStatus].bg} ${statusConfig[event.timeStatus].text} text-[10px] font-bold rounded-lg shadow-sm flex items-center gap-1.5`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${statusConfig[event.timeStatus].dot}`} />
+                              {statusConfig[event.timeStatus].label}
+                            </span>
+                          )}
+                        </div>
+                        <div className="absolute bottom-4 left-4 right-4">
+                          <h3 className="text-white font-bold text-lg leading-tight line-clamp-1">{event.name}</h3>
+                          <div className="flex items-center gap-3 mt-2 text-white/80 text-xs">
+                            <span className="flex items-center gap-1">📍 {event.location}</span>
+                            <span className="flex items-center gap-1">👥 {event.maxAttendees} chỗ</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-6">
+                        <p className="text-slate-500 text-sm line-clamp-2 mb-6 font-medium leading-relaxed">
+                          {event.description || "Không có mô tả cho sự kiện này."}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                            {event.date ? new Date(event.date).toLocaleString("vi-VN", { dateStyle: 'medium', timeStyle: 'short' }) : "N/A"}
+                          </div>
+                          <button
+                            onClick={() => setEditingEvent(event)}
+                            className="h-10 px-5 border-2 border-slate-100 hover:border-slate-900 hover:bg-slate-900 hover:text-white text-slate-900 text-xs font-bold rounded-xl transition-all active:scale-95"
+                          >
+                            Chi tiết & Sửa
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </main>
 
       {/* Edit Modal */}

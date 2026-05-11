@@ -2,6 +2,8 @@ import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const NAV_LINKS = [
   {
@@ -194,7 +196,16 @@ function FriendSuggestion({ avatar, matchPercent, name, meta, tags }: FriendSugg
 export default function Index() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const displayName = user?.full_name?.trim() || "bạn";
+
+  useEffect(() => {
+    if (user?.role === "ORGANIZER") {
+      navigate("/organizer/events", { replace: true });
+    } else if (user?.role === "admin") {
+      navigate("/admin/events-management", { replace: true });
+    }
+  }, [user, navigate]);
 
   const events: EventCardProps[] = [
     {

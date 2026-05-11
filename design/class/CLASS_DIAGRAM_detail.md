@@ -274,6 +274,7 @@ classDiagram
     class Event {
         +Long eventId
         +String title
+        +String category
         +String description
         +Date startTime
         +Date endTime

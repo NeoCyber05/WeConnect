@@ -122,6 +122,7 @@ CREATE TABLE EVENTS (
     event_id     BIGINT       AUTO_INCREMENT PRIMARY KEY,
     organizer_id BIGINT       NOT NULL,
     title        VARCHAR(255) NOT NULL,
+    category     VARCHAR(100),
     description  TEXT,
     start_time   TIMESTAMP    NOT NULL,
     end_time     TIMESTAMP    NOT NULL,
