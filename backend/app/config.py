@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     PUSHER_CLUSTER: str | None = None
     PUSHER_SSL: bool = True
 
+    LIVEKIT_URL: str | None = None
+    LIVEKIT_API_KEY: str | None = None
+    LIVEKIT_API_SECRET: str | None = None
+
     UPLOAD_DIR: str = "/app/uploads"
     MAX_UPLOAD_SIZE_MB: int = 10
 

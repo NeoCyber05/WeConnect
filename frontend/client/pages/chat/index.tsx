@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Pusher from "pusher-js";
 import Navbar from "@/components/Navbar";
 import { API_BASE_URL } from "@/lib/api";
@@ -18,6 +18,7 @@ import {
 } from "@/lib/chatApi";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import { sendCallInvite } from "@/lib/videoApi";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -978,6 +979,7 @@ function ChatWindow({
   isSending,
   typingUserId,
   translatingIds,
+  currentUserId,
   onSend,
   onTyping,
   onTranslate,
@@ -988,14 +990,40 @@ function ChatWindow({
   isSending: boolean;
   typingUserId: number | null;
   translatingIds: Set<number>;
+  currentUserId: number | null;
   onSend: (content: string) => Promise<void>;
   onTyping: (isTyping: boolean) => void;
   onTranslate: (messageId: number) => Promise<void>;
 }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<number | null>(null);
+
+  const handleStartCall = async () => {
+    if (!conv || currentUserId === null) return;
+    const minId = Math.min(currentUserId, conv.participantId);
+    const maxId = Math.max(currentUserId, conv.participantId);
+    const roomName = `room_${minId}_${maxId}`;
+
+    // Notify callee via Pusher before entering the room
+    const currentUser = getCurrentUser();
+    sendCallInvite({
+      calleeId: conv.participantId,
+      roomName,
+      callerName: currentUser?.full_name ?? "Người dùng",
+      callerAvatar: null, // Backend self-populates from current_user.avatar_url
+    }).catch(() => {}); // fire-and-forget — don't block navigation on failure
+
+    const params = new URLSearchParams({
+      room: roomName,
+      partner: conv.name,
+      partner_id: conv.participantId.toString(),
+      ...(conv.avatar ? { avatar: conv.avatar } : {}),
+    });
+    navigate(`/call?${params.toString()}`);
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -1077,7 +1105,12 @@ function ChatWindow({
           <button className="p-2 text-[#6B7280] hover:text-[#2D3A3A] hover:bg-[#F9FAF9] rounded-full transition-colors">
             <IconEdit />
           </button>
-          <button className="p-2 text-[#6B7280] hover:text-[#2D3A3A] hover:bg-[#F9FAF9] rounded-full transition-colors">
+          <button
+            id="btn-start-call"
+            onClick={handleStartCall}
+            title="Bắt đầu cuộc gọi video"
+            className="p-2 text-[#6B7280] hover:text-[#4A6741] hover:bg-[#F9FAF9] rounded-full transition-colors"
+          >
             <IconPhone />
           </button>
         </div>
@@ -1493,6 +1526,7 @@ export default function Index() {
           isSending={isSending}
           typingUserId={typingUserId}
           translatingIds={translatingIds}
+          currentUserId={currentUserId}
           onSend={handleSend}
           onTyping={handleTyping}
           onTranslate={handleTranslate}

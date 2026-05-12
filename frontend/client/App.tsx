@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import GlobalCallProvider from "@/components/GlobalCallProvider";
 
 // Auth
 import Register from "@/pages/register/index";
@@ -46,38 +47,40 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            {/* Public Auth Routes */}
-            <Route path="/register" element={<Register />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
+          <GlobalCallProvider>
+            <Routes>
+              {/* Public Auth Routes */}
+              <Route path="/register" element={<Register />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
 
-            {/* Protected Main App Routes */}
-            <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-            <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
-            <Route path="/profile/:id" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
-            <Route path="/friends" element={<ProtectedRoute><Friends /></ProtectedRoute>} />
-            <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-            <Route path="/call" element={<ProtectedRoute><Call /></ProtectedRoute>} />
-            <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
-            <Route path="/events/:id" element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
-            <Route path="/games" element={<ProtectedRoute><Games /></ProtectedRoute>} />
-            <Route path="/game" element={<ProtectedRoute><GameRoom /></ProtectedRoute>} />
+              {/* Protected Main App Routes */}
+              <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+              <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><MyProfile /></ProtectedRoute>} />
+              <Route path="/profile/:id" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+              <Route path="/friends" element={<ProtectedRoute><Friends /></ProtectedRoute>} />
+              <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+              <Route path="/call" element={<ProtectedRoute><Call /></ProtectedRoute>} />
+              <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
+              <Route path="/events/:id" element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
+              <Route path="/games" element={<ProtectedRoute><Games /></ProtectedRoute>} />
+              <Route path="/game" element={<ProtectedRoute><GameRoom /></ProtectedRoute>} />
 
-            {/* Organizer Routes */}
-            <Route path="/organizer/stats" element={<ProtectedRoute requireOrganizer><AdminStats /></ProtectedRoute>} />
-            <Route path="/organizer/events" element={<ProtectedRoute requireOrganizer><EventManagement /></ProtectedRoute>} />
-            <Route path="/organizer/events/:id/stats" element={<ProtectedRoute requireOrganizer><EventStats /></ProtectedRoute>} />
+              {/* Organizer Routes */}
+              <Route path="/organizer/stats" element={<ProtectedRoute requireOrganizer><AdminStats /></ProtectedRoute>} />
+              <Route path="/organizer/events" element={<ProtectedRoute requireOrganizer><EventManagement /></ProtectedRoute>} />
+              <Route path="/organizer/events/:id/stats" element={<ProtectedRoute requireOrganizer><EventStats /></ProtectedRoute>} />
 
-            {/* Admin Routes */}
-            <Route path="/admin/stats" element={<ProtectedRoute requireAdmin><AdminStats /></ProtectedRoute>} />
-            <Route path="/admin/events-management" element={<ProtectedRoute requireAdmin><AdminEventsManagement /></ProtectedRoute>} />
+              {/* Admin Routes */}
+              <Route path="/admin/stats" element={<ProtectedRoute requireAdmin><AdminStats /></ProtectedRoute>} />
+              <Route path="/admin/events-management" element={<ProtectedRoute requireAdmin><AdminEventsManagement /></ProtectedRoute>} />
 
-            {/* Catch-all */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+              {/* Catch-all */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </GlobalCallProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

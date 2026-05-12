@@ -642,6 +642,40 @@ Hoặc với ảnh:
 
 ---
 
+### 6.4 Lấy LiveKit Access Token — `POST /video/token`
+
+**Auth required.** Dùng để frontend kết nối trực tiếp vào LiveKit room sau khi có token.
+
+**Request**:
+```json
+{
+  "room_name": "call-1024-2048"
+}
+```
+
+| Field | Type | Bắt buộc | Mô tả |
+|-------|------|-----------|-------|
+| `room_name` | string (1–255) | ✓ | Tên phòng LiveKit cần tham gia |
+
+**Response 200**:
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+> Token này được ký bằng `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET`, mang `identity = user_id` và grant `room_join=true` cho `room_name` đã chỉ định. FE truyền token này vào LiveKit SDK (`Room.connect(url, token)`).
+
+**Lỗi**:
+| Mã | Code | Nguyên nhân |
+|----|------|-------------|
+| 401 | `UNAUTHORIZED` | Không có hoặc token JWT hết hạn |
+| 500 | `LIVEKIT_NOT_CONFIGURED` | Thiếu biến môi trường `LIVEKIT_*` |
+| 500 | `TOKEN_GENERATION_FAILED` | Lỗi nội bộ khi ký token |
+
+---
+
+
 ## 7. Event APIs (SRS ID 7, 17)
 
 ### 7.1 Danh sách sự kiện công khai — `GET /events`
