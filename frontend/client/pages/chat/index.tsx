@@ -1,6 +1,21 @@
-import { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import Pusher from "pusher-js";
 import Navbar from "@/components/Navbar";
+import { API_BASE_URL } from "@/lib/api";
+import { getAccessToken, getCurrentUser } from "@/lib/auth";
+import {
+  createOrGetConversation,
+  getPusherConfig,
+  listConversations,
+  listMessages,
+  markConversationRead,
+  sendMessage as sendChatMessage,
+  sendTypingStatus,
+  translateMessage,
+  type ChatConversation,
+  type ChatMessage as ApiChatMessage,
+} from "@/lib/chatApi";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
@@ -8,10 +23,14 @@ import { useTranslation } from "react-i18next";
 
 interface Conversation {
   id: string;
+  conversationId: number;
+  participantId: number;
   name: string;
   avatar?: string;
   lastMessage: string;
+  lastMessageId?: number;
   time: string;
+  unreadCount: number;
   isOnline?: boolean;
   isActive?: boolean;
   isMine?: boolean;
@@ -19,11 +38,16 @@ interface Conversation {
 
 interface Message {
   id: string;
+  messageId: number;
+  conversationId: number;
+  senderId: number;
   from: "me" | "other";
   content: string;
   time: string;
+  type: string;
   translation?: string;
   isJapanese?: boolean;
+  isRead?: boolean;
 }
 
 interface SearchResult {
@@ -37,80 +61,6 @@ interface SearchResult {
   personality: string;
   avatar?: string;
 }
-
-// ─── Data ─────────────────────────────────────────────────────────────────────
-
-const conversations: Conversation[] = [
-  {
-    id: "1",
-    name: "Mai Phương (Lily)",
-    avatar:
-      "https://api.builder.io/api/v1/image/assets/TEMP/3436feeaab7edc9ff43625c56805afec2f2d4cdc?width=96",
-    lastMessage: "Bạn: Chúc bạn một ngày tốt lành!",
-    time: "10:45",
-    isOnline: true,
-    isActive: true,
-    isMine: true,
-  },
-  {
-    id: "2",
-    name: "Hoàng Nam",
-    avatar:
-      "https://api.builder.io/api/v1/image/assets/TEMP/3e5f6465def7e7120e53b010188cc239a9533e52?width=96",
-    lastMessage: "Bạn có rảnh đi uống cà phê không?",
-    time: "Hôm qua",
-  },
-  {
-    id: "3",
-    name: "Thu Trang",
-    avatar:
-      "https://api.builder.io/api/v1/image/assets/TEMP/cb8c8fdb8176b0341511b076db6c9f5021d62948?width=96",
-    lastMessage: "Tài liệu hôm trước mình gửi bạn đã xem chưa?",
-    time: "2 ngày trước",
-  },
-  {
-    id: "4",
-    name: "Minh Anh (Hana)",
-    avatar:
-      "https://api.builder.io/api/v1/image/assets/TEMP/26982b5d03d04105c9c8d651554b7c0e4f06b327?width=80",
-    lastMessage: "Cảm ơn bạn nhiều nhé!",
-    time: "Thứ 2",
-  },
-];
-
-const initialMessages: Message[] = [
-  {
-    id: "1",
-    from: "other",
-    content: "こんにちは！次のN2試験の準備はもう終わりましたか？",
-    time: "10:30 AM",
-    isJapanese: true,
-  },
-  {
-    id: "2",
-    from: "me",
-    content:
-      "Mình cũng hòm hòm rồi, vẫn còn hơi lo phần nghe hiểu một chút.",
-    time: "10:32 AM",
-  },
-  {
-    id: "3",
-    from: "other",
-    content:
-      "あまり心配しないでください。午後にリスニングの問題集を送りますね。",
-    time: "10:35 AM",
-    translation:
-      "Đừng lo lắng quá nhé. Chiều nay mình sẽ gửi bộ đề luyện nghe cho bạn.",
-    isJapanese: true,
-  },
-  {
-    id: "4",
-    from: "me",
-    content:
-      "Ôi thế thì tốt quá! Cảm ơn bạn nhiều nhé. Chúc bạn một ngày tốt lành!",
-    time: "10:45 AM",
-  },
-];
 
 const searchResults: SearchResult[] = [
   {
@@ -178,6 +128,82 @@ const searchResults: SearchResult[] = [
     personality: "Vui vẻ",
   },
 ];
+
+const EMPTY_LAST_MESSAGE = "Chưa có tin nhắn";
+
+function formatChatTime(value?: string | null): string {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const now = new Date();
+  const sameDay = date.toDateString() === now.toDateString();
+  if (sameDay) {
+    return date.toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) {
+    return "Hôm qua";
+  }
+
+  return date.toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+  });
+}
+
+function containsJapanese(text: string): boolean {
+  return /[\u3040-\u30ff\u3400-\u9fff]/.test(text);
+}
+
+function toConversation(data: ChatConversation, currentUserId: number | null): Conversation {
+  const isMine = data.last_message?.sender_id === currentUserId;
+  const lastMessage = data.last_message
+    ? `${isMine ? "Bạn: " : ""}${data.last_message.content}`
+    : EMPTY_LAST_MESSAGE;
+
+  return {
+    id: String(data.conversation_id),
+    conversationId: data.conversation_id,
+    participantId: data.participant.user_id,
+    name: data.participant.full_name,
+    avatar: data.participant.avatar_url ?? undefined,
+    lastMessage,
+    lastMessageId: data.last_message?.message_id,
+    time: formatChatTime(data.last_message?.created_at ?? data.last_message_at ?? data.created_at),
+    unreadCount: data.unread_count,
+    isMine,
+  };
+}
+
+function toMessage(data: ApiChatMessage, currentUserId: number | null): Message {
+  return {
+    id: String(data.message_id),
+    messageId: data.message_id,
+    conversationId: data.conversation_id,
+    senderId: data.sender_id,
+    from: data.sender_id === currentUserId ? "me" : "other",
+    content: data.content,
+    time: formatChatTime(data.created_at),
+    type: data.type,
+    translation: data.translated_content ?? undefined,
+    isJapanese: containsJapanese(data.content),
+    isRead: data.is_read,
+  };
+}
+
+function sortConversations(items: Conversation[]): Conversation[] {
+  return [...items].sort((a, b) => {
+    const aId = a.lastMessageId ?? 0;
+    const bId = b.lastMessageId ?? 0;
+    return bId - aId;
+  });
+}
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
 
@@ -473,6 +499,16 @@ function SearchDropdown({
   const [interestFilter, setInterestFilter] = useState("Tất cả");
   const [levelFilter, setLevelFilter] = useState("Tất cả");
 
+  useEffect(() => {
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [onClose]);
+
   const FilterSelect = ({
     label,
     value,
@@ -491,7 +527,7 @@ function SearchDropdown({
       <div className="relative">
         <select
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onChange(e.target.value)}
           className="w-full h-[38px] border border-[#E2E8E2] rounded-lg bg-white text-[11px] font-semibold text-[#2D3A3A] pl-2 pr-7 appearance-none outline-none cursor-pointer"
         >
           <option>{t("chat.all") || "Tất cả"}</option>
@@ -597,7 +633,7 @@ const navItems = [
   { label: "navbar.games", icon: <IconGame />, active: false },
 ];
 
-function Header() {
+export function Header() {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
@@ -727,12 +763,19 @@ function ConversationItem({
           <span className="text-sm font-bold text-[#2D3A3A] truncate">
             {conv.name}
           </span>
-          <span className="text-[10px] text-[#6B7280] shrink-0">{conv.time}</span>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {conv.unreadCount > 0 && (
+              <span className="min-w-5 h-5 px-1.5 rounded-full bg-[#4A6741] text-[10px] font-bold text-white flex items-center justify-center">
+                {conv.unreadCount > 9 ? "9+" : conv.unreadCount}
+              </span>
+            )}
+            <span className="text-[10px] text-[#6B7280]">{conv.time}</span>
+          </div>
         </div>
         <span
           className={cn(
             "text-xs mt-0.5 truncate",
-            isActive ? "text-[#4A6741] font-medium" : "text-[#6B7280]"
+            isActive || conv.unreadCount > 0 ? "text-[#4A6741] font-medium" : "text-[#6B7280]"
           )}
         >
           {conv.lastMessage}
@@ -746,12 +789,25 @@ function ConversationItem({
 
 function ConversationSidebar({
   activeId,
+  conversations,
+  isLoading,
+  error,
   onSelect,
 }: {
   activeId: string;
+  conversations: Conversation[];
+  isLoading: boolean;
+  error: string | null;
   onSelect: (id: string) => void;
 }) {
   const { t } = useTranslation();
+  const [query, setQuery] = useState("");
+  const filteredConversations = useMemo(() => {
+    const keyword = query.trim().toLowerCase();
+    if (!keyword) return conversations;
+    return conversations.filter((conv) => conv.name.toLowerCase().includes(keyword));
+  }, [conversations, query]);
+
   return (
     <aside className="w-80 xl:w-96 flex flex-col border-r border-[#E2E8E2] bg-white shrink-0">
       {/* Sidebar header */}
@@ -775,6 +831,8 @@ function ConversationSidebar({
           </div>
           <input
             type="text"
+            value={query}
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => setQuery(event.target.value)}
             placeholder={t("chat.searchConversations")}
             className="w-full pl-8 pr-4 py-2.5 rounded-lg bg-[rgba(241,245,249,0.8)] text-sm text-[#2D3A3A] placeholder-[#6B7280] outline-none focus:ring-2 focus:ring-[#4A6741]/20"
           />
@@ -783,7 +841,22 @@ function ConversationSidebar({
 
       {/* Conversations */}
       <div className="flex-1 overflow-y-auto">
-        {conversations.map((conv) => (
+        {isLoading && (
+          <div className="px-4 py-6 text-sm text-[#6B7280]">
+            Đang tải hội thoại...
+          </div>
+        )}
+        {!isLoading && error && (
+          <div className="px-4 py-6 text-sm text-red-600">
+            {error}
+          </div>
+        )}
+        {!isLoading && !error && filteredConversations.length === 0 && (
+          <div className="px-4 py-6 text-sm text-[#6B7280]">
+            Không có hội thoại phù hợp
+          </div>
+        )}
+        {!isLoading && !error && filteredConversations.map((conv) => (
           <ConversationItem
             key={conv.id}
             conv={conv}
@@ -798,21 +871,42 @@ function ConversationSidebar({
 
 // ─── Chat Message ─────────────────────────────────────────────────────────────
 
-function ChatMessage({ msg }: { msg: Message }) {
+function ChatMessage({
+  msg,
+  participantAvatar,
+  onTranslate,
+  isTranslating,
+}: {
+  msg: Message;
+  participantAvatar?: string;
+  onTranslate: (messageId: number) => Promise<void>;
+  isTranslating: boolean;
+}) {
   const { t } = useTranslation();
   const [showTranslation, setShowTranslation] = useState(
     msg.translation !== undefined
   );
 
+  useEffect(() => {
+    if (msg.translation) {
+      setShowTranslation(true);
+    }
+  }, [msg.translation]);
+
+  const handleTranslate = async () => {
+    if (msg.translation) {
+      setShowTranslation(!showTranslation);
+      return;
+    }
+    await onTranslate(msg.messageId);
+    setShowTranslation(true);
+  };
+
   if (msg.from === "other") {
     return (
       <div className="flex items-start gap-3 max-w-[85%] sm:max-w-[75%]">
         <div className="pt-1 shrink-0">
-          <img
-            src="https://api.builder.io/api/v1/image/assets/TEMP/cb8c8fdb8176b0341511b076db6c9f5021d62948?width=64"
-            alt=""
-            className="w-8 h-8 rounded-full object-cover"
-          />
+          <Avatar src={participantAvatar} size={32} />
         </div>
         <div className="flex flex-col gap-1">
           <div className="px-3 py-2.5 rounded-tl-none rounded-tr-2xl rounded-br-2xl rounded-bl-2xl border border-[#E2E8E2] bg-white shadow-sm">
@@ -841,12 +935,17 @@ function ChatMessage({ msg }: { msg: Message }) {
             <span className="text-[10px] text-[#6B7280]">{msg.time}</span>
             {msg.isJapanese && (
               <button
-                onClick={() => setShowTranslation(!showTranslation)}
-                className="flex items-center gap-1 text-[#4A6741] hover:opacity-80 transition-opacity"
+                onClick={handleTranslate}
+                disabled={isTranslating}
+                className="flex items-center gap-1 text-[#4A6741] hover:opacity-80 transition-opacity disabled:opacity-50"
               >
                 <IconTranslate />
                 <span className="text-[10px] font-bold text-[#4A6741]">
-                  {showTranslation ? t("chat.hideTranslation") : t("chat.translate")}
+                  {isTranslating
+                    ? "Đang dịch..."
+                    : showTranslation && msg.translation
+                      ? t("chat.hideTranslation")
+                      : t("chat.translate")}
                 </span>
               </button>
             )}
@@ -872,14 +971,83 @@ function ChatMessage({ msg }: { msg: Message }) {
 
 // ─── Chat Window ──────────────────────────────────────────────────────────────
 
-function ChatWindow({ conv }: { conv: Conversation }) {
+function ChatWindow({
+  conv,
+  messages,
+  isLoading,
+  isSending,
+  typingUserId,
+  translatingIds,
+  onSend,
+  onTyping,
+  onTranslate,
+}: {
+  conv: Conversation | null;
+  messages: Message[];
+  isLoading: boolean;
+  isSending: boolean;
+  typingUserId: number | null;
+  translatingIds: Set<number>;
+  onSend: (content: string) => Promise<void>;
+  onTyping: (isTyping: boolean) => void;
+  onTranslate: (messageId: number) => Promise<void>;
+}) {
   const { t } = useTranslation();
   const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, conv?.id]);
+
+  useEffect(() => {
+    setInputValue("");
+  }, [conv?.id]);
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        window.clearTimeout(typingTimeoutRef.current);
+      }
+    };
   }, []);
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(event.target.value);
+    if (!conv) return;
+
+    onTyping(true);
+    if (typingTimeoutRef.current) {
+      window.clearTimeout(typingTimeoutRef.current);
+    }
+    typingTimeoutRef.current = window.setTimeout(() => onTyping(false), 1200);
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const content = inputValue.trim();
+    if (!content || !conv || isSending) return;
+
+    setInputValue("");
+    onTyping(false);
+    await onSend(content);
+  };
+
+  if (!conv) {
+    return (
+      <div className="flex flex-col flex-1 min-w-0 bg-[rgba(248,250,252,0.3)] items-center justify-center px-6 text-center">
+        <div className="max-w-sm">
+          <h3 className="text-base font-bold text-[#2D3A3A]">
+            Chọn một hội thoại
+          </h3>
+          <p className="mt-2 text-sm text-[#6B7280]">
+            Danh sách hội thoại của bạn sẽ hiển thị bên trái sau khi có kết bạn và tin nhắn.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col flex-1 min-w-0 bg-[rgba(248,250,252,0.3)]">
@@ -894,7 +1062,11 @@ function ChatWindow({ conv }: { conv: Conversation }) {
           </div>
           <div>
             <h3 className="text-sm font-bold text-[#2D3A3A]">{conv.name}</h3>
-            {conv.isOnline && (
+            {typingUserId === conv.participantId ? (
+              <p className="text-xs text-[#22C55E] font-medium">
+                Đang nhập...
+              </p>
+            ) : conv.isOnline && (
               <p className="text-xs text-[#22C55E] font-medium">
                 {t("chat.active")}
               </p>
@@ -920,15 +1092,31 @@ function ChatWindow({ conv }: { conv: Conversation }) {
           </span>
         </div>
 
-        {initialMessages.map((msg) => (
-          <ChatMessage key={msg.id} msg={msg} />
+        {isLoading && (
+          <div className="py-8 text-center text-sm text-[#6B7280]">
+            Đang tải tin nhắn...
+          </div>
+        )}
+        {!isLoading && messages.length === 0 && (
+          <div className="py-8 text-center text-sm text-[#6B7280]">
+            Chưa có tin nhắn nào
+          </div>
+        )}
+        {!isLoading && messages.map((msg) => (
+          <ChatMessage
+            key={msg.id}
+            msg={msg}
+            participantAvatar={conv.avatar}
+            onTranslate={onTranslate}
+            isTranslating={translatingIds.has(msg.messageId)}
+          />
         ))}
         <div ref={messagesEndRef} />
       </div>
 
       {/* Message input */}
       <div className="px-4 py-4 bg-white border-t border-[#E2E8E2] shrink-0">
-        <div className="flex items-center gap-2">
+        <form onSubmit={handleSubmit} className="flex items-center gap-2">
           {/* Attachment buttons */}
           <div className="flex items-center gap-0 pr-2">
             <button className="p-2 text-[#6B7280] hover:text-[#2D3A3A] hover:bg-[#F9FAF9] rounded-full transition-colors">
@@ -947,8 +1135,9 @@ function ChatWindow({ conv }: { conv: Conversation }) {
             <input
               type="text"
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
+              onChange={handleInputChange}
               placeholder={t("chat.typeMessage")}
+              disabled={isSending}
               className="w-full py-2.5 pl-4 pr-12 rounded-full bg-[rgba(241,245,249,0.8)] text-sm text-[#2D3A3A] placeholder-[#6B7280] outline-none focus:ring-2 focus:ring-[#4A6741]/20 transition-all"
             />
             <button className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A6741] hover:opacity-80 transition-opacity">
@@ -957,10 +1146,14 @@ function ChatWindow({ conv }: { conv: Conversation }) {
           </div>
 
           {/* Send button */}
-          <button className="w-10 h-10 rounded-full bg-[#4A6741] flex items-center justify-center shadow-md hover:bg-[#3d5836] transition-colors shrink-0">
+          <button
+            type="submit"
+            disabled={!inputValue.trim() || isSending}
+            className="w-10 h-10 rounded-full bg-[#4A6741] flex items-center justify-center shadow-md hover:bg-[#3d5836] transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <IconSend />
           </button>
-        </div>
+        </form>
       </div>
     </div>
   );
@@ -969,9 +1162,317 @@ function ChatWindow({ conv }: { conv: Conversation }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Index() {
-  const [activeConvId, setActiveConvId] = useState("1");
-  const activeConv =
-    conversations.find((c) => c.id === activeConvId) ?? conversations[0];
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedUserId = Number(searchParams.get("user_id"));
+  const currentUserId = getCurrentUser()?.user_id ?? null;
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConvId, setActiveConvId] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(true);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [conversationError, setConversationError] = useState<string | null>(null);
+  const [typingUserId, setTypingUserId] = useState<number | null>(null);
+  const [translatingIds, setTranslatingIds] = useState<Set<number>>(new Set());
+  const pusherRef = useRef<Pusher | null>(null);
+  const lastTypingStateRef = useRef(false);
+  const [pusherReady, setPusherReady] = useState(false);
+
+  const activeConv = useMemo(
+    () => conversations.find((conversation) => conversation.id === activeConvId) ?? null,
+    [activeConvId, conversations]
+  );
+
+  const updateConversationFromMessage = (message: ApiChatMessage) => {
+    setConversations((items) =>
+      sortConversations(
+        items.map((conversation) => {
+          if (conversation.conversationId !== message.conversation_id) {
+            return conversation;
+          }
+
+          const isMine = message.sender_id === currentUserId;
+          return {
+            ...conversation,
+            lastMessage: `${isMine ? "Bạn: " : ""}${message.content}`,
+            lastMessageId: message.message_id,
+            time: formatChatTime(message.created_at),
+            unreadCount:
+              isMine || conversation.id === activeConvId
+                ? 0
+                : conversation.unreadCount + 1,
+            isMine,
+          };
+        })
+      )
+    );
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadConversations() {
+      setIsLoadingConversations(true);
+      setConversationError(null);
+      try {
+        const response = await listConversations();
+        if (cancelled) return;
+
+        let mapped = sortConversations(
+          response.data.map((conversation) => toConversation(conversation, currentUserId))
+        );
+
+        if (Number.isFinite(requestedUserId) && requestedUserId > 0) {
+          try {
+            const opened = await createOrGetConversation(requestedUserId);
+            const openedConversation = toConversation(opened.data, currentUserId);
+            mapped = sortConversations([
+              openedConversation,
+              ...mapped.filter((conversation) => conversation.id !== openedConversation.id),
+            ]);
+            setActiveConvId(openedConversation.id);
+            setSearchParams({}, { replace: true });
+          } catch (error) {
+            setConversationError(
+              error instanceof Error ? error.message : "Không mở được hội thoại"
+            );
+          }
+        }
+
+        setConversations(mapped);
+        setActiveConvId((current) => current || mapped[0]?.id || "");
+      } catch (error) {
+        if (!cancelled) {
+          setConversationError(
+            error instanceof Error ? error.message : "Không tải được hội thoại"
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingConversations(false);
+        }
+      }
+    }
+
+    loadConversations();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUserId, requestedUserId, setSearchParams]);
+
+  useEffect(() => {
+    if (!activeConv) {
+      setMessages([]);
+      return;
+    }
+
+    let cancelled = false;
+    const selectedConversation = activeConv;
+
+    async function loadConversationMessages() {
+      setIsLoadingMessages(true);
+      try {
+        const response = await listMessages(selectedConversation.conversationId);
+        if (cancelled) return;
+
+        const mapped = response.data.map((message) => toMessage(message, currentUserId));
+        setMessages(mapped);
+        const lastMessageId = mapped[mapped.length - 1]?.messageId;
+        if (lastMessageId) {
+          markConversationRead(selectedConversation.conversationId, lastMessageId).catch(() => {});
+        }
+        setConversations((items) =>
+          items.map((conversation) =>
+            conversation.id === selectedConversation.id ? { ...conversation, unreadCount: 0 } : conversation
+          )
+        );
+      } finally {
+        if (!cancelled) {
+          setIsLoadingMessages(false);
+        }
+      }
+    }
+
+    setTypingUserId(null);
+    loadConversationMessages();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeConv?.conversationId, activeConv?.id, currentUserId]);
+
+  useEffect(() => {
+    lastTypingStateRef.current = false;
+  }, [activeConv?.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let userChannelName = "";
+
+    async function connectPusher() {
+      const token = getAccessToken();
+      if (!token || currentUserId === null) return;
+
+      try {
+        const response = await getPusherConfig();
+        if (cancelled) return;
+
+        const pusher = new Pusher(response.data.key, {
+          cluster: response.data.cluster,
+          authEndpoint: `${API_BASE_URL}${response.data.auth_endpoint}`,
+          auth: {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        });
+
+        pusherRef.current = pusher;
+        userChannelName = `private-user-${currentUserId}`;
+        const userChannel = pusher.subscribe(userChannelName);
+        userChannel.bind("conversation:updated", (payload: ChatConversation) => {
+          const updated = toConversation(payload, currentUserId);
+          setConversations((items) =>
+            sortConversations([
+              updated,
+              ...items.filter((conversation) => conversation.id !== updated.id),
+            ])
+          );
+        });
+        setPusherReady(true);
+      } catch (error) {
+        console.warn("Pusher is not available for chat realtime", error);
+      }
+    }
+
+    connectPusher();
+    return () => {
+      cancelled = true;
+      setPusherReady(false);
+      if (pusherRef.current) {
+        if (userChannelName) {
+          pusherRef.current.unsubscribe(userChannelName);
+        }
+        pusherRef.current.disconnect();
+        pusherRef.current = null;
+      }
+    };
+  }, [currentUserId]);
+
+  useEffect(() => {
+    const pusher = pusherRef.current;
+    if (!pusherReady || !pusher || !activeConv || currentUserId === null) return;
+
+    const channelName = `private-conversation-${activeConv.conversationId}`;
+    const channel = pusher.subscribe(channelName);
+
+    channel.bind("chat:new", (payload: ApiChatMessage) => {
+      const nextMessage = toMessage(payload, currentUserId);
+      setMessages((items) =>
+        items.some((message) => message.messageId === nextMessage.messageId)
+          ? items
+          : [...items, nextMessage]
+      );
+      updateConversationFromMessage(payload);
+
+      if (payload.sender_id !== currentUserId) {
+        markConversationRead(payload.conversation_id, payload.message_id).catch(() => {});
+      }
+    });
+
+    channel.bind(
+      "chat:typing",
+      (payload: { conversation_id: number; user_id: number; is_typing: boolean }) => {
+        if (payload.user_id === currentUserId) return;
+        setTypingUserId(payload.is_typing ? payload.user_id : null);
+      }
+    );
+
+    channel.bind(
+      "chat:read",
+      (payload: { user_id: number; last_read_message_id?: number | null }) => {
+        if (payload.user_id === currentUserId) return;
+        setMessages((items) =>
+          items.map((message) =>
+            message.from === "me" &&
+            (!payload.last_read_message_id || message.messageId <= payload.last_read_message_id)
+              ? { ...message, isRead: true }
+              : message
+          )
+        );
+      }
+    );
+
+    channel.bind(
+      "chat:translated",
+      (payload: { message_id: number; translated_content: string }) => {
+        setMessages((items) =>
+          items.map((message) =>
+            message.messageId === payload.message_id
+              ? { ...message, translation: payload.translated_content }
+              : message
+          )
+        );
+      }
+    );
+
+    return () => {
+      channel.unbind_all();
+      pusher.unsubscribe(channelName);
+    };
+  }, [activeConv?.conversationId, currentUserId, pusherReady]);
+
+  const handleSelectConversation = (id: string) => {
+    setActiveConvId(id);
+    setConversations((items) =>
+      items.map((conversation) =>
+        conversation.id === id ? { ...conversation, unreadCount: 0 } : conversation
+      )
+    );
+  };
+
+  const handleSend = async (content: string) => {
+    if (!activeConv) return;
+
+    setIsSending(true);
+    try {
+      const response = await sendChatMessage(activeConv.conversationId, content);
+      const sentMessage = toMessage(response.data, currentUserId);
+      setMessages((items) =>
+        items.some((message) => message.messageId === sentMessage.messageId)
+          ? items
+          : [...items, sentMessage]
+      );
+      updateConversationFromMessage(response.data);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleTyping = (isTyping: boolean) => {
+    if (!activeConv || lastTypingStateRef.current === isTyping) return;
+    lastTypingStateRef.current = isTyping;
+    sendTypingStatus(activeConv.conversationId, isTyping).catch(() => {});
+  };
+
+  const handleTranslate = async (messageId: number) => {
+    setTranslatingIds((items) => new Set(items).add(messageId));
+    try {
+      const response = await translateMessage(messageId, "VI");
+      setMessages((items) =>
+        items.map((message) =>
+          message.messageId === messageId
+            ? { ...message, translation: response.data.translated_content }
+            : message
+        )
+      );
+    } finally {
+      setTranslatingIds((items) => {
+        const next = new Set(items);
+        next.delete(messageId);
+        return next;
+      });
+    }
+  };
 
   return (
     <div className="flex flex-col h-screen bg-wc-bg overflow-hidden font-inter">
@@ -980,9 +1481,22 @@ export default function Index() {
       <main className="flex-1 flex overflow-hidden">
         <ConversationSidebar
           activeId={activeConvId}
-          onSelect={setActiveConvId}
+          conversations={conversations}
+          isLoading={isLoadingConversations}
+          error={conversationError}
+          onSelect={handleSelectConversation}
         />
-        <ChatWindow conv={activeConv} />
+        <ChatWindow
+          conv={activeConv}
+          messages={messages}
+          isLoading={isLoadingMessages}
+          isSending={isSending}
+          typingUserId={typingUserId}
+          translatingIds={translatingIds}
+          onSend={handleSend}
+          onTyping={handleTyping}
+          onTranslate={handleTranslate}
+        />
       </main>
     </div>
   );

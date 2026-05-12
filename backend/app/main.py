@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.config import settings
-from app.routers import auth, users, events, friends, ai
+from app.routers import auth, users, events, friends, ai, messages
 
 app = FastAPI(
     title="WeConnect API",
@@ -30,6 +30,7 @@ app.include_router(users.router, prefix="/api/v1", tags=["Users & Profile"])
 app.include_router(events.router, prefix="/api/v1/events", tags=["Events"])
 app.include_router(friends.router, prefix="/api/v1", tags=["Friends"])
 app.include_router(ai.router, prefix="/api/v1/ai", tags=["AI & Translation"])
+app.include_router(messages.router, prefix="/api/v1", tags=["Messaging"])
 
 
 

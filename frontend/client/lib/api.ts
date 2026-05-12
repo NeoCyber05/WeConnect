@@ -1,4 +1,4 @@
-const BASE_URL = (import.meta.env.VITE_API_URL as string) || "";
+export const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || "";
 
 async function getToken(): Promise<string | null> {
   return localStorage.getItem("access_token");
@@ -8,7 +8,7 @@ async function tryRefresh(): Promise<boolean> {
   const refreshToken = localStorage.getItem("refresh_token");
   if (!refreshToken) return false;
   try {
-    const res = await fetch(`${BASE_URL}/api/v1/auth/refresh`, {
+    const res = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh_token: refreshToken }),
@@ -36,8 +36,8 @@ export async function apiFetch<T = unknown>(
   }
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  console.log(`[apiFetch] Calling: ${BASE_URL}${path}`, { method: options.method || "GET" });
-  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+  console.log(`[apiFetch] Calling: ${API_BASE_URL}${path}`, { method: options.method || "GET" });
+  const res = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
   console.log(`[apiFetch] Response received for ${path}: ${res.status}`);
 
   if (res.status === 401 && !skipAuth) {
@@ -45,7 +45,7 @@ export async function apiFetch<T = unknown>(
     if (refreshed) {
       const newToken = localStorage.getItem("access_token");
       headers["Authorization"] = `Bearer ${newToken}`;
-      const retryRes = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+      const retryRes = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
       if (!retryRes.ok) {
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");

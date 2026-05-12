@@ -18,6 +18,12 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str | None = None
     GEMINI_API_KEY: str | None = None
 
+    PUSHER_APP_ID: str | None = None
+    PUSHER_KEY: str | None = None
+    PUSHER_SECRET: str | None = None
+    PUSHER_CLUSTER: str | None = None
+    PUSHER_SSL: bool = True
+
     UPLOAD_DIR: str = "/app/uploads"
     MAX_UPLOAD_SIZE_MB: int = 10
 

@@ -502,7 +502,7 @@ export default function FriendsPage() {
 
                     <div className="flex items-center gap-2 shrink-0">
                       <Link
-                        to="/chat"
+                        to={`/chat?user_id=${friend.user_id}`}
                         className="p-0 hover:opacity-70 transition-opacity"
                         title="Nhắn tin"
                       >
