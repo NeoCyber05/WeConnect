@@ -419,57 +419,61 @@ export default function Index() {
                   const catColor = categoryColors[event.category] || "bg-slate-900 text-white";
                   return (
                     <div key={event.id} className="group bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500">
-                      <div className="relative h-48 overflow-hidden">
-                        <img src={event.coverImage} alt={event.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent" />
-                        <div className="absolute top-4 left-4">
-                          <span className={`px-3 py-1 ${catColor} text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg`}>
-                            {event.category}
-                          </span>
-                        </div>
-                        <div className="absolute top-4 right-4 flex flex-col items-end gap-1.5">
-                          {event.isCancelled ? (
-                            <span className={`px-2.5 py-1 ${statusConfig.cancelled.bg} ${statusConfig.cancelled.text} text-[10px] font-bold rounded-lg shadow-sm flex items-center gap-1.5`}>
-                              <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.cancelled.dot}`} />
-                              {statusConfig.cancelled.label}
+                      <Link to={`/events/${event.id}`} className="block">
+                        <div className="relative h-48 overflow-hidden">
+                          <img src={event.coverImage} alt={event.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent" />
+                          <div className="absolute top-4 left-4">
+                            <span className={`px-3 py-1 ${catColor} text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg`}>
+                              {event.category}
                             </span>
-                          ) : (
-                            event.isClosed && (
-                              <span className={`px-2.5 py-1 ${statusConfig.closed.bg} ${statusConfig.closed.text} text-[10px] font-bold rounded-lg shadow-sm flex items-center gap-1.5`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.closed.dot}`} />
-                                {statusConfig.closed.label}
+                          </div>
+                          <div className="absolute top-4 right-4 flex flex-col items-end gap-1.5">
+                            {event.isCancelled ? (
+                              <span className={`px-2.5 py-1 ${statusConfig.cancelled.bg} ${statusConfig.cancelled.text} text-[10px] font-bold rounded-lg shadow-sm flex items-center gap-1.5`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.cancelled.dot}`} />
+                                {statusConfig.cancelled.label}
                               </span>
-                            )
-                          )}
-                          {!event.isCancelled && (
-                            <span className={`px-2.5 py-1 ${statusConfig[event.timeStatus].bg} ${statusConfig[event.timeStatus].text} text-[10px] font-bold rounded-lg shadow-sm flex items-center gap-1.5`}>
-                              <span className={`w-1.5 h-1.5 rounded-full ${statusConfig[event.timeStatus].dot}`} />
-                              {statusConfig[event.timeStatus].label}
-                            </span>
-                          )}
-                        </div>
-                        <div className="absolute bottom-4 left-4 right-4">
-                          <h3 className="text-white font-bold text-lg leading-tight line-clamp-1">{event.name}</h3>
-                          <div className="flex items-center gap-3 mt-2 text-white/80 text-xs">
-                            <span className="flex items-center gap-1">📍 {event.location}</span>
-                            <span className="flex items-center gap-1">👥 {event.maxAttendees} chỗ</span>
+                            ) : (
+                              event.isClosed && (
+                                <span className={`px-2.5 py-1 ${statusConfig.closed.bg} ${statusConfig.closed.text} text-[10px] font-bold rounded-lg shadow-sm flex items-center gap-1.5`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.closed.dot}`} />
+                                  {statusConfig.closed.label}
+                                </span>
+                              )
+                            )}
+                            {!event.isCancelled && (
+                              <span className={`px-2.5 py-1 ${statusConfig[event.timeStatus].bg} ${statusConfig[event.timeStatus].text} text-[10px] font-bold rounded-lg shadow-sm flex items-center gap-1.5`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${statusConfig[event.timeStatus].dot}`} />
+                                {statusConfig[event.timeStatus].label}
+                              </span>
+                            )}
+                          </div>
+                          <div className="absolute bottom-4 left-4 right-4">
+                            <h3 className="text-white font-bold text-lg leading-tight line-clamp-1">{event.name}</h3>
+                            <div className="flex items-center gap-3 mt-2 text-white/80 text-xs">
+                              <span className="flex items-center gap-1">📍 {event.location}</span>
+                              <span className="flex items-center gap-1">👥 {event.maxAttendees} chỗ</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      </Link>
                       <div className="p-6">
-                        <p className="text-slate-500 text-sm line-clamp-2 mb-6 font-medium leading-relaxed">
-                          {event.description || "Không có mô tả cho sự kiện này."}
-                        </p>
+                        <Link to={`/events/${event.id}`} className="block">
+                          <p className="text-slate-500 text-sm line-clamp-2 mb-6 font-medium leading-relaxed">
+                            {event.description || "Không có mô tả cho sự kiện này."}
+                          </p>
+                        </Link>
                         <div className="flex items-center justify-between">
                           <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                             {event.date ? new Date(event.date).toLocaleString("vi-VN", { dateStyle: 'medium', timeStyle: 'short' }) : "N/A"}
                           </div>
-                          <button
-                            onClick={() => setEditingEvent(event)}
-                            className="h-10 px-5 border-2 border-slate-100 hover:border-slate-900 hover:bg-slate-900 hover:text-white text-slate-900 text-xs font-bold rounded-xl transition-all active:scale-95"
+                          <Link
+                            to={`/events/${event.id}`}
+                            className="h-10 px-5 border-2 border-slate-100 hover:border-slate-900 hover:bg-slate-900 hover:text-white text-slate-900 text-xs font-bold rounded-xl transition-all active:scale-95 flex items-center justify-center"
                           >
-                            Chi tiết & Sửa
-                          </button>
+                            Chi tiết
+                          </Link>
                         </div>
                       </div>
                     </div>

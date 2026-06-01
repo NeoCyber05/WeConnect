@@ -1,19 +1,29 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { useTranslation } from "react-i18next";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/api";
 
-const games = [
+interface GameRoomOut {
+  room_id: number;
+  code: string;
+  host_id: number;
+  room_type: string;
+  max_players: number;
+  status: string;
+  created_at: string;
+  participants_count: number;
+  participants: Array<{ user_id: number; full_name: string; avatar_url: string | null }>;
+}
+
+const GAME_METADATA = [
   {
     id: "chess",
+    type: "CHESS",
     name: "Cờ vua (Chess)",
     description: "Chiến thuật đỉnh cao • 1vs1",
     iconBg: "bg-blue-100",
-    rooms: [
-      { id: "#CH-2034", status: "Đang chờ", statusColor: "text-green-600", players: "1 / 2", canJoin: true },
-      { id: "#CH-9812", status: "Đang đấu", statusColor: "text-orange-500", players: "2 / 2", canJoin: false },
-    ],
-    openCount: 4,
     badgeBg: "bg-primary/10",
     badgeText: "text-primary",
     icon: (
@@ -24,11 +34,10 @@ const games = [
   },
   {
     id: "kanji",
+    type: "KANJI",
     name: "Đoán từ vựng Kanji N3",
     description: "Học tập • Đồng đội • 2-4 người",
     iconBg: "bg-orange-100",
-    rooms: [],
-    openCount: 2,
     badgeBg: "bg-primary/10",
     badgeText: "text-primary",
     icon: (
@@ -39,14 +48,12 @@ const games = [
   },
   {
     id: "nihon",
+    type: "QUIZ",
     name: "Đố vui văn hóa Nhật Bản",
     description: "Kiến thức chung • 4-10 người",
     iconBg: "bg-purple-100",
-    rooms: [],
-    openCount: 0,
     badgeBg: "bg-slate-100",
     badgeText: "text-slate-500",
-    badgeLabel: "0 phòng chờ",
     icon: (
       <svg width="24" height="25" viewBox="0 0 24 25" fill="none">
         <path d="M3.75 25V19.625C2.5625 18.5417 1.64062 17.276 0.984375 15.8281C0.328125 14.3802 0 12.8542 0 11.25C0 8.125 1.09375 5.46875 3.28125 3.28125C5.46875 1.09375 8.125 0 11.25 0C13.8542 0 16.1615 0.765625 18.1719 2.29688C20.1823 3.82812 21.4896 5.82292 22.0938 8.28125L23.7188 14.6875C23.8229 15.0833 23.75 15.4427 23.5 15.7656C23.25 16.0885 22.9167 16.25 22.5 16.25H20V20C20 20.6875 19.7552 21.276 19.2656 21.7656C18.776 22.2552 18.1875 22.5 17.5 22.5H15V25H12.5V20H17.5V13.75H20.875L19.6875 8.90625C19.2083 7.01042 18.1875 5.46875 16.625 4.28125C15.0625 3.09375 13.2708 2.5 11.25 2.5C8.83333 2.5 6.77083 3.34375 5.0625 5.03125C3.35417 6.71875 2.5 8.77083 2.5 11.1875C2.5 12.4375 2.75521 13.625 3.26562 14.75C3.77604 15.875 4.5 16.875 5.4375 17.75L6.25 18.5V25H3.75Z" fill="#9333EA"/>
@@ -59,10 +66,92 @@ const categories = ["all", "strategy", "learning", "puzzle"];
 
 export default function Index() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
   const [expandedGame, setExpandedGame] = useState<string>("chess");
   const [activeCategory, setActiveCategory] = useState("all");
   const [gameSearch, setGameSearch] = useState("");
   const [roomCode, setRoomCode] = useState("");
+
+  // Fetch all active game rooms
+  const { data: apiRooms = [], refetch } = useQuery({
+    queryKey: ["game-rooms"],
+    queryFn: () => apiFetch<GameRoomOut[]>("/api/v1/games/rooms"),
+    refetchInterval: 5000, // Auto refresh every 5 seconds
+  });
+
+  // Map metadata and dynamic rooms
+  const games = GAME_METADATA.map((meta) => {
+    const matchingRooms = apiRooms.filter((r) => r.room_type === meta.type);
+    const rooms = matchingRooms.map((room) => ({
+      id: room.code,
+      status: room.status === "WAITING" ? "Đang chờ" : "Đang đấu",
+      statusColor: room.status === "WAITING" ? "text-green-600" : "text-orange-500",
+      players: `${room.participants_count} / ${room.max_players}`,
+      canJoin: room.status === "WAITING" && room.participants_count < room.max_players,
+    }));
+    const openCount = matchingRooms.filter((r) => r.status === "WAITING").length;
+
+    return {
+      ...meta,
+      rooms,
+      openCount,
+      badgeLabel: openCount === 0 ? "0 phòng chờ" : `${openCount} phòng chờ`,
+    };
+  });
+
+  // Find active room type for sidebar actions
+  const currentMeta = GAME_METADATA.find((m) => m.id === expandedGame);
+  const currentType = currentMeta ? currentMeta.type : "QUIZ";
+
+  // Create room mutation
+  const createRoomMutation = useMutation({
+    mutationFn: (roomType: string) =>
+      apiFetch<GameRoomOut>("/api/v1/games/rooms", {
+        method: "POST",
+        body: JSON.stringify({ room_type: roomType, max_players: roomType === "CHESS" ? 2 : 10 }),
+      }),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["game-rooms"] });
+      navigate(`/game?code=${data.code}`);
+    },
+    onError: (err: any) => {
+      alert(err.message || "Không thể tạo phòng game");
+    },
+  });
+
+  // Join room mutation
+  const joinRoomMutation = useMutation({
+    mutationFn: (code: string) =>
+      apiFetch<GameRoomOut>("/api/v1/games/rooms/join", {
+        method: "POST",
+        body: JSON.stringify({ code }),
+      }),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["game-rooms"] });
+      navigate(`/game?code=${data.code}`);
+    },
+    onError: (err: any) => {
+      alert(err.message || "Mã phòng không tồn tại hoặc phòng đã đầy");
+    },
+  });
+
+  // Join random room mutation
+  const joinRandomMutation = useMutation({
+    mutationFn: (roomType: string) =>
+      apiFetch<GameRoomOut>("/api/v1/games/rooms/random", {
+        method: "POST",
+        body: JSON.stringify({ room_type: roomType, max_players: roomType === "CHESS" ? 2 : 10 }),
+      }),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["game-rooms"] });
+      navigate(`/game?code=${data.code}`);
+    },
+    onError: (err: any) => {
+      alert(err.message || "Không thể tham gia phòng ngẫu nhiên");
+    },
+  });
 
   const filteredGames = games.filter((g) => {
     const matchSearch = g.name.toLowerCase().includes(gameSearch.toLowerCase());
@@ -89,17 +178,27 @@ export default function Index() {
                 <div className="flex flex-col gap-4">
                   <p className="text-xs font-bold uppercase tracking-[0.7px] text-gray-500">{t("games.actions")}</p>
                   <div className="flex flex-col gap-3">
-                    <button className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl text-white text-sm font-medium shadow-sm transition-opacity hover:opacity-90 active:opacity-80" style={{ background: "#4A6741" }}>
+                    <button
+                      onClick={() => createRoomMutation.mutate(currentType)}
+                      disabled={createRoomMutation.isPending}
+                      className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl text-white text-sm font-medium shadow-sm transition-opacity hover:opacity-90 active:opacity-80 disabled:opacity-50"
+                      style={{ background: "#4A6741" }}
+                    >
                       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                         <path d="M9 15H11V11H15V9H11V5H9V9H5V11H9V15ZM10 20C8.61667 20 7.31667 19.7375 6.1 19.2125C4.88333 18.6875 3.825 17.975 2.925 17.075C2.025 16.175 1.3125 15.1167 0.7875 13.9C0.2625 12.6833 0 11.3833 0 10C0 8.61667 0.2625 7.31667 0.7875 6.1C1.3125 4.88333 2.025 3.825 2.925 2.925C3.825 2.025 4.88333 1.3125 6.1 0.7875C7.31667 0.2625 8.61667 0 10 0C11.3833 0 12.6833 0.2625 13.9 0.7875C15.1167 1.3125 16.175 2.025 17.075 2.925C17.975 3.825 18.6875 4.88333 19.2125 6.1C19.7375 7.31667 20 8.61667 20 10C20 11.3833 19.7375 12.6833 19.2125 13.9C18.6875 15.1167 17.975 16.175 17.075 17.075C16.175 17.975 15.1167 18.6875 13.9 19.2125C12.6833 19.7375 11.3833 20 10 20ZM10 18C12.2333 18 14.125 17.225 15.675 15.675C17.225 14.125 18 12.2333 18 10C18 7.76667 17.225 5.875 15.675 4.325C14.125 2.775 12.2333 2 10 2C7.76667 2 5.875 2.775 4.325 4.325C2.775 5.875 2 7.76667 2 10C2 12.2333 2.775 14.125 4.325 15.675C5.875 17.225 7.76667 18 10 18Z" fill="white"/>
                       </svg>
-                      {t("games.createRoom")}
+                      {createRoomMutation.isPending ? "Đang tạo..." : t("games.createRoom")}
                     </button>
-                    <button className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl text-white text-sm font-medium shadow-sm transition-opacity hover:opacity-90 active:opacity-80" style={{ background: "#4A6741" }}>
+                    <button
+                      onClick={() => joinRandomMutation.mutate(currentType)}
+                      disabled={joinRandomMutation.isPending}
+                      className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl text-white text-sm font-medium shadow-sm transition-opacity hover:opacity-90 active:opacity-80 disabled:opacity-50"
+                      style={{ background: "#4A6741" }}
+                    >
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <path d="M10 16V14H12.6L9.425 10.825L10.85 9.4L14 12.55V10H16V16H10ZM1.4 16L0 14.6L12.6 2H10V0H16V6H14V3.4L1.4 16ZM5.175 6.575L0 1.4L1.4 0L6.575 5.175L5.175 6.575Z" fill="white"/>
                       </svg>
-                      {t("games.random")}
+                      {joinRandomMutation.isPending ? "Đang tìm..." : t("games.random")}
                     </button>
                   </div>
                 </div>
@@ -116,6 +215,11 @@ export default function Index() {
                       placeholder={t("games.roomCodePlaceholder")}
                       value={roomCode}
                       onChange={(e) => setRoomCode(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && roomCode.trim()) {
+                          joinRoomMutation.mutate(roomCode.trim());
+                        }
+                      }}
                       className="w-full pl-10 pr-4 py-3 rounded-2xl border border-[#E2E8E2] bg-[#F8FAFC] text-sm text-gray-500 placeholder-gray-400 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40"
                     />
                   </div>
@@ -247,10 +351,12 @@ export default function Index() {
                                 </div>
                                 {room.canJoin && (
                                   <button
-                                    className="px-6 py-2 rounded-lg text-white text-xs font-bold shadow-sm transition-opacity hover:opacity-90 shrink-0"
+                                    onClick={() => joinRoomMutation.mutate(room.id)}
+                                    disabled={joinRoomMutation.isPending}
+                                    className="px-6 py-2 rounded-lg text-white text-xs font-bold shadow-sm transition-opacity hover:opacity-90 shrink-0 disabled:opacity-50"
                                     style={{ background: "#4A6741" }}
                                   >
-                                    {t("games.join")}
+                                    {joinRoomMutation.isPending ? "Đang vào..." : t("games.join")}
                                   </button>
                                 )}
                               </div>
@@ -266,18 +372,6 @@ export default function Index() {
           </div>
         </div>
       </main>
-    </div>
-  );
-}
-
-function NavItem({ icon, label, active }: { icon: React.ReactNode; label: string; active: boolean }) {
-  return (
-    <div
-      className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer self-stretch ${active ? "border-b-2" : "hover:bg-gray-50"}`}
-      style={active ? { borderBottomColor: "#4A6741", color: "#4A6741" } : { color: "#6B7280" }}
-    >
-      <span className="shrink-0">{icon}</span>
-      <span className="text-sm font-semibold whitespace-nowrap">{label}</span>
     </div>
   );
 }

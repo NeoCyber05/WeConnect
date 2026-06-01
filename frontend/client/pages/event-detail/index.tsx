@@ -211,23 +211,20 @@ export default function Index() {
                 <div className="flex items-center gap-4 mb-6">
                   <h3 className="text-[#1B1B1D] text-lg font-bold">{t("events.organizer")}</h3>
                 </div>
-                <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+                <Link
+                  to={`/profile/${event.organizer.user_id}`}
+                  className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100/70 transition-colors w-full cursor-pointer"
+                >
                   <img
                     src={event.organizer.avatar_url || "https://api.builder.io/api/v1/image/assets/TEMP/1aa6cda7cbb8af6978846088580c88c40f54f3f7?width=48"}
                     alt={event.organizer.full_name}
                     className="w-12 h-12 rounded-full object-cover shadow-sm"
                   />
                   <div>
-                    <p className="text-[#1B1B1D] font-bold">{event.organizer.full_name}</p>
+                    <p className="text-[#1B1B1D] font-bold hover:text-brand-green transition-colors">{event.organizer.full_name}</p>
                     <p className="text-wc-gray text-xs">Organizer</p>
                   </div>
-                  <Link
-                    to={`/users/${event.organizer.user_id}`}
-                    className="ml-auto text-wc-green text-sm font-semibold hover:underline"
-                  >
-                    {t("events.viewProfile")}
-                  </Link>
-                </div>
+                </Link>
               </div>
             </div>
 
