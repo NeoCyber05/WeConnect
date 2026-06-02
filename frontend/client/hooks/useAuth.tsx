@@ -6,7 +6,7 @@ import { saveTokens, clearTokens, getCurrentUser, isAuthenticated, CurrentUser }
 interface AuthContextType {
   user: CurrentUser | null;
   isLoggedIn: boolean;
-  login: (identifier: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string, from?: string) => Promise<void>;
   logout: () => Promise<void>;
   setUser: (user: CurrentUser | null) => void;
 }

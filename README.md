@@ -2,7 +2,15 @@
 
 
 ## 1. Chạy Docker
-Mở terminal tại thư mục gốc của dự án (`itss-nhat-1`) và chạy docker
+Mở terminal tại thư mục gốc của dự án (`itss-nhat-1`) và chạy docker:
+```bash
+docker compose up --build -d
+```
+
+Sau khi các container khởi động thành công, truy cập các dịch vụ qua các cổng sau:
+- **Frontend**: [http://localhost:8081](http://localhost:8081)
+- **Backend (API Docs)**: [http://localhost:8001/docs](http://localhost:8001/docs)
+- **Database (MySQL)**: `localhost:3308`
 
 ## 2. Tài khoản mẫu
 

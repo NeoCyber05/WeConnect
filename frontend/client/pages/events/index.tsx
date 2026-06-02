@@ -73,6 +73,7 @@ interface EventOut {
   is_full: boolean;
   is_registered: boolean;
   organizer: { user_id: number; full_name: string; avatar_url?: string };
+  image_url?: string | null;
 }
 
 interface UserOut {
@@ -246,7 +247,7 @@ export default function Index() {
       <Navbar />
 
       <main className="max-w-[1280px] mx-auto px-4 py-8">
-        <div className="flex items-end justify-between mb-8">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
           <div className="flex flex-col gap-2">
             <h1 className="text-3xl font-black text-wc-dark uppercase tracking-tight leading-9">
               {t("events.exploreEvents")}

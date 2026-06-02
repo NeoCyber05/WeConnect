@@ -35,13 +35,17 @@ export default function Index() {
     setError("");
     setLoading(true);
     try {
+      const trimmedEmail = email.trim();
+      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
+      const identifierType = isEmail ? "EMAIL" : "PHONE";
+
       await apiFetch(
         "/api/v1/auth/register",
         {
           method: "POST",
           body: JSON.stringify({
-            identifier: email,
-            identifier_type: "EMAIL",
+            identifier: trimmedEmail,
+            identifier_type: identifierType,
             password,
             full_name: fullName,
           }),
@@ -65,7 +69,7 @@ export default function Index() {
         {
           method: "POST",
           body: JSON.stringify({
-            identifier: email,
+            identifier: email.trim(),
             code: otp.join(""),
             purpose: "REGISTER",
           }),
@@ -100,7 +104,7 @@ export default function Index() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row font-inter">
       {/* Left panel - dark */}
-      <div className="relative flex flex-col justify-between overflow-hidden md:w-5/12 min-h-[360px] md:min-h-screen bg-weconnect-dark">
+      <div className="relative hidden md:flex flex-col justify-between overflow-hidden md:w-5/12 md:min-h-screen bg-weconnect-dark">
         {/* Background gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#050B14] to-[#121A24]" />
 
@@ -139,7 +143,12 @@ export default function Index() {
       </div>
 
       {/* Right panel - white */}
-      <div className="flex-1 bg-white flex items-center justify-center px-6 py-10 md:px-16">
+      <div className="flex-1 bg-white flex flex-col items-center justify-center px-6 py-10 md:px-16">
+        {/* Mobile Logo */}
+        <div className="flex md:hidden items-center justify-center gap-3 pt-6 pb-2 mb-6">
+          <WeConnectIcon />
+          <span className="text-[#0F172A] font-bold text-xl tracking-wide">WeConnect</span>
+        </div>
         <div className="w-full max-w-[420px]">
           {/* Heading */}
           <div className="text-center mb-8">

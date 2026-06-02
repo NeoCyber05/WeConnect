@@ -68,6 +68,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
   // Handle click outside to close search popup
@@ -80,6 +81,11 @@ export default function Navbar() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location]);
 
   const { data: user } = useQuery({
     queryKey: ["me"],
@@ -189,8 +195,53 @@ export default function Navbar() {
               </div>
             </Link>
           </div>
+          {/* Hamburger button on mobile */}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="md:hidden p-2 rounded-lg text-wc-gray hover:text-wc-green hover:bg-wc-light transition-colors"
+            aria-label="Toggle menu"
+          >
+            {isMobileMenuOpen ? (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            ) : (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+              </svg>
+            )}
+          </button>
         </div>
       </div>
+      {/* Mobile Menu Panel */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden border-t border-wc-border bg-white px-4 py-4 flex flex-col gap-2 shadow-inner">
+          {displayLinks.map(({ href, label, icon: Icon }) => {
+            const active = href === "/"
+              ? location.pathname === "/"
+              : location.pathname.startsWith(href);
+            return (
+              <Link
+                key={href}
+                to={href}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl transition-colors ${active
+                    ? "text-wc-green bg-[#F1F5F0]"
+                    : "text-wc-gray hover:text-wc-green hover:bg-wc-bg"
+                  }`}
+              >
+                <span className={active ? "text-wc-green" : "text-wc-gray"}>
+                  <Icon />
+                </span>
+                {t(label)}
+              </Link>
+            );
+          })}
+        </div>
+      )}
     </header>
   );
 }

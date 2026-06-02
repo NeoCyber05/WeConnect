@@ -914,6 +914,10 @@ INSERT INTO GAME_ROOMS (code, host_id, room_type, max_players, status, created_a
 ('ROOM009', 2, 'QUIZ', 10, 'WAITING', NOW()),
 ('ROOM010', 23, 'QUIZ', 10, 'WAITING', NOW());
 
--- ── 9. OTPS ──
+-- ── 9. GAMES ──
+INSERT INTO GAMES (game_id, name, description, game_type, icon_bg, badge_bg, badge_text) VALUES
+('nihon', 'Đố vui văn hóa Nhật Bản', 'Kiến thức chung • 4-10 người', 'QUIZ', 'bg-purple-100', 'bg-slate-100', 'text-slate-500');
+
+-- ── 10. OTPS ──
 INSERT INTO OTPS (identifier, code, purpose, expire_at, used, created_at) VALUES
 ('test.user@gmail.com', '123456', 'REGISTER', '2037-12-31 23:59:59', FALSE, NOW());

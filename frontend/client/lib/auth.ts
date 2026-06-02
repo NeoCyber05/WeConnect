@@ -2,6 +2,7 @@ export interface CurrentUser {
   user_id: number;
   full_name: string;
   role: string;
+  avatar_url?: string | null;
 }
 
 export function getAccessToken(): string | null {

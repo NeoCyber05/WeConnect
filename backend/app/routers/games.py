@@ -2,14 +2,24 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import Optional, List
+from datetime import datetime, timezone
 import random
 import string
 from app.dependencies import get_db, get_current_user
 from app.models.user import User
-from app.models.game import GameRoom, GameParticipant
-from app.schemas.game import GameRoomOut, GameRoomCreate, JoinRoomRequest
+from app.models.game import Game, GameRoom, GameParticipant
+from app.schemas.game import GameOut, GameRoomOut, GameRoomCreate, JoinRoomRequest, ScoreUpdateRequest
 
 router = APIRouter()
+
+
+@router.get("", response_model=List[GameOut])
+def list_games(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List all games from the database."""
+    return db.query(Game).all()
 
 
 def _generate_unique_code(db: Session) -> str:
@@ -22,7 +32,7 @@ def _generate_unique_code(db: Session) -> str:
 
 def _build_room_out(room: GameRoom, db: Session) -> dict:
     active_participants = (
-        db.query(User)
+        db.query(User, GameParticipant)
         .join(GameParticipant, GameParticipant.user_id == User.user_id)
         .filter(GameParticipant.room_id == room.room_id)
         .filter(GameParticipant.left_at.is_(None))
@@ -30,11 +40,12 @@ def _build_room_out(room: GameRoom, db: Session) -> dict:
     )
 
     participants_list = []
-    for p in active_participants:
+    for u, gp in active_participants:
         participants_list.append({
-            "user_id": p.user_id,
-            "full_name": p.full_name,
-            "avatar_url": p.avatar_url,
+            "user_id": u.user_id,
+            "full_name": u.full_name,
+            "avatar_url": u.avatar_url,
+            "score": gp.score,
         })
 
     return {
@@ -45,6 +56,7 @@ def _build_room_out(room: GameRoom, db: Session) -> dict:
         "max_players": room.max_players,
         "status": room.status,
         "created_at": room.created_at,
+        "started_at": room.started_at,
         "participants_count": len(participants_list),
         "participants": participants_list,
     }
@@ -255,3 +267,56 @@ def leave_game_room(
             db.commit()
 
     return {"status": "ok", "message": "Đã rời khỏi phòng thành công"}
+
+
+@router.put("/rooms/{room_id}/score")
+def update_room_score(
+    room_id: int,
+    body: ScoreUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Cập nhật điểm số của người chơi trong phòng."""
+    participant = db.query(GameParticipant).filter(
+        GameParticipant.room_id == room_id,
+        GameParticipant.user_id == current_user.user_id,
+        GameParticipant.left_at.is_(None)
+    ).first()
+    if not participant:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Bạn không tham gia phòng này hoặc đã rời đi"
+        )
+
+    participant.score = body.score
+    db.commit()
+    return {"status": "ok", "score": participant.score}
+
+
+@router.post("/rooms/{room_id}/start")
+def start_game_room(
+    room_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Bắt đầu trận đấu (chỉ dành cho chủ phòng)."""
+    room = db.query(GameRoom).filter(GameRoom.room_id == room_id).first()
+    if not room:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Phòng game không tồn tại"
+        )
+    if room.host_id != current_user.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chỉ chủ phòng mới có thể bắt đầu trận đấu"
+        )
+    if room.status != "WAITING":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Phòng game đã bắt đầu hoặc đã kết thúc"
+        )
+    room.status = "PLAYING"
+    room.started_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    db.commit()
+    return {"status": "ok", "message": "Trận đấu đã bắt đầu thành công"}

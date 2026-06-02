@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import { cn } from "@/lib/utils";
 
 interface UserOut {
   user_id: number;
@@ -18,8 +19,9 @@ interface GameRoomOut {
   max_players: number;
   status: string;
   created_at: string;
+  started_at?: string | null;
   participants_count: number;
-  participants: Array<{ user_id: number; full_name: string; avatar_url: string | null }>;
+  participants: Array<{ user_id: number; full_name: string; avatar_url: string | null; score: number }>;
 }
 
 type MessageType = "system" | "other" | "me";
@@ -253,6 +255,7 @@ export default function Index() {
     refetchInterval: 3000,
   });
 
+  const isMeHost = roomData && currentUser ? Number(currentUser.user_id) === Number(roomData.host_id) : false;
   // Leave room mutation
   const leaveRoomMutation = useMutation({
     mutationFn: () => apiFetch(`/api/v1/games/rooms/${roomData?.room_id}/leave`, { method: "POST" }),
@@ -265,19 +268,52 @@ export default function Index() {
     }
   });
 
+  // Start room mutation
+  const startRoomMutation = useMutation({
+    mutationFn: () =>
+      apiFetch(`/api/v1/games/rooms/${roomData?.room_id}/start`, { method: "POST" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["game-room", roomCode] });
+    },
+  });
+
+  const handleStartMatch = () => {
+    if (isMeHost && roomData?.room_id) {
+      startRoomMutation.mutate();
+    }
+  };
+
   // ── STATE VARIABLES ──
   
-  const [gameState, setGameState] = useState<"playing" | "paused" | "ended">("playing");
+  const [gameState, setGameState] = useState<"waiting" | "playing" | "paused" | "ended">("waiting");
+  const [activeTab, setActiveTab] = useState<"game" | "scores" | "chat">("game");
+  const [isChatCollapsed, setIsChatCollapsed] = useState(false);
   
   // Timers
   const [matchTime, setMatchTime] = useState(585); // 09:45 in seconds
   const [questionTimer, setQuestionTimer] = useState(10); // 10 seconds per question
   
   // Scores
-  const [scoreMe, setScoreMe] = useState(120);
-  const [scoreHoangAnh, setScoreHoangAnh] = useState(95);
-  const [scoreMaiLinh, setScoreMaiLinh] = useState(80);
-  const [scoreTuan, setScoreTuan] = useState(60);
+  const [scoreMe, setScoreMe] = useState(0);
+  const [scoreHoangAnh, setScoreHoangAnh] = useState(0);
+  const [scoreMaiLinh, setScoreMaiLinh] = useState(0);
+  const [scoreTuan, setScoreTuan] = useState(0);
+
+  // Score synchronization mutation
+  const updateScoreMutation = useMutation({
+    mutationFn: (newScore: number) =>
+      apiFetch(`/api/v1/games/rooms/${roomData?.room_id}/score`, {
+        method: "PUT",
+        body: JSON.stringify({ score: newScore }),
+      }),
+  });
+
+  // Sync scoreMe to backend database when it changes
+  useEffect(() => {
+    if (roomData?.room_id) {
+      updateScoreMutation.mutate(scoreMe);
+    }
+  }, [scoreMe, roomData?.room_id]);
 
   // Ready states
   const [readyMe, setReadyMe] = useState(true);
@@ -305,7 +341,7 @@ export default function Index() {
     },
     {
       id: 3,
-      name: "Bạn (Lê Minh)",
+      name: `Bạn (${currentUser?.full_name || "Lê Minh"})`,
       text: "Bắt đầu luôn thôi nào! Đang rất hào hứng đây.",
       type: "me",
     },
@@ -383,6 +419,80 @@ export default function Index() {
     };
   }, [gameState, isAnswered, currentQuestionIdx]);
 
+  // Synchronize game state and timer from room data (database)
+  useEffect(() => {
+    if (!roomData) return;
+
+    if (roomData.status === "WAITING") {
+      // Only reset when transitioning from a different state
+      setGameState((prev) => {
+        if (prev !== "waiting") {
+          setMatchTime(600);
+          setQuestionTimer(10);
+          setCurrentQuestionIdx(0);
+          setIsAnswered(false);
+          setSelectedAnswer(null);
+          setShowResultModal(false);
+        }
+        return "waiting";
+      });
+    } else if (roomData.status === "PLAYING") {
+      if (roomData.started_at) {
+        // Ensure UTC parsing: append Z if not present
+        const rawTs = roomData.started_at;
+        const utcStr = rawTs.endsWith("Z") || rawTs.includes("+") ? rawTs : rawTs + "Z";
+        const startedAtMs = new Date(utcStr).getTime();
+        const nowMs = Date.now();
+        const elapsedSeconds = Math.max(0, Math.floor((nowMs - startedAtMs) / 1000));
+
+        const totalDuration = 600; // 10 minutes
+        const remaining = Math.max(0, totalDuration - elapsedSeconds);
+
+        // Only set to playing state – never directly end from sync effect
+        // The local countdown timer handles the "ended" transition
+        setGameState((prev) => {
+          if (prev === "waiting" || prev === "ended") {
+            // First time entering PLAYING state – sync the match time
+            setMatchTime(remaining);
+          }
+          return "playing";
+        });
+
+        // Sync current question index
+        const cycleSeconds = 12.5;
+        const totalQuestions = questions.length;
+        const qIdx = Math.min(Math.floor(elapsedSeconds / cycleSeconds), totalQuestions - 1);
+
+        if (qIdx !== currentQuestionIdx) {
+          setCurrentQuestionIdx(qIdx);
+          setIsAnswered(false);
+          setSelectedAnswer(null);
+        }
+
+        const inCycleSeconds = elapsedSeconds % cycleSeconds;
+        if (inCycleSeconds < 10) {
+          if (!isAnswered) {
+            const remainingTimer = Math.max(1, Math.ceil(10 - inCycleSeconds));
+            setQuestionTimer(remainingTimer);
+          }
+        } else {
+          if (!isAnswered) {
+            setIsAnswered(true);
+            setSelectedAnswer(null);
+            setQuestionTimer(0);
+          }
+        }
+      } else {
+        // started_at not set yet (race condition) – just switch to playing
+        setGameState("playing");
+      }
+    } else if (roomData.status === "ENDED") {
+      setGameState("ended");
+      setShowResultModal(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomData]);
+
   // Scroll to bottom of chat
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -442,22 +552,24 @@ export default function Index() {
       setScoreMe((s) => s + pointsEarned);
 
       // System notification
+      const userName = currentUser?.full_name || "Lê Minh";
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now(),
           name: "Hệ thống",
-          text: `Bạn (Lê Minh) đã trả lời chính xác câu ${activeQuestion.id} trong ${10 - questionTimer}s và nhận được +${pointsEarned} điểm!`,
+          text: `Bạn (${userName}) đã trả lời chính xác câu ${activeQuestion.id} trong ${10 - questionTimer}s và nhận được +${pointsEarned} điểm!`,
           type: "system",
         },
       ]);
     } else {
+      const userName = currentUser?.full_name || "Lê Minh";
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now(),
           name: "Hệ thống",
-          text: `Bạn (Lê Minh) đã trả lời sai câu ${activeQuestion.id}. Đáp án đúng là: ${activeQuestion.options[activeQuestion.correctIndex]}`,
+          text: `Bạn (${userName}) đã trả lời sai câu ${activeQuestion.id}. Đáp án đúng là: ${activeQuestion.options[activeQuestion.correctIndex]}`,
           type: "system",
         },
       ]);
@@ -542,12 +654,13 @@ export default function Index() {
     setReadyMe(nextState);
 
     // Sync notification
+    const userName = currentUser?.full_name || "Lê Minh";
     setMessages((prev) => [
       ...prev,
       {
         id: Date.now(),
         name: "Hệ thống",
-        text: `Bạn (Lê Minh) đã thay đổi trạng thái sang: ${nextState ? "SẴN SÀNG" : "ĐANG CHỜ"}`,
+        text: `Bạn (${userName}) đã thay đổi trạng thái sang: ${nextState ? "SẴN SÀNG" : "ĐANG CHỜ"}`,
         type: "system",
       },
     ]);
@@ -559,11 +672,12 @@ export default function Index() {
     if (!message.trim()) return;
 
     const userText = message.trim();
+    const userName = currentUser?.full_name || "Lê Minh";
     setMessages((prev) => [
       ...prev,
       {
         id: Date.now(),
-        name: "Bạn (Lê Minh)",
+        name: `Bạn (${userName})`,
         text: userText,
         type: "me",
       },
@@ -604,12 +718,13 @@ export default function Index() {
     if (invitedFriends.includes(friend.id)) return;
     setInvitedFriends((prev) => [...prev, friend.id]);
 
+    const userName = currentUser?.full_name || "Lê Minh";
     setMessages((prev) => [
       ...prev,
       {
         id: Date.now(),
         name: "Hệ thống",
-        text: `Bạn (Lê Minh) đã gửi lời mời tham gia phòng game cho ${friend.name}.`,
+        text: `Bạn (${userName}) đã gửi lời mời tham gia phòng game cho ${friend.name}.`,
         type: "system",
       },
     ]);
@@ -617,10 +732,10 @@ export default function Index() {
 
   // Restart match (podium restart button)
   const handleRestartGame = () => {
-    setScoreMe(120);
-    setScoreHoangAnh(95);
-    setScoreMaiLinh(80);
-    setScoreTuan(60);
+    setScoreMe(0);
+    setScoreHoangAnh(0);
+    setScoreMaiLinh(0);
+    setScoreTuan(0);
     setCurrentQuestionIdx(0);
     setQuestionTimer(10);
     setMatchTime(585);
@@ -642,15 +757,17 @@ export default function Index() {
 
   // Pause action click
   const handlePauseMatch = () => {
+    if (!isMeHost) return;
     setGameState("paused");
     setShowPauseModal(true);
 
+    const hostName = roomData?.participants?.find((p) => Number(p.user_id) === Number(roomData.host_id))?.full_name || "chủ phòng";
     setMessages((prev) => [
       ...prev,
       {
         id: Date.now(),
         name: "Hệ thống",
-        text: "Trận đấu đã tạm dừng bởi chủ phòng Lê Minh.",
+        text: `Trận đấu đã tạm dừng bởi chủ phòng ${hostName}.`,
         type: "system",
       },
     ]);
@@ -658,6 +775,7 @@ export default function Index() {
 
   // Resume action click
   const handleResumeMatch = () => {
+    if (!isMeHost) return;
     setGameState("playing");
     setShowPauseModal(false);
 
@@ -674,16 +792,18 @@ export default function Index() {
 
   // End early click
   const handleEndMatchEarly = () => {
+    if (!isMeHost) return;
     setGameState("ended");
     setShowPauseModal(false);
     setShowResultModal(true);
 
+    const hostName = roomData?.participants?.find((p) => Number(p.user_id) === Number(roomData.host_id))?.full_name || "chủ phòng";
     setMessages((prev) => [
       ...prev,
       {
         id: Date.now(),
         name: "Hệ thống",
-        text: "Trận đấu đã kết thúc sớm bởi chủ phòng.",
+        text: `Trận đấu đã kết thúc sớm bởi chủ phòng ${hostName}.`,
         type: "system",
       },
     ]);
@@ -702,17 +822,9 @@ export default function Index() {
   };
 
   // ── SORTED PLAYERS FOR LEADERBOARD ──
-  const players = (roomData?.participants || []).map((participant, index) => {
-    const isMe = participant.user_id === currentUser?.user_id;
-    let score = 0;
-    if (isMe) {
-      score = scoreMe;
-    } else {
-      if (index === 1) score = scoreHoangAnh;
-      else if (index === 2) score = scoreMaiLinh;
-      else if (index === 3) score = scoreTuan;
-      else score = 50 + (index * 5);
-    }
+  const players = (roomData?.participants || []).map((participant) => {
+    const isMe = Number(participant.user_id) === Number(currentUser?.user_id);
+    const score = isMe ? scoreMe : (participant.score || 0);
 
     const nameInitial = participant.full_name.substring(0, 2);
     const avatarElement = participant.avatar_url ? (
@@ -794,12 +906,21 @@ export default function Index() {
           {/* Status Badge & Leave Button */}
           <div className="flex items-center gap-4">
             <div
-              className="flex items-center gap-2 px-3 py-1 rounded-full border bg-[#F1F5F0]"
-              style={{ borderColor: "rgba(74,103,65,0.2)" }}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1 rounded-full border",
+                gameState === "waiting" 
+                  ? "bg-amber-50/50 border-amber-200/50 text-amber-600" 
+                  : "bg-[#F1F5F0] border-[#E2E8E2] text-[#4A6741]"
+              )}
             >
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-[11px] font-bold tracking-[0.55px] uppercase text-[#4A6741]">
-                {gameState === "paused" ? "Đang tạm dừng" : "Trận đấu đang diễn ra"}
+              <div className={cn(
+                "w-2 h-2 rounded-full",
+                gameState === "waiting" ? "bg-amber-500 animate-pulse" : "bg-green-500 animate-pulse"
+              )} />
+              <span className="text-[11px] font-bold tracking-[0.55px] uppercase">
+                {gameState === "waiting" 
+                  ? "Đang chờ" 
+                  : (gameState === "paused" ? "Đang tạm dừng" : "Trận đấu đang diễn ra")}
               </span>
             </div>
 
@@ -816,12 +937,52 @@ export default function Index() {
         </div>
       </header>
 
+      {/* Mobile Tab Switcher */}
+      <div className="md:hidden flex bg-white border-b border-[#E2E8E2] flex-shrink-0">
+        <button
+          onClick={() => setActiveTab("game")}
+          className={cn(
+            "flex-1 py-3 text-xs font-bold text-center border-b-2 transition-colors",
+            activeTab === "game"
+              ? "text-[#4A6741] border-[#4A6741] bg-[rgba(241,245,240,0.5)]"
+              : "text-gray-500 border-transparent hover:text-[#2D3A3A]"
+          )}
+        >
+          🎮 Trò chơi
+        </button>
+        <button
+          onClick={() => setActiveTab("scores")}
+          className={cn(
+            "flex-1 py-3 text-xs font-bold text-center border-b-2 transition-colors",
+            activeTab === "scores"
+              ? "text-[#4A6741] border-[#4A6741] bg-[rgba(241,245,240,0.5)]"
+              : "text-gray-500 border-transparent hover:text-[#2D3A3A]"
+          )}
+        >
+          🏆 Bảng điểm
+        </button>
+        <button
+          onClick={() => setActiveTab("chat")}
+          className={cn(
+            "flex-1 py-3 text-xs font-bold text-center border-b-2 transition-colors",
+            activeTab === "chat"
+              ? "text-[#4A6741] border-[#4A6741] bg-[rgba(241,245,240,0.5)]"
+              : "text-gray-500 border-transparent hover:text-[#2D3A3A]"
+          )}
+        >
+          💬 Chat &amp; Người chơi
+        </button>
+      </div>
+
       {/* ── MAIN THREE-COLUMN LAYOUT ── */}
       <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
         
         {/* ── LEFT SIDEBAR: TIME & USER LIST & ACTIONS ── */}
         <aside
-          className="flex-shrink-0 w-full md:w-80 flex flex-col overflow-hidden bg-white border-r border-[#E2E8E2]"
+          className={cn(
+            "flex-shrink-0 w-full md:w-64 lg:w-80 flex flex-col overflow-hidden bg-white border-r border-[#E2E8E2]",
+            activeTab === "chat" ? "flex" : "hidden md:flex"
+          )}
         >
           {/* Total Game Timer */}
           <div className="flex flex-col items-start gap-3 p-6 bg-slate-50/50 border-b border-[#E2E8E2] flex-shrink-0">
@@ -848,8 +1009,8 @@ export default function Index() {
             </span>
             <div className="flex flex-col gap-3">
               {(roomData?.participants || []).map((participant, index) => {
-                const isMe = participant.user_id === currentUser?.user_id;
-                const isHost = participant.user_id === roomData?.host_id;
+                const isMe = Number(participant.user_id) === Number(currentUser?.user_id);
+                const isHost = Number(participant.user_id) === Number(roomData?.host_id);
                 const nameInitial = participant.full_name.substring(0, 2);
 
                 return (
@@ -915,7 +1076,7 @@ export default function Index() {
           <div className="flex gap-2 p-4 border-t border-[#E2E8E2] bg-white flex-shrink-0">
             <button
               onClick={handlePauseMatch}
-              disabled={gameState !== "playing"}
+              disabled={gameState !== "playing" || !isMeHost}
               className="flex-1 py-2 rounded-lg text-[12px] font-bold border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
             >
               Dừng trận
@@ -923,123 +1084,167 @@ export default function Index() {
             <button
               onClick={handleToggleReady}
               className="flex-1 py-2 rounded-lg text-[12px] font-bold text-white transition duration-200"
-              style={{ background: readyMe ? "#4A6741" : "#3B82F6" }}
+              style={{ background: readyMe ? "#3B82F6" : "#4A6741" }}
             >
-              {readyMe ? "Sẵn sàng" : "Chờ trận"}
+              {readyMe ? "Chờ trận" : "Sẵn sàng"}
             </button>
           </div>
         </aside>
 
         {/* ── MIDDLE GAME CARD & CHAT PANEL ── */}
-        <div className="flex-1 flex flex-col overflow-hidden min-w-0 bg-[#F1F5F9] border-r border-[#E2E8E2]">
+        <div className={cn(
+          "flex-1 flex flex-col overflow-hidden min-w-0 bg-[#F1F5F9] border-r border-[#E2E8E2]",
+          activeTab !== "scores" ? "flex" : "hidden md:flex"
+        )}>
           
           {/* Central Question Container */}
-          <div className="flex-grow flex items-center justify-center p-6 overflow-y-auto">
-            <div className="relative w-full max-w-[600px] bg-white border border-[#E2E8E2] rounded-3xl p-6 shadow-sm overflow-hidden flex flex-col items-center">
-              
-              {/* Lightning decorative SVGs */}
-              <div className="absolute left-6 top-6 opacity-25 animate-bounce">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="#22C55E">
-                  <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" />
-                </svg>
-              </div>
-              <div className="absolute right-6 top-10 opacity-25 animate-bounce delay-200">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="#EAB308">
-                  <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" />
-                </svg>
-              </div>
-
-              {/* Quiz Badge */}
-              <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-green-500 text-white shadow-sm mb-4">
-                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                  <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" />
-                </svg>
-                <span className="text-[12px] font-extrabold tracking-wide uppercase">
-                  {activeQuestion.category}
-                </span>
-              </div>
-
-              {/* Question Text */}
-              <h2 className="text-[20px] font-extrabold text-center text-[#2D3A3A] mb-1.5 max-w-[500px]">
-                {activeQuestion.question}
-              </h2>
-              <p className="text-[12px] text-gray-500 font-semibold mb-6">
-                {activeQuestion.description}
-              </p>
-
-              {/* 4 Answer Grid Options */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full mb-6">
-                {activeQuestion.options.map((opt, idx) => {
-                  const isSelected = selectedAnswer === idx;
-                  const isCorrect = idx === activeQuestion.correctIndex;
-                  const showWrong = isSelected && !isCorrect;
-                  const showRight = isAnswered && isCorrect;
-
-                  let borderClass = "border-[#E2E8E2] hover:border-green-300";
-                  let bgClass = "bg-white";
-                  let textClass = "text-[#2D3A3A]";
-
-                  if (showRight) {
-                    borderClass = "border-green-500 border-2";
-                    bgClass = "bg-green-50";
-                    textClass = "text-green-700 font-extrabold";
-                  } else if (showWrong) {
-                    borderClass = "border-red-500 border-2";
-                    bgClass = "bg-red-50";
-                    textClass = "text-red-700 font-extrabold";
-                  } else if (isSelected) {
-                    borderClass = "border-green-500 border-2";
-                    bgClass = "bg-green-50";
-                  }
-
-                  return (
-                    <button
-                      key={idx}
-                      onClick={() => handleSelectAnswer(idx)}
-                      disabled={isAnswered || gameState !== "playing"}
-                      className={`answer-card px-5 py-4 rounded-2xl border text-center transition duration-200 cursor-pointer disabled:cursor-default ${borderClass} ${bgClass}`}
-                    >
-                      <span className={`text-[14px] font-bold ${textClass}`}>
-                        {opt}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Progress Bar and Hint */}
-              <div className="w-full flex flex-col items-center gap-3">
-                <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-1000"
-                    style={{
-                      width: `${(questionTimer / 10) * 100}%`,
-                      background: questionTimer <= 3 ? "#EF4444" : "#22C55E",
-                    }}
-                  />
+          <div className={cn(
+            "flex-grow flex items-center justify-center p-6 overflow-y-auto",
+            activeTab === "game" ? "flex" : "hidden md:flex"
+          )}>
+            {gameState === "waiting" ? (
+              <div className="relative w-full max-w-[600px] bg-white border border-[#E2E8E2] rounded-[32px] p-8 shadow-sm overflow-hidden flex flex-col items-center justify-center text-center min-h-[380px]">
+                {/* Decorative game console icon */}
+                <div className="w-20 h-20 bg-slate-50 border border-slate-100 rounded-3xl flex items-center justify-center mb-6 text-4xl shadow-inner animate-bounce">
+                  🎮
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-[#2D3A3A]">
-                  <svg className="w-4 h-4 text-gray-500 fill-none stroke-current stroke-2" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="8" x2="12" y2="12" />
-                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                <h2 className="text-[22px] font-black text-[#2D3A3A] mb-3">
+                  Phòng chờ game
+                </h2>
+                <p className="text-sm text-gray-500 max-w-[340px] mb-8 font-medium leading-relaxed">
+                  {isMeHost 
+                    ? "Tất cả người chơi đã sẵn sàng? Hãy nhấn nút bắt đầu phía dưới để tiến hành so tài ngay!" 
+                    : "Đang chờ chủ phòng bắt đầu trận đấu. Đừng rời màn hình nhé!"}
+                </p>
+
+                {isMeHost ? (
+                  <button
+                    onClick={handleStartMatch}
+                    disabled={startRoomMutation.isPending}
+                    className="px-8 py-3.5 bg-[#4A6741] hover:bg-[#3c5435] disabled:opacity-50 text-white font-extrabold rounded-2xl transition duration-200 shadow-lg shadow-green-100 flex items-center gap-2 text-sm uppercase tracking-wider active:scale-95 cursor-pointer"
+                  >
+                    {startRoomMutation.isPending ? "Đang khởi tạo..." : "Bắt đầu trận đấu"}
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-[#F1F5F0] border border-green-100">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-ping" />
+                    <span className="text-xs font-bold text-[#4A6741]">
+                      Đang chờ chủ phòng...
+                    </span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="relative w-full max-w-[600px] bg-white border border-[#E2E8E2] rounded-3xl p-6 shadow-sm overflow-hidden flex flex-col items-center">
+                
+                {/* Lightning decorative SVGs */}
+                <div className="absolute left-6 top-6 opacity-25 animate-bounce">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="#22C55E">
+                    <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" />
                   </svg>
-                  <span>
-                    Trả lời nhanh để giành điểm! Mỗi câu chỉ có{" "}
-                    <strong className={questionTimer <= 3 ? "text-red-500 font-bold" : "text-green-600 font-bold"}>
-                      {questionTimer} giây
-                    </strong>.
+                </div>
+                <div className="absolute right-6 top-10 opacity-25 animate-bounce delay-200">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="#EAB308">
+                    <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" />
+                  </svg>
+                </div>
+
+                {/* Quiz Badge */}
+                <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-green-500 text-white shadow-sm mb-4">
+                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                    <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" />
+                  </svg>
+                  <span className="text-[12px] font-extrabold tracking-wide uppercase">
+                    {activeQuestion.category}
                   </span>
                 </div>
-              </div>
 
-            </div>
+                {/* Question Text */}
+                <h2 className="text-[20px] font-extrabold text-center text-[#2D3A3A] mb-1.5 max-w-[500px]">
+                  {activeQuestion.question}
+                </h2>
+                <p className="text-[12px] text-gray-500 font-semibold mb-6">
+                  {activeQuestion.description}
+                </p>
+
+                {/* 4 Answer Grid Options */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full mb-6">
+                  {activeQuestion.options.map((opt, idx) => {
+                    const isSelected = selectedAnswer === idx;
+                    const isCorrect = idx === activeQuestion.correctIndex;
+                    const showWrong = isSelected && !isCorrect;
+                    const showRight = isAnswered && isCorrect;
+
+                    let borderClass = "border-[#E2E8E2] hover:border-green-300";
+                    let bgClass = "bg-white";
+                    let textClass = "text-[#2D3A3A]";
+
+                    if (showRight) {
+                      borderClass = "border-green-500 border-2";
+                      bgClass = "bg-green-50";
+                      textClass = "text-green-700 font-extrabold";
+                    } else if (showWrong) {
+                      borderClass = "border-red-500 border-2";
+                      bgClass = "bg-red-50";
+                      textClass = "text-red-700 font-extrabold";
+                    } else if (isSelected) {
+                      borderClass = "border-green-500 border-2";
+                      bgClass = "bg-green-50";
+                    }
+
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => handleSelectAnswer(idx)}
+                        disabled={isAnswered || gameState !== "playing"}
+                        className={`answer-card px-5 py-4 rounded-2xl border text-center transition duration-200 cursor-pointer disabled:cursor-default ${borderClass} ${bgClass}`}
+                      >
+                        <span className={`text-[14px] font-bold ${textClass}`}>
+                          {opt}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Progress Bar and Hint */}
+                <div className="w-full flex flex-col items-center gap-3">
+                  <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-1000"
+                      style={{
+                        width: `${(questionTimer / 10) * 100}%`,
+                        background: questionTimer <= 3 ? "#EF4444" : "#22C55E",
+                      }}
+                    />
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-[#2D3A3A]">
+                    <svg className="w-4 h-4 text-gray-500 fill-none stroke-current stroke-2" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    <span>
+                      Trả lời nhanh để giành điểm! Mỗi câu chỉ có{" "}
+                      <strong className={questionTimer <= 3 ? "text-red-500 font-bold" : "text-green-600 font-bold"}>
+                        {questionTimer} giây
+                      </strong>.
+                    </span>
+                  </div>
+                </div>
+
+              </div>
+            )}
           </div>
 
           {/* ── BOTTOM PANEL: CHAT CLIENT ── */}
           <div
-            className="flex-shrink-0 flex flex-col bg-white border-t border-[#E2E8E2]"
-            style={{ height: "256px" }}
+            className={cn(
+              "flex-shrink-0 flex flex-col bg-white border-t border-[#E2E8E2] w-full transition-all duration-300",
+              activeTab === "chat" 
+                ? "flex-1 h-full" 
+                : (isChatCollapsed ? "h-11 overflow-hidden" : "h-64 md:h-64")
+            )}
           >
             {/* Chat header */}
             <div className="flex items-center justify-between px-6 py-2.5 bg-slate-50/80 border-b border-[#E2E8E2]">
@@ -1056,6 +1261,21 @@ export default function Index() {
                   </div>
                 )}
               </div>
+              <button 
+                onClick={() => setIsChatCollapsed(!isChatCollapsed)}
+                className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-slate-200/50"
+                title={isChatCollapsed ? "Mở rộng chat" : "Thu gọn chat"}
+              >
+                {isChatCollapsed ? (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                  </svg>
+                )}
+              </button>
             </div>
 
             {/* Message Log */}
@@ -1114,7 +1334,7 @@ export default function Index() {
                         </div>
                       </div>
                       <div className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 text-white text-[10px] flex-shrink-0 font-bold">
-                        LM
+                        {currentUser?.full_name ? currentUser.full_name.substring(0, 2).toUpperCase() : "LM"}
                       </div>
                     </div>
                   )}
@@ -1172,7 +1392,10 @@ export default function Index() {
         </div>
 
         {/* ── RIGHT SIDEBAR: SCOREBOARD (BẢNG ĐIỂM) ── */}
-        <aside className="flex-shrink-0 w-full md:w-80 flex flex-col bg-white border-l border-[#E2E8E2] overflow-y-auto p-4 gap-4">
+        <aside className={cn(
+          "flex-shrink-0 w-full md:w-64 lg:w-80 flex flex-col bg-white border-l border-[#E2E8E2] overflow-y-auto p-4 gap-4",
+          activeTab === "scores" ? "flex" : "hidden md:flex"
+        )}>
           <div className="flex items-center gap-1.5 px-3 py-1 bg-orange-50 text-orange-600 border border-orange-200/50 rounded-full self-start flex-shrink-0">
             <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
               <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" />

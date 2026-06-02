@@ -68,7 +68,7 @@ export default function Index() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row font-inter">
       {/* Left Panel */}
-      <div className="relative flex flex-col md:w-[42%] bg-gradient-to-b from-[#050B14] to-[#121A24] overflow-hidden min-h-[400px] md:min-h-screen">
+      <div className="relative hidden md:flex flex-col md:w-[42%] bg-gradient-to-b from-[#050B14] to-[#121A24] overflow-hidden md:min-h-screen">
         {/* Logo */}
         <div className="flex items-center gap-3 px-12 pt-14">
           <WeConnectIcon />
@@ -140,6 +140,12 @@ export default function Index() {
               TIẾNG NHẬT
             </span>
           </button>
+        </div>
+
+        {/* Mobile Logo */}
+        <div className="flex md:hidden items-center justify-center gap-3 pt-6 pb-2">
+          <WeConnectIcon />
+          <span className="text-[#1E293B] font-bold text-xl tracking-tight">WeConnect</span>
         </div>
 
         {/* Form area */}

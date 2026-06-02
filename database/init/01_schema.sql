@@ -179,6 +179,7 @@ CREATE TABLE GAME_PARTICIPANTS (
     user_id        BIGINT    NOT NULL,
     joined_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     left_at        TIMESTAMP NULL,
+    score          INT       DEFAULT 0,
     FOREIGN KEY (room_id)  REFERENCES GAME_ROOMS(room_id) ON DELETE CASCADE,
     FOREIGN KEY (user_id)  REFERENCES USERS(user_id)     ON DELETE CASCADE
 );
@@ -203,6 +204,17 @@ CREATE TABLE OTPS (
     expire_at  TIMESTAMP    NOT NULL,
     used       BOOLEAN      DEFAULT FALSE,
     created_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ── 16. GAMES ─────────────────────────────────────────────────
+CREATE TABLE GAMES (
+    game_id     VARCHAR(50)  PRIMARY KEY,
+    name        VARCHAR(255) NOT NULL,
+    description VARCHAR(255),
+    game_type   VARCHAR(50)  NOT NULL UNIQUE,
+    icon_bg     VARCHAR(50),
+    badge_bg    VARCHAR(50),
+    badge_text  VARCHAR(50)
 );
 
 -- ============================================================

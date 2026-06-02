@@ -397,10 +397,10 @@ export default function Index() {
                   <div className="w-1 h-1 rounded-full bg-wc-gray/40" />
                 </div>
               </div>
-              <div className="flex items-center gap-3 self-start sm:self-auto">
+              <div className="flex items-center gap-3 self-start sm:self-auto w-full sm:w-auto justify-between sm:justify-start">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="p-3 rounded-2xl border border-wc-dark/10 bg-white/10 backdrop-blur-sm shadow-sm text-wc-dark hover:bg-wc-light-green transition-colors" title="Change Language">
+                    <button className="p-3 rounded-2xl border border-wc-dark/10 bg-white/10 backdrop-blur-sm shadow-sm text-wc-dark hover:bg-wc-light-green transition-colors shrink-0" title="Change Language">
                       <Globe className="w-[18px] h-[18px]" strokeWidth={2.5} />
                     </button>
                   </DropdownMenuTrigger>
@@ -415,13 +415,13 @@ export default function Index() {
                 </DropdownMenu>
                 <button 
                   onClick={() => setIsEditProfileOpen(true)}
-                  className="px-6 py-3 rounded-2xl border border-wc-dark/10 bg-white/10 backdrop-blur-sm shadow-sm text-wc-dark font-bold text-base hover:bg-wc-light-green transition-colors"
+                  className="flex-1 sm:flex-none px-4 sm:px-6 py-3 rounded-2xl border border-wc-dark/10 bg-white/10 backdrop-blur-sm shadow-sm text-wc-dark font-bold text-sm sm:text-base hover:bg-wc-light-green transition-colors text-center"
                 >
                   {t("profile.editProfile")}
                 </button>
                 <button 
                   onClick={() => logout()}
-                  className="p-3 rounded-2xl border border-red-100 bg-red-50/50 text-red-500 hover:bg-red-50 transition-colors shadow-sm"
+                  className="p-3 rounded-2xl border border-red-100 bg-red-50/50 text-red-500 hover:bg-red-50 transition-colors shadow-sm shrink-0"
                   title={t("profile.logout")}
                 >
                   <LogoutIcon />

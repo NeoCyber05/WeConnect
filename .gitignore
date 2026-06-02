@@ -250,3 +250,4 @@ objects/
 GUIDE.md
 FE_UPDATE/
 .vscode/
+.agents/

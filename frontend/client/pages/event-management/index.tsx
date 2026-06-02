@@ -392,6 +392,7 @@ export default function Index() {
                     status: "upcoming",
                     timeStatus: "upcoming",
                     isClosed: false,
+                    isCancelled: false,
                   });
                 }}
                 className="h-12 px-6 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl transition-all flex items-center gap-2 shadow-lg shadow-slate-200 active:scale-95"
@@ -415,7 +416,6 @@ export default function Index() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {filtered.map((event) => {
-                  const status = statusConfig[event.status] || statusConfig.upcoming;
                   const catColor = categoryColors[event.category] || "bg-slate-900 text-white";
                   return (
                     <div key={event.id} className="group bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500">

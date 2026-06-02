@@ -64,7 +64,7 @@ def _send_otp(identifier: str, code: str, purpose: str) -> None:
             html_content = f"<p>Mã OTP của bạn là: <strong>{code}</strong></p><p>Mã này sẽ hết hạn sau {settings.OTP_EXPIRE_MINUTES} phút.</p>"
             
             r = resend.Emails.send({
-                "from": "onboarding@resend.dev",
+                "from": "WeConnect <otp@nxs24042005.id.vn>",
                 "to": identifier,
                 "subject": subject,
                 "html": html_content

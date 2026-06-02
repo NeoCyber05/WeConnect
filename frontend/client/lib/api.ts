@@ -67,7 +67,25 @@ export async function apiFetch<T = unknown>(
   if (!res.ok) {
     const errData = await res.json().catch(() => ({}));
     console.error(`[apiFetch] Error for ${path}:`, errData);
-    throw new Error(errData.detail || `Error ${res.status}`);
+    let errMsg = `Error ${res.status}`;
+    if (errData && errData.detail) {
+      if (typeof errData.detail === "string") {
+        errMsg = errData.detail;
+      } else if (Array.isArray(errData.detail)) {
+        errMsg = errData.detail
+          .map((err: any) => {
+            let msg = err.msg || JSON.stringify(err);
+            if (msg.startsWith("Value error, ")) {
+              msg = msg.substring("Value error, ".length);
+            }
+            return msg;
+          })
+          .join(", ");
+      } else {
+        errMsg = JSON.stringify(errData.detail);
+      }
+    }
+    throw new Error(errMsg);
   }
 
   if (res.status === 204) return null as T;

@@ -698,31 +698,32 @@ export function Header() {
 
           {/* User avatar */}
           <div className="pl-2 border-l border-[#E2E8E2]">
-            {getCurrentUser()?.role === "ORGANIZER" || getCurrentUser()?.role === "admin" ? (
-              <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-[#4A6741]/10">
-                <img
-                  src={getCurrentUser()?.avatar_url 
-                    ? (getCurrentUser()?.avatar_url.startsWith("/") ? `${API_BASE_URL}${getCurrentUser()?.avatar_url}` : getCurrentUser()?.avatar_url)
-                    : "https://api.builder.io/api/v1/image/assets/TEMP/970853f39e1b18632ca69640ab7ac67726e7dc95?width=72"
-                  }
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ) : (
-              <Link to="/profile">
+            {(() => {
+              const currentUser = getCurrentUser();
+              const avatar = currentUser?.avatar_url;
+              const avatarSrc = avatar
+                ? (avatar.startsWith("/") ? `${API_BASE_URL}${avatar}` : avatar)
+                : "https://api.builder.io/api/v1/image/assets/TEMP/970853f39e1b18632ca69640ab7ac67726e7dc95?width=72";
+              return currentUser?.role === "ORGANIZER" || currentUser?.role === "admin" ? (
                 <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-[#4A6741]/10">
                   <img
-                    src={getCurrentUser()?.avatar_url 
-                      ? (getCurrentUser()?.avatar_url.startsWith("/") ? `${API_BASE_URL}${getCurrentUser()?.avatar_url}` : getCurrentUser()?.avatar_url)
-                      : "https://api.builder.io/api/v1/image/assets/TEMP/970853f39e1b18632ca69640ab7ac67726e7dc95?width=72"
-                    }
+                    src={avatarSrc}
                     alt="Profile"
                     className="w-full h-full object-cover"
                   />
                 </div>
-              </Link>
-            )}
+              ) : (
+                <Link to="/profile">
+                  <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-[#4A6741]/10">
+                    <img
+                      src={avatarSrc}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </Link>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -792,12 +793,14 @@ function ConversationSidebar({
   isLoading,
   error,
   onSelect,
+  className,
 }: {
   activeId: string;
   conversations: Conversation[];
   isLoading: boolean;
   error: string | null;
   onSelect: (id: string) => void;
+  className?: string;
 }) {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
@@ -808,7 +811,7 @@ function ConversationSidebar({
   }, [conversations, query]);
 
   return (
-    <aside className="w-80 xl:w-96 flex flex-col border-r border-[#E2E8E2] bg-white shrink-0">
+    <aside className={cn("w-full md:w-80 xl:w-96 flex flex-col border-r border-[#E2E8E2] bg-white shrink-0", className)}>
       {/* Sidebar header */}
       <div className="flex items-center justify-between px-4 pt-4 pb-3">
         <h2 className="text-lg font-bold text-[#2D3A3A]">{t("chat.chat")}</h2>
@@ -978,6 +981,8 @@ function ChatWindow({
   onSend,
   onTyping,
   onTranslate,
+  onBack,
+  className,
 }: {
   conv: Conversation | null;
   messages: Message[];
@@ -989,6 +994,8 @@ function ChatWindow({
   onSend: (content: string) => Promise<void>;
   onTyping: (isTyping: boolean) => void;
   onTranslate: (messageId: number) => Promise<void>;
+  onBack?: () => void;
+  className?: string;
 }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -1059,7 +1066,7 @@ function ChatWindow({
 
   if (!conv) {
     return (
-      <div className="flex flex-col flex-1 min-w-0 bg-[rgba(248,250,252,0.3)] items-center justify-center px-6 text-center">
+      <div className={cn("flex flex-col flex-1 min-w-0 bg-[rgba(248,250,252,0.3)] items-center justify-center px-6 text-center", className)}>
         <div className="max-w-sm">
           <h3 className="text-base font-bold text-[#2D3A3A]">
             Chọn một hội thoại
@@ -1073,10 +1080,21 @@ function ChatWindow({
   }
 
   return (
-    <div className="flex flex-col flex-1 min-w-0 bg-[rgba(248,250,252,0.3)]">
+    <div className={cn("flex flex-col flex-1 min-w-0 bg-[rgba(248,250,252,0.3)]", className)}>
       {/* Chat header */}
       <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-[#E2E8E2] shadow-sm shrink-0">
         <div className="flex items-center gap-3">
+          {/* Back button on mobile */}
+          <button
+            onClick={onBack}
+            className="md:hidden p-1 mr-1 text-[#6B7280] hover:text-[#2D3A3A] transition-colors"
+            title="Quay lại danh sách"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+          </button>
           <div className="relative">
             <Avatar src={conv.avatar} size={40} />
             {conv.isOnline && (
@@ -1202,6 +1220,7 @@ export default function Index() {
   const pusherRef = useRef<Pusher | null>(null);
   const lastTypingStateRef = useRef(false);
   const [pusherReady, setPusherReady] = useState(false);
+  const [showChatWindowOnMobile, setShowChatWindowOnMobile] = useState(false);
 
   const activeConv = useMemo(
     () => conversations.find((conversation) => conversation.id === activeConvId) ?? null,
@@ -1256,6 +1275,7 @@ export default function Index() {
               ...mapped.filter((conversation) => conversation.id !== openedConversation.id),
             ]);
             setActiveConvId(openedConversation.id);
+            setShowChatWindowOnMobile(true);
             setSearchParams({}, { replace: true });
           } catch (error) {
             setConversationError(
@@ -1448,6 +1468,7 @@ export default function Index() {
 
   const handleSelectConversation = (id: string) => {
     setActiveConvId(id);
+    setShowChatWindowOnMobile(true);
     setConversations((items) =>
       items.map((conversation) =>
         conversation.id === id ? { ...conversation, unreadCount: 0 } : conversation
@@ -1510,6 +1531,7 @@ export default function Index() {
           isLoading={isLoadingConversations}
           error={conversationError}
           onSelect={handleSelectConversation}
+          className={cn(showChatWindowOnMobile ? "hidden md:flex" : "flex")}
         />
         <ChatWindow
           conv={activeConv}
@@ -1522,6 +1544,8 @@ export default function Index() {
           onSend={handleSend}
           onTyping={handleTyping}
           onTranslate={handleTranslate}
+          onBack={() => setShowChatWindowOnMobile(false)}
+          className={cn(showChatWindowOnMobile ? "flex" : "hidden md:flex")}
         />
       </main>
     </div>

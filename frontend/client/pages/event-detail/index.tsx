@@ -40,7 +40,7 @@ interface UserOut {
 
 function mapEventOutToEditEvent(e: EventOut): Event {
   const apiStatus = e.status?.toUpperCase();
-  let status: "active" | "closed" | "cancelled" = "active";
+  let status: "upcoming" | "ongoing" | "finished" | "closed" | "cancelled" = "ongoing";
   if (apiStatus === "FINISHED") status = "closed";
   else if (apiStatus === "CANCELLED") status = "cancelled";
   
@@ -50,10 +50,14 @@ function mapEventOutToEditEvent(e: EventOut): Event {
     category: "Sự kiện", // Default or map if available
     maxAttendees: e.capacity,
     date: e.start_time,
+    endDate: e.end_time || e.start_time,
     location: e.location,
     description: e.description,
     coverImage: e.image_url || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=200&fit=crop",
     status,
+    timeStatus: apiStatus === "FINISHED" ? "finished" : "ongoing",
+    isClosed: apiStatus === "FINISHED",
+    isCancelled: apiStatus === "CANCELLED",
   };
 }
 
@@ -198,7 +202,7 @@ export default function Index() {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-6 items-start">
-          <div className="flex-1 min-w-0">
+          <div className="w-full flex-1 min-w-0 order-2 lg:order-1">
             <div className="bg-white rounded-lg border border-[#E4E2E4] shadow-[0_8px_32px_0_rgba(0,0,0,0.04)] p-6">
               <div className="pb-4 mb-5 border-b border-[#F0EDEF]">
                 <h2 className="text-[#1B1B1D] text-xl font-bold leading-7 tracking-[-0.5px]">{t("events.eventInfo")}</h2>
@@ -317,7 +321,7 @@ export default function Index() {
             </div>
           </div>
 
-          <div className="w-full lg:w-[380px] flex-shrink-0">
+          <div className="w-full lg:w-[380px] flex-shrink-0 order-1 lg:order-2">
             <div className="bg-white rounded-lg border border-[#E4E2E4] shadow-[0_8px_32px_0_rgba(0,0,0,0.04)] p-6">
               <p className="text-[#1B1B1D] text-sm font-semibold mb-5">{t("events.eventDetails")}</p>
 

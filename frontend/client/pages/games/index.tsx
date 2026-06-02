@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { useTranslation } from "react-i18next";
@@ -17,52 +17,39 @@ interface GameRoomOut {
   participants: Array<{ user_id: number; full_name: string; avatar_url: string | null }>;
 }
 
-const GAME_METADATA = [
-  {
-    id: "chess",
-    type: "CHESS",
-    name: "Cờ vua (Chess)",
-    description: "Chiến thuật đỉnh cao • 1vs1",
-    iconBg: "bg-blue-100",
-    badgeBg: "bg-primary/10",
-    badgeText: "text-primary",
-    icon: (
-      <svg width="23" height="23" viewBox="0 0 23 23" fill="none">
-        <path d="M0 10V0H10V10H0ZM0 22.5V12.5H10V22.5H0ZM12.5 10V0H22.5V10H12.5ZM12.5 22.5V12.5H22.5V22.5H12.5ZM2.5 7.5H7.5V2.5H2.5V7.5ZM15 7.5H20V2.5H15V7.5ZM15 20H20V15H15V20ZM2.5 20H7.5V15H2.5V20Z" fill="#2563EB"/>
-      </svg>
-    ),
-  },
-  {
-    id: "kanji",
-    type: "KANJI",
-    name: "Đoán từ vựng Kanji N3",
-    description: "Học tập • Đồng đội • 2-4 người",
-    iconBg: "bg-orange-100",
-    badgeBg: "bg-primary/10",
-    badgeText: "text-primary",
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 25" fill="none">
-        <path d="M13.875 23.75L8.5625 18.4375L10.3125 16.6875L13.875 20.25L20.9375 13.1875L22.6875 14.9375L13.875 23.75ZM0 16.25L6.0625 0H9L15.0625 16.25H12.1875L10.75 12.125H4.1875L2.75 16.25H0ZM5.0625 9.75H9.9375L7.5625 3H7.4375L5.0625 9.75Z" fill="#EA580C"/>
-      </svg>
-    ),
-  },
-  {
-    id: "nihon",
-    type: "QUIZ",
-    name: "Đố vui văn hóa Nhật Bản",
-    description: "Kiến thức chung • 4-10 người",
-    iconBg: "bg-purple-100",
-    badgeBg: "bg-slate-100",
-    badgeText: "text-slate-500",
-    icon: (
-      <svg width="24" height="25" viewBox="0 0 24 25" fill="none">
-        <path d="M3.75 25V19.625C2.5625 18.5417 1.64062 17.276 0.984375 15.8281C0.328125 14.3802 0 12.8542 0 11.25C0 8.125 1.09375 5.46875 3.28125 3.28125C5.46875 1.09375 8.125 0 11.25 0C13.8542 0 16.1615 0.765625 18.1719 2.29688C20.1823 3.82812 21.4896 5.82292 22.0938 8.28125L23.7188 14.6875C23.8229 15.0833 23.75 15.4427 23.5 15.7656C23.25 16.0885 22.9167 16.25 22.5 16.25H20V20C20 20.6875 19.7552 21.276 19.2656 21.7656C18.776 22.2552 18.1875 22.5 17.5 22.5H15V25H12.5V20H17.5V13.75H20.875L19.6875 8.90625C19.2083 7.01042 18.1875 5.46875 16.625 4.28125C15.0625 3.09375 13.2708 2.5 11.25 2.5C8.83333 2.5 6.77083 3.34375 5.0625 5.03125C3.35417 6.71875 2.5 8.77083 2.5 11.1875C2.5 12.4375 2.75521 13.625 3.26562 14.75C3.77604 15.875 4.5 16.875 5.4375 17.75L6.25 18.5V25H3.75Z" fill="#9333EA"/>
-      </svg>
-    ),
-  },
-];
+interface GameOut {
+  game_id: string;
+  name: string;
+  description: string | null;
+  game_type: string;
+  icon_bg: string | null;
+  badge_bg: string | null;
+  badge_text: string | null;
+}
 
-const categories = ["all", "strategy", "learning", "puzzle"];
+const GAME_ICONS: Record<string, React.ReactNode> = {
+  chess: (
+    <svg width="23" height="23" viewBox="0 0 23 23" fill="none">
+      <path d="M0 10V0H10V10H0ZM0 22.5V12.5H10V22.5H0ZM12.5 10V0H22.5V10H12.5ZM12.5 22.5V12.5H22.5V22.5H12.5ZM2.5 7.5H7.5V2.5H2.5V7.5ZM15 7.5H20V2.5H15V7.5ZM15 20H20V15H15V20ZM2.5 20H7.5V15H2.5V20Z" fill="#2563EB"/>
+    </svg>
+  ),
+  kanji: (
+    <svg width="24" height="24" viewBox="0 0 24 25" fill="none">
+      <path d="M13.875 23.75L8.5625 18.4375L10.3125 16.6875L13.875 20.25L20.9375 13.1875L22.6875 14.9375L13.875 23.75ZM0 16.25L6.0625 0H9L15.0625 16.25H12.1875L10.75 12.125H4.1875L2.75 16.25H0ZM5.0625 9.75H9.9375L7.5625 3H7.4375L5.0625 9.75Z" fill="#EA580C"/>
+    </svg>
+  ),
+  nihon: (
+    <svg width="24" height="25" viewBox="0 0 24 25" fill="none">
+      <path d="M3.75 25V19.625C2.5625 18.5417 1.64062 17.276 0.984375 15.8281C0.328125 14.3802 0 12.8542 0 11.25C0 8.125 1.09375 5.46875 3.28125 3.28125C5.46875 1.09375 8.125 0 11.25 0C13.8542 0 16.1615 0.765625 18.1719 2.29688C20.1823 3.82812 21.4896 5.82292 22.0938 8.28125L23.7188 14.6875C23.8229 15.0833 23.75 15.4427 23.5 15.7656C23.25 16.0885 22.9167 16.25 22.5 16.25H20V20C20 20.6875 19.7552 21.276 19.2656 21.7656C18.776 22.2552 18.1875 22.5 17.5 22.5H15V25H12.5V20H17.5V13.75H20.875L19.6875 8.90625C19.2083 7.01042 18.1875 5.46875 16.625 4.28125C15.0625 3.09375 13.2708 2.5 11.25 2.5C8.83333 2.5 6.77083 3.34375 5.0625 5.03125C3.35417 6.71875 2.5 8.77083 2.5 11.1875C2.5 12.4375 2.75521 13.625 3.26562 14.75C3.77604 15.875 4.5 16.875 5.4375 17.75L6.25 18.5V25H3.75Z" fill="#9333EA"/>
+    </svg>
+  ),
+};
+
+const DEFAULT_GAME_ICON = (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+  </svg>
+);
 
 export default function Index() {
   const { t } = useTranslation();
@@ -74,6 +61,31 @@ export default function Index() {
   const [gameSearch, setGameSearch] = useState("");
   const [roomCode, setRoomCode] = useState("");
 
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedGameId, setSelectedGameId] = useState("");
+  const [maxPlayers, setMaxPlayers] = useState(10);
+
+  // Fetch list of games from database – must be declared before handlers that use apiGames
+  const { data: apiGames = [] } = useQuery({
+    queryKey: ["games-list"],
+    queryFn: () => apiFetch<GameOut[]>("/api/v1/games"),
+  });
+
+  // Dynamic categories based on games returned from database
+  const categories = ["all"];
+  if (apiGames.some((g) => g.game_type === "CHESS")) categories.push("strategy");
+  if (apiGames.some((g) => g.game_type === "KANJI")) categories.push("learning");
+  if (apiGames.some((g) => g.game_type === "QUIZ")) categories.push("puzzle");
+
+  useEffect(() => {
+    if (!categories.includes(activeCategory)) {
+      setActiveCategory("all");
+    }
+    if (expandedGame !== "" && apiGames.length > 0 && !apiGames.some((g) => g.game_id === expandedGame)) {
+      setExpandedGame(apiGames[0].game_id);
+    }
+  }, [apiGames, activeCategory, expandedGame]);
+
   // Fetch all active game rooms
   const { data: apiRooms = [], refetch } = useQuery({
     queryKey: ["game-rooms"],
@@ -81,9 +93,9 @@ export default function Index() {
     refetchInterval: 5000, // Auto refresh every 5 seconds
   });
 
-  // Map metadata and dynamic rooms
-  const games = GAME_METADATA.map((meta) => {
-    const matchingRooms = apiRooms.filter((r) => r.room_type === meta.type);
+  // Map database games and dynamic rooms
+  const games = apiGames.map((game) => {
+    const matchingRooms = apiRooms.filter((r) => r.room_type === game.game_type);
     const rooms = matchingRooms.map((room) => ({
       id: room.code,
       status: room.status === "WAITING" ? "Đang chờ" : "Đang đấu",
@@ -94,7 +106,14 @@ export default function Index() {
     const openCount = matchingRooms.filter((r) => r.status === "WAITING").length;
 
     return {
-      ...meta,
+      id: game.game_id,
+      type: game.game_type,
+      name: game.name,
+      description: game.description || "",
+      iconBg: game.icon_bg || "bg-gray-100",
+      badgeBg: game.badge_bg || "bg-slate-100",
+      badgeText: game.badge_text || "text-slate-500",
+      icon: GAME_ICONS[game.game_id] || DEFAULT_GAME_ICON,
       rooms,
       openCount,
       badgeLabel: openCount === 0 ? "0 phòng chờ" : `${openCount} phòng chờ`,
@@ -102,18 +121,51 @@ export default function Index() {
   });
 
   // Find active room type for sidebar actions
-  const currentMeta = GAME_METADATA.find((m) => m.id === expandedGame);
-  const currentType = currentMeta ? currentMeta.type : "QUIZ";
+  const currentMeta = apiGames.find((m) => m.game_id === expandedGame);
+  const currentType = currentMeta ? currentMeta.game_type : "QUIZ";
+
+  const handleOpenCreateModal = () => {
+    const defaultGame = apiGames.find((g) => g.game_id === expandedGame) || apiGames[0];
+    if (defaultGame) {
+      setSelectedGameId(defaultGame.game_id);
+      if (defaultGame.game_type === "CHESS") {
+        setMaxPlayers(2);
+      } else if (defaultGame.game_type === "KANJI") {
+        setMaxPlayers(4);
+      } else {
+        setMaxPlayers(10);
+      }
+    } else {
+      // apiGames not loaded yet – still open modal with empty state
+      setSelectedGameId("");
+    }
+    setShowCreateModal(true);
+  };
+
+  const handleGameChange = (gameId: string) => {
+    setSelectedGameId(gameId);
+    const game = apiGames.find((g) => g.game_id === gameId);
+    if (game) {
+      if (game.game_type === "CHESS") {
+        setMaxPlayers(2);
+      } else if (game.game_type === "KANJI") {
+        setMaxPlayers(4);
+      } else {
+        setMaxPlayers(10);
+      }
+    }
+  };
 
   // Create room mutation
   const createRoomMutation = useMutation({
-    mutationFn: (roomType: string) =>
+    mutationFn: (variables: { room_type: string; max_players: number }) =>
       apiFetch<GameRoomOut>("/api/v1/games/rooms", {
         method: "POST",
-        body: JSON.stringify({ room_type: roomType, max_players: roomType === "CHESS" ? 2 : 10 }),
+        body: JSON.stringify({ room_type: variables.room_type, max_players: variables.max_players }),
       }),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["game-rooms"] });
+      setShowCreateModal(false);
       navigate(`/game?code=${data.code}`);
     },
     onError: (err: any) => {
@@ -156,9 +208,9 @@ export default function Index() {
   const filteredGames = games.filter((g) => {
     const matchSearch = g.name.toLowerCase().includes(gameSearch.toLowerCase());
     if (activeCategory === "all") return matchSearch;
-    if (activeCategory === "strategy") return matchSearch && g.id === "chess";
-    if (activeCategory === "learning") return matchSearch && g.id === "kanji";
-    if (activeCategory === "puzzle") return matchSearch && g.id === "nihon";
+    if (activeCategory === "strategy") return matchSearch && g.type === "CHESS";
+    if (activeCategory === "learning") return matchSearch && g.type === "KANJI";
+    if (activeCategory === "puzzle") return matchSearch && g.type === "QUIZ";
     return matchSearch;
   });
 
@@ -179,15 +231,15 @@ export default function Index() {
                   <p className="text-xs font-bold uppercase tracking-[0.7px] text-gray-500">{t("games.actions")}</p>
                   <div className="flex flex-col gap-3">
                     <button
-                      onClick={() => createRoomMutation.mutate(currentType)}
-                      disabled={createRoomMutation.isPending}
+                      onClick={handleOpenCreateModal}
+                      disabled={createRoomMutation.isPending || apiGames.length === 0}
                       className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl text-white text-sm font-medium shadow-sm transition-opacity hover:opacity-90 active:opacity-80 disabled:opacity-50"
                       style={{ background: "#4A6741" }}
                     >
                       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                         <path d="M9 15H11V11H15V9H11V5H9V9H5V11H9V15ZM10 20C8.61667 20 7.31667 19.7375 6.1 19.2125C4.88333 18.6875 3.825 17.975 2.925 17.075C2.025 16.175 1.3125 15.1167 0.7875 13.9C0.2625 12.6833 0 11.3833 0 10C0 8.61667 0.2625 7.31667 0.7875 6.1C1.3125 4.88333 2.025 3.825 2.925 2.925C3.825 2.025 4.88333 1.3125 6.1 0.7875C7.31667 0.2625 8.61667 0 10 0C11.3833 0 12.6833 0.2625 13.9 0.7875C15.1167 1.3125 16.175 2.025 17.075 2.925C17.975 3.825 18.6875 4.88333 19.2125 6.1C19.7375 7.31667 20 8.61667 20 10C20 11.3833 19.7375 12.6833 19.2125 13.9C18.6875 15.1167 17.975 16.175 17.075 17.075C16.175 17.975 15.1167 18.6875 13.9 19.2125C12.6833 19.7375 11.3833 20 10 20ZM10 18C12.2333 18 14.125 17.225 15.675 15.675C17.225 14.125 18 12.2333 18 10C18 7.76667 17.225 5.875 15.675 4.325C14.125 2.775 12.2333 2 10 2C7.76667 2 5.875 2.775 4.325 4.325C2.775 5.875 2 7.76667 2 10C2 12.2333 2.775 14.125 4.325 15.675C5.875 17.225 7.76667 18 10 18Z" fill="white"/>
                       </svg>
-                      {createRoomMutation.isPending ? "Đang tạo..." : t("games.createRoom")}
+                      Tạo phòng
                     </button>
                     <button
                       onClick={() => joinRandomMutation.mutate(currentType)}
@@ -333,9 +385,9 @@ export default function Index() {
                             {game.rooms.map((room) => (
                               <div
                                 key={room.id}
-                                className="flex items-center justify-between p-4 rounded-2xl border border-[#E2E8E2] bg-white"
+                                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl border border-[#E2E8E2] bg-white"
                               >
-                                <div className="flex items-center gap-6 flex-wrap">
+                                <div className="grid grid-cols-3 sm:flex sm:items-center gap-4 sm:gap-6">
                                   <div>
                                     <p className="text-[10px] font-bold uppercase tracking-[-0.5px] text-gray-500">{t("games.id")}</p>
                                     <p className="text-sm font-bold mt-0.5" style={{ color: "#2D3A3A" }}>{room.id}</p>
@@ -353,7 +405,7 @@ export default function Index() {
                                   <button
                                     onClick={() => joinRoomMutation.mutate(room.id)}
                                     disabled={joinRoomMutation.isPending}
-                                    className="px-6 py-2 rounded-lg text-white text-xs font-bold shadow-sm transition-opacity hover:opacity-90 shrink-0 disabled:opacity-50"
+                                    className="w-full sm:w-auto px-6 py-2 rounded-lg text-white text-xs font-bold shadow-sm transition-opacity hover:opacity-90 shrink-0 disabled:opacity-50 text-center"
                                     style={{ background: "#4A6741" }}
                                   >
                                     {joinRoomMutation.isPending ? "Đang vào..." : t("games.join")}
@@ -372,6 +424,91 @@ export default function Index() {
           </div>
         </div>
       </main>
+
+      {/* Create Room Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-white rounded-3xl border border-[#E2E8E2] shadow-2xl p-6 relative" style={{ fontFamily: "Inter, -apple-system, Roboto, Helvetica, sans-serif" }}>
+            <button
+              onClick={() => setShowCreateModal(false)}
+              className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+
+            <h3 className="text-xl font-bold mb-5" style={{ color: "#2D3A3A" }}>Tạo phòng chơi mới</h3>
+
+            <div className="flex flex-col gap-4">
+              {/* Game selection */}
+              <div>
+                <label className="text-xs font-bold uppercase tracking-[0.7px] text-gray-500 block mb-2">Chọn trò chơi</label>
+                <select
+                  value={selectedGameId}
+                  onChange={(e) => handleGameChange(e.target.value)}
+                  className="w-full px-4 py-3 rounded-2xl border border-[#E2E8E2] bg-[#F8FAFC] text-sm text-gray-700 outline-none focus:ring-2 focus:ring-[#4A6741]/30 focus:border-[#4A6741]/40"
+                >
+                  {apiGames.map((g) => (
+                    <option key={g.game_id} value={g.game_id}>
+                      {g.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Max players selection */}
+              <div>
+                <label className="text-xs font-bold uppercase tracking-[0.7px] text-gray-500 block mb-2">Số người chơi tối đa</label>
+                <select
+                  value={maxPlayers}
+                  onChange={(e) => setMaxPlayers(Number(e.target.value))}
+                  className="w-full px-4 py-3 rounded-2xl border border-[#E2E8E2] bg-[#F8FAFC] text-sm text-gray-700 outline-none focus:ring-2 focus:ring-[#4A6741]/30 focus:border-[#4A6741]/40"
+                >
+                  {selectedGameId && apiGames.find(g => g.game_id === selectedGameId)?.game_type === "CHESS" ? (
+                    <option value="2">2 người chơi</option>
+                  ) : selectedGameId && apiGames.find(g => g.game_id === selectedGameId)?.game_type === "KANJI" ? (
+                    [2, 3, 4].map(n => (
+                      <option key={n} value={n}>{n} người chơi</option>
+                    ))
+                  ) : (
+                    [2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+                      <option key={n} value={n}>{n} người chơi</option>
+                    ))
+                  )}
+                </select>
+              </div>
+
+              {/* Submit button */}
+              <div className="flex gap-3 mt-4">
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  className="flex-1 px-4 py-3 border border-[#E2E8E2] bg-white hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-2xl transition-colors"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={() => {
+                    const game = apiGames.find(g => g.game_id === selectedGameId);
+                    if (game) {
+                      createRoomMutation.mutate({
+                        room_type: game.game_type,
+                        max_players: maxPlayers
+                      });
+                    }
+                  }}
+                  disabled={createRoomMutation.isPending}
+                  className="flex-1 px-4 py-3 text-white text-sm font-semibold rounded-2xl shadow-sm transition-opacity hover:opacity-90 active:opacity-80 disabled:opacity-50"
+                  style={{ background: "#4A6741" }}
+                >
+                  {createRoomMutation.isPending ? "Đang tạo..." : "Tạo phòng"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
