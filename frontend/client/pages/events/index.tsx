@@ -283,11 +283,11 @@ export default function Index() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Search */}
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-wc-gray uppercase tracking-wider">{t("events.search") || "Tìm kiếm"}</label>
+                <label className="text-xs font-bold text-wc-gray uppercase tracking-wider">{t("events.search")}</label>
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder={t("events.searchPlaceholder") || "Tên sự kiện, địa điểm..."}
+                    placeholder={t("events.searchPlaceholder")}
                     value={filters.search}
                     onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
                     className="w-full pl-10 pr-4 py-2.5 bg-wc-bg border-none rounded-xl text-sm focus:ring-2 focus:ring-wc-green/20 transition-all"
@@ -300,13 +300,13 @@ export default function Index() {
 
               {/* Category */}
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-wc-gray uppercase tracking-wider">{t("events.category") || "Danh mục"}</label>
+                <label className="text-xs font-bold text-wc-gray uppercase tracking-wider">{t("events.category")}</label>
                 <select
                   value={filters.category}
                   onChange={(e) => setFilters((prev) => ({ ...prev, category: e.target.value }))}
                   className="w-full px-4 py-2.5 bg-wc-bg border-none rounded-xl text-sm focus:ring-2 focus:ring-wc-green/20 transition-all appearance-none cursor-pointer"
                 >
-                  <option value="all">Tất cả danh mục</option>
+                  <option value="all">{t("events.categoryAll")}</option>
                   <option value="Công nghệ">Công nghệ</option>
                   <option value="Kinh doanh">Kinh doanh</option>
                   <option value="Giáo dục">Giáo dục</option>
@@ -317,16 +317,16 @@ export default function Index() {
 
               {/* Status */}
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-wc-gray uppercase tracking-wider">{t("events.status") || "Trạng thái"}</label>
+                <label className="text-xs font-bold text-wc-gray uppercase tracking-wider">{t("events.status")}</label>
                 <select
                   value={filters.status}
                   onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
                   className="w-full px-4 py-2.5 bg-wc-bg border-none rounded-xl text-sm focus:ring-2 focus:ring-wc-green/20 transition-all appearance-none cursor-pointer"
                 >
-                  <option value="all">Tất cả trạng thái</option>
-                  <option value="upcoming">Sắp tới</option>
-                  <option value="ongoing">Đang diễn ra</option>
-                  <option value="finished">Đã kết thúc</option>
+                  <option value="all">{t("events.statusAll")}</option>
+                  <option value="upcoming">{t("events.statusUpcoming")}</option>
+                  <option value="ongoing">{t("events.statusOngoing")}</option>
+                  <option value="finished">{t("events.statusFinished")}</option>
                 </select>
               </div>
             </div>
@@ -338,7 +338,7 @@ export default function Index() {
                   onClick={() => setFilters({ search: "", category: "all", status: "all" })}
                   className="text-xs font-bold text-wc-green hover:underline"
                 >
-                  Xóa tất cả bộ lọc
+                  {t("events.clearFilters")}
                 </button>
               </div>
             )}

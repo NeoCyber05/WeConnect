@@ -2,10 +2,11 @@ import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import { getFriendSuggestions, sendFriendRequest } from "@/lib/friendsApi";
 
 const NAV_LINKS = [
   {
@@ -228,24 +229,29 @@ function EventCard({
   );}
 
 interface FriendSuggestionProps {
+  userId: number;
   avatar: string;
   matchPercent: number;
   name: string;
   meta: string;
   tags: string[];
+  onAdd: () => void;
+  isPending: boolean;
 }
 
-function FriendSuggestion({ avatar, matchPercent, name, meta, tags }: FriendSuggestionProps) {
+function FriendSuggestion({ userId, avatar, matchPercent, name, meta, tags, onAdd, isPending }: FriendSuggestionProps) {
   return (
     <div className="flex items-center gap-4">
-      <div className="relative shrink-0">
+      <Link to={`/profile/${userId}`} className="relative shrink-0">
         <img src={avatar} alt={name} className="w-14 h-14 rounded-full shadow-[0_0_0_2px_#F1F5F9] object-cover" />
         <div className="absolute -bottom-1 -right-1 flex items-center px-1.5 py-0.5 rounded-full border-2 border-white bg-[#4A6741]">
           <span className="text-white text-[8px] font-bold leading-3">{matchPercent}%</span>
         </div>
-      </div>
+      </Link>
       <div className="flex-1 min-w-0">
-        <p className="text-[#2D3A3A] text-[14px] font-bold leading-5 truncate">{name}</p>
+        <Link to={`/profile/${userId}`} className="hover:text-wc-green transition-colors">
+          <p className="text-[#2D3A3A] text-[14px] font-bold leading-5 truncate">{name}</p>
+        </Link>
         <p className="text-[#6B7280] text-[10px] leading-[15px]">{meta}</p>
         <div className="flex flex-wrap gap-1 mt-1">
           {tags.map((tag) => (
@@ -255,7 +261,11 @@ function FriendSuggestion({ avatar, matchPercent, name, meta, tags }: FriendSugg
           ))}
         </div>
       </div>
-      <button className="shrink-0 p-2 rounded-lg bg-[rgba(74,103,65,0.1)] hover:bg-[rgba(74,103,65,0.2)] transition-colors">
+      <button
+        onClick={onAdd}
+        disabled={isPending}
+        className="shrink-0 p-2 rounded-lg bg-[rgba(74,103,65,0.1)] hover:bg-[rgba(74,103,65,0.2)] transition-colors disabled:opacity-50"
+      >
         <AddFriendIcon />
       </button>
     </div>
@@ -313,29 +323,33 @@ export default function Index() {
     };
   });
 
-  const friends: FriendSuggestionProps[] = [
-    {
-      avatar: "https://api.builder.io/api/v1/image/assets/TEMP/44f473e4387daf47f645da8834b4b9424a6c82d8?width=112",
-      matchPercent: 98,
-      name: "Minh Anh (Hana)",
-      meta: "22 tuổi • Hà Nội",
-      tags: ["N3 Japanese", "Game"],
+  const API_URL = (import.meta.env.VITE_API_URL as string) || "";
+
+  // Fetch friend suggestions from API
+  const { data: suggestionsData } = useQuery({
+    queryKey: ["friend-suggestions-home"],
+    queryFn: getFriendSuggestions,
+  });
+
+  const sendRequestMutation = useMutation({
+    mutationFn: (userId: number) => sendFriendRequest(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["friend-suggestions-home"] });
     },
-    {
-      avatar: "https://api.builder.io/api/v1/image/assets/TEMP/0e84ec6bddc5b970695c1cf74858fd8b7898eb18?width=112",
-      matchPercent: 85,
-      name: "Quốc Bảo (Kenji)",
-      meta: "24 tuổi • TP.HCM",
-      tags: ["N1 JLPT", "Kinh doanh"],
-    },
-    {
-      avatar: "https://api.builder.io/api/v1/image/assets/TEMP/226e674b15644bc278f4e417257ec58047fb1c87?width=112",
-      matchPercent: 72,
-      name: "Mai Phương (Lily)",
-      meta: "23 tuổi • Đà Nẵng",
-      tags: ["N2 JLPT", "Du lịch"],
-    },
-  ];
+  });
+
+  const suggestions = (suggestionsData?.data ?? []).slice(0, 3).map((u) => ({
+    userId: u.user_id,
+    avatar: u.avatar_url
+      ? u.avatar_url.startsWith("http") ? u.avatar_url : `${API_URL}${u.avatar_url}`
+      : "https://api.builder.io/api/v1/image/assets/TEMP/44f473e4387daf47f645da8834b4b9424a6c82d8?width=112",
+    matchPercent: Math.floor(60 + Math.random() * 38),
+    name: u.full_name,
+    meta: [u.japanese_level, u.location].filter(Boolean).join(" • ") || "WeConnect",
+    tags: u.hobbies.slice(0, 3),
+    onAdd: () => sendRequestMutation.mutate(u.user_id),
+    isPending: sendRequestMutation.isPending && sendRequestMutation.variables === u.user_id,
+  }));
 
   return (
     <div className="min-h-screen bg-[#F9FAF9] font-inter">
@@ -415,9 +429,11 @@ export default function Index() {
             <div className="rounded-2xl border border-[#E2E8E2] bg-white shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-6 flex flex-col gap-6">
               <h3 className="text-[#2D3A3A] text-[18px] font-bold leading-7">{t("home.friendSuggestions")}</h3>
               <div className="flex flex-col gap-6">
-                {friends.map((friend) => (
-                  <FriendSuggestion key={friend.name} {...friend} />
-                ))}
+                {suggestions.length > 0 ? suggestions.map((s) => (
+                  <FriendSuggestion key={s.userId} {...s} />
+                )) : (
+                  <p className="text-[#6B7280] text-xs italic">{t("friends.noSuggestions")}</p>
+                )}
               </div>
             </div>
 

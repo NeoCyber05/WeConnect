@@ -20,6 +20,7 @@ interface FeedbackOut {
 interface EventOut {
   event_id: number;
   title: string;
+  category: string | null;
   description: string;
   start_time: string;
   end_time: string;
@@ -47,7 +48,7 @@ function mapEventOutToEditEvent(e: EventOut): Event {
   return {
     id: e.event_id,
     name: e.title,
-    category: "Sự kiện", // Default or map if available
+    category: e.category ?? "Sự kiện",
     maxAttendees: e.capacity,
     date: e.start_time,
     endDate: e.end_time || e.start_time,
@@ -324,6 +325,23 @@ export default function Index() {
           <div className="w-full lg:w-[380px] flex-shrink-0 order-1 lg:order-2">
             <div className="bg-white rounded-lg border border-[#E4E2E4] shadow-[0_8px_32px_0_rgba(0,0,0,0.04)] p-6">
               <p className="text-[#1B1B1D] text-sm font-semibold mb-5">{t("events.eventDetails")}</p>
+
+              {event.category && (
+                <div className="flex items-start gap-3.5 mb-5 pb-5 border-b border-[#F0EDEF]">
+                  <div className="w-[42px] h-[42px] rounded-lg bg-brand-icon-bg flex items-center justify-center flex-shrink-0">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4A6741" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                      <line x1="7" y1="7" x2="7.01" y2="7"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-[#57657B] text-[10px] font-bold tracking-[1px] uppercase mb-0.5">{t("events.category")}</p>
+                    <span className="inline-block bg-wc-light-green text-wc-green text-xs font-bold px-3 py-1 rounded-full">
+                      {event.category}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-start gap-3.5 mb-5">
                 <div className="w-[42px] h-[42px] rounded-lg bg-brand-icon-bg flex items-center justify-center flex-shrink-0">

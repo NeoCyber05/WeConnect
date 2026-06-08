@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface HobbyOut {
   hobby_id: number;
@@ -69,11 +68,11 @@ export default function EditHobbiesModal({ isOpen, onClose, selectedHobbyIds }: 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle className="text-wc-dark font-bold text-xl">Chọn sở thích của bạn</DialogTitle>
         </DialogHeader>
-        <ScrollArea className="flex-1 pr-4 py-4">
+        <div className="overflow-y-auto max-h-[50vh] pr-2 py-2">
           <div className="space-y-6">
             {groupedHobbies && Object.entries(groupedHobbies).map(([category, hobbies]) => (
               <div key={category} className="space-y-3">
@@ -99,8 +98,8 @@ export default function EditHobbiesModal({ isOpen, onClose, selectedHobbyIds }: 
               </div>
             ))}
           </div>
-        </ScrollArea>
-        <DialogFooter className="mt-4">
+        </div>
+        <DialogFooter>
           <Button
             type="button"
             variant="outline"
