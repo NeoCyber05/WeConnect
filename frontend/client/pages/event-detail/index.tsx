@@ -196,6 +196,13 @@ export default function Index() {
             <div className="inline-flex items-center bg-brand-green px-3 py-1 rounded-sm mb-3">
               <span className="text-white text-[10px] font-bold tracking-[1.5px] uppercase">{event.status}</span>
             </div>
+            {event.category && (
+              <div className="mb-3">
+                <span className="inline-block bg-white/20 backdrop-blur-md text-white text-[11px] font-bold px-3 py-1 rounded-sm uppercase tracking-wider border border-white/30">
+                  {t(`eventCategories.${event.category}`, event.category)}
+                </span>
+              </div>
+            )}
             <h1 className="text-white text-3xl sm:text-4xl lg:text-[42px] font-black leading-tight tracking-[-1.2px]">
               {event.title}
             </h1>
