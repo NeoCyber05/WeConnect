@@ -311,6 +311,7 @@ export default function Index() {
                   <option value="Kinh doanh">Kinh doanh</option>
                   <option value="Giáo dục">Giáo dục</option>
                   <option value="Nghệ thuật">Nghệ thuật</option>
+                  <option value="Khác">Khác</option>
                 </select>
               </div>
 

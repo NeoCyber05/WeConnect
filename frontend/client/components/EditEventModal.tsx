@@ -34,6 +34,7 @@ const categories = [
   "Kinh doanh",
   "Giáo dục",
   "Nghệ thuật",
+  "Khác",
 ];
 
 const defaultCreateCover =

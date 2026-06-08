@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import { useTranslation } from "react-i18next";
 
 interface StatsOverview {
   total_events: number;
@@ -109,9 +110,47 @@ function SmallStarIcon() {
 }
 
 export default function Index() {
+  const { t, i18n } = useTranslation();
   const [featuredTab, setFeaturedTab] = useState<"sao" | "dangky">("sao");
   const location = useLocation();
-  const isOrganizerPath = location.pathname === "/organizer/stats";
+  const isJa = i18n.language.startsWith("ja");
+
+  const localizedFeaturedEvents = [
+    {
+      id: 1,
+      title: isJa ? "ブロックチェーン技術セミナー2024" : "Hội thảo Công nghệ Blockchain 2024",
+      attendees: 168,
+      rating: 4.9,
+      rank: "#1",
+      rankBg: "bg-[#ECFDF5]",
+      rankColor: "text-[#059669]",
+      img: "https://api.builder.io/api/v1/image/assets/TEMP/e4eab2adeaaff49a2cd60623e92ed7030bff28e2?width=80",
+    },
+    {
+      id: 2,
+      title: isJa ? "日越桜祭り" : "Lễ hội Hoa Anh Đào Việt-Nhật",
+      attendees: 2500,
+      rating: 4.9,
+      rank: "#2",
+      rankBg: "bg-[#F0FDF4]",
+      rankColor: "text-[#16A34A]",
+      img: "https://api.builder.io/api/v1/image/assets/TEMP/662fccd927a637b030c51b23d1a85931bc62dfe2?width=80",
+    },
+    {
+      id: 3,
+      title: isJa ? "日本茶道 - 静寂の芸術" : "Trà đạo Nhật Bản - Nghệ thuật của sự tĩnh lặng",
+      attendees: 35,
+      rating: 4.9,
+      rank: "#3",
+      rankBg: "bg-[#F0FDF4]",
+      rankColor: "text-[#16A34A]",
+      img: "https://api.builder.io/api/v1/image/assets/TEMP/369dfcc3ae62bfc34d5e4e8d22fbf9fcc673a2c0?width=80",
+    },
+  ];
+
+  const months = isJa
+    ? ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"]
+    : ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"];
 
   const { data: overview } = useQuery({
     queryKey: ["stats-overview"],
@@ -131,10 +170,10 @@ export default function Index() {
     rank: `#${i + 1}`,
     rankBg: i === 0 ? "bg-[#ECFDF5]" : "bg-[#F0FDF4]",
     rankColor: i === 0 ? "text-[#059669]" : "text-[#16A34A]",
-    img: e.image_url || featuredEvents[i]?.img || "",
+    img: e.image_url || localizedFeaturedEvents[i]?.img || "",
   }));
 
-  const displayedFeaturedEvents = topEvents.length > 0 ? topEvents : featuredEvents;
+  const displayedFeaturedEvents = topEvents.length > 0 ? topEvents : localizedFeaturedEvents;
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
@@ -146,11 +185,11 @@ export default function Index() {
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <h1 className="text-3xl sm:text-[36px] font-black leading-10 tracking-[-0.9px] text-black">
-                Chào mừng trở lại! 👋
+                {t("adminStats.welcome")}
               </h1>
             </div>
             <p className="text-[#45464D] text-base font-medium leading-6">
-              Hôm nay có 4 sự kiện đang chờ bạn quản lý
+              {t("adminStats.waitingEvents", { count: overview?.upcoming_events ?? 4 })}
             </p>
           </div>
 
@@ -163,7 +202,7 @@ export default function Index() {
                   <path d="M5 50C3.625 50 2.44792 49.5104 1.46875 48.5312C0.489583 47.5521 0 46.375 0 45V10C0 8.625 0.489583 7.44792 1.46875 6.46875C2.44792 5.48958 3.625 5 5 5H7.5V0H12.5V5H32.5V0H37.5V5H40C41.375 5 42.5521 5.48958 43.5312 6.46875C44.5104 7.44792 45 8.625 45 10V45C45 46.375 44.5104 47.5521 43.5312 48.5312C42.5521 49.5104 41.375 50 40 50H5ZM5 45H40V20H5V45ZM5 15H40V10H5V15ZM22.5 30C21.7917 30 21.1979 29.7604 20.7188 29.2812C20.2396 28.8021 20 28.2083 20 27.5C20 26.7917 20.2396 26.1979 20.7188 25.7188C21.1979 25.2396 21.7917 25 22.5 25C23.2083 25 23.8021 25.2396 24.2812 25.7188C24.7604 26.1979 25 26.7917 25 27.5C25 28.2083 24.7604 28.8021 24.2812 29.2812C23.8021 29.7604 23.2083 30 22.5 30ZM12.5 30C11.7917 30 11.1979 29.7604 10.7188 29.2812C10.2396 28.8021 10 28.2083 10 27.5C10 26.7917 10.2396 26.1979 10.7188 25.7188C11.1979 25.2396 11.7917 25 12.5 25C13.2083 25 13.8021 25.2396 14.2812 25.7188C14.7604 26.1979 15 26.7917 15 27.5C15 28.2083 14.7604 28.8021 14.2812 29.2812C13.8021 29.7604 13.2083 30 12.5 30ZM32.5 30C31.7917 30 31.1979 29.7604 30.7188 29.2812C30.2396 28.8021 30 28.2083 30 27.5C30 26.7917 30.2396 26.1979 30.7188 25.7188C31.1979 25.2396 31.7917 25 32.5 25C33.2083 25 33.8021 25.2396 34.2812 25.7188C34.7604 26.1979 35 26.7917 35 27.5C35 28.2083 34.7604 28.8021 34.2812 29.2812C33.8021 29.7604 33.2083 30 32.5 30Z" fill="white"/>
                 </svg>
               </div>
-              <p className="text-[#7C839B] text-[14px] font-semibold leading-5 tracking-[0.7px] uppercase">TỔNG SỰ KIỆN</p>
+              <p className="text-[#7C839B] text-[14px] font-semibold leading-5 tracking-[0.7px] uppercase">{t("adminStats.totalEvents")}</p>
               <div className="flex items-center gap-3">
                 <span className="text-white text-[36px] font-black leading-10">{overview?.total_events ?? 42}</span>
                 <div className="flex items-center gap-1">
@@ -178,7 +217,7 @@ export default function Index() {
 
             {/* Total Attendees */}
             <div className="bg-white rounded-lg border border-[#E2E8F0] shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-6 flex flex-col justify-between min-h-[162px]">
-              <p className="text-[#515F74] text-[14px] font-semibold leading-5 tracking-[0.7px] uppercase">TỔNG NGƯỜI THAM GIA</p>
+              <p className="text-[#515F74] text-[14px] font-semibold leading-5 tracking-[0.7px] uppercase">{t("adminStats.totalAttendees")}</p>
               <div className="flex items-center gap-3">
                 <span className="text-black text-[36px] font-black leading-10">{(overview?.total_registrations ?? 1284).toLocaleString()}</span>
                 <div className="flex items-center gap-1">
@@ -203,7 +242,7 @@ export default function Index() {
 
             {/* Average Rating */}
             <div className="bg-white rounded-lg border border-[#E2E8F0] shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-6 flex flex-col justify-between min-h-[162px]">
-              <p className="text-[#515F74] text-[14px] font-semibold leading-5 tracking-[0.7px] uppercase">ĐÁNH GIÁ TRUNG BÌNH</p>
+              <p className="text-[#515F74] text-[14px] font-semibold leading-5 tracking-[0.7px] uppercase">{t("adminStats.avgRating")}</p>
               <div className="flex items-center gap-2">
                 <span className="text-black text-[36px] font-black leading-10">{overview?.average_satisfaction?.toFixed(1) ?? "4.8"}</span>
                 <span className="text-[#94A3B8] text-xl font-normal leading-7">/ 5.0</span>
@@ -224,11 +263,11 @@ export default function Index() {
             <div className="bg-white rounded-lg border border-[#F1F5F9] shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-6 flex flex-col gap-4">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div>
-                  <h2 className="text-black text-xl font-bold leading-7">Tăng trưởng người tham gia 12 tháng</h2>
-                  <p className="text-[#45464D] text-sm font-normal leading-[21px] mt-1">Thống kê chi tiết theo tháng</p>
+                  <h2 className="text-black text-xl font-bold leading-7">{t("adminStats.growth12Months")}</h2>
+                  <p className="text-[#45464D] text-sm font-normal leading-[21px] mt-1">{t("adminStats.monthlyDetail")}</p>
                 </div>
                 <button className="flex items-center gap-1.5 px-3 py-1.5 border border-[#E2E8F0] bg-[#F6F3F5] rounded text-sm font-medium text-[#1B1B1D] whitespace-nowrap self-start">
-                  Tháng 1 - Tháng 12, 2024
+                  {t("adminStats.monthRange")}
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <path d="M4 5.99998L8 9.99998L12 5.99998" stroke="#6B7280" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
@@ -256,7 +295,7 @@ export default function Index() {
             {/* Featured Events */}
             <div className="bg-white rounded-lg border border-[#E2E8F0] shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] flex flex-col">
               <div className="p-4 flex items-center justify-between">
-                <h2 className="text-black text-base font-bold leading-6">Sự kiện nổi bật</h2>
+                <h2 className="text-black text-base font-bold leading-6">{t("adminStats.featuredEvents")}</h2>
                 <div className="flex items-center border border-[#E2E8F0] rounded overflow-hidden" style={{ padding: "0.8px" }}>
                   <button
                     onClick={() => setFeaturedTab("sao")}
@@ -265,14 +304,14 @@ export default function Index() {
                     <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                       <path d="M4.80251 0.956246C4.82077 0.919355 4.84897 0.888302 4.88395 0.86659C4.91892 0.844879 4.95926 0.833374 5.00042 0.833374C5.04159 0.833374 5.08193 0.844879 5.1169 0.86659C5.15187 0.888302 5.18008 0.919355 5.19834 0.956246L6.16084 2.90583C6.22425 3.03415 6.31785 3.14517 6.4336 3.22935C6.54936 3.31354 6.68381 3.36838 6.82542 3.38916L8.97792 3.70416C9.01871 3.71007 9.05703 3.72728 9.08855 3.75383C9.12006 3.78038 9.14352 3.81522 9.15627 3.85442C9.16901 3.89361 9.17054 3.93558 9.16067 3.97559C9.1508 4.01561 9.12993 4.05206 9.10043 4.08083L7.54376 5.59666C7.4411 5.69671 7.36429 5.8202 7.31994 5.95651C7.27559 6.09282 7.26503 6.23787 7.28917 6.37916L7.65668 8.52083C7.66387 8.5616 7.65947 8.60356 7.64397 8.64195C7.62846 8.68033 7.60248 8.71358 7.56898 8.73791C7.53549 8.76224 7.49583 8.77666 7.45454 8.77954C7.41324 8.78241 7.37197 8.77362 7.33542 8.75416L5.41126 7.7425C5.28447 7.67592 5.14342 7.64114 5.00022 7.64114C4.85702 7.64114 4.71596 7.67592 4.58917 7.7425L2.66542 8.75416C2.6289 8.7735 2.58767 8.7822 2.54645 8.77927C2.50522 8.77634 2.46564 8.7619 2.43221 8.73759C2.39879 8.71328 2.37285 8.68007 2.35736 8.64176C2.34187 8.60344 2.33745 8.56154 2.34459 8.52083L2.71167 6.37958C2.73592 6.23822 2.72542 6.09308 2.68107 5.95668C2.63671 5.82029 2.55984 5.69673 2.45709 5.59666L0.900424 4.08125C0.870672 4.05251 0.849588 4.01599 0.839575 3.97586C0.829563 3.93573 0.831023 3.89359 0.843791 3.85424C0.856558 3.8149 0.880119 3.77993 0.91179 3.75332C0.94346 3.72672 0.981967 3.70954 1.02292 3.70375L3.17501 3.38916C3.31678 3.36854 3.45142 3.31377 3.56733 3.22957C3.68325 3.14538 3.77697 3.03428 3.84042 2.90583L4.80251 0.956246Z" stroke="#D97706" strokeWidth="0.833333" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
-                    Sao
+                    {t("adminStats.starTab")}
                   </button>
                   <button
                     onClick={() => setFeaturedTab("dangky")}
                     className={`flex items-center gap-1 px-2 py-1 text-[11px] font-medium leading-[16.5px] border-l border-[#E2E8F0] ${featuredTab === "dangky" ? "bg-[#F1F5F9] text-[#1B1B1D]" : "bg-white text-[#6B7280]"}`}
                   >
                     <UserGroupIcon />
-                    Đăng ký
+                    {t("adminStats.registerTab")}
                   </button>
                 </div>
               </div>
@@ -307,7 +346,7 @@ export default function Index() {
 
               <div className="border-t border-black mt-3">
                 <Link to="/events" className="w-full py-3 flex items-center justify-center">
-                  <span className="text-[#059669] text-xs font-medium leading-[18px]">Xem tất cả sự kiện</span>
+                  <span className="text-[#059669] text-xs font-medium leading-[18px]">{t("adminStats.viewAllEvents")}</span>
                 </Link>
               </div>
             </div>
@@ -317,7 +356,7 @@ export default function Index() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Donut chart */}
             <div className="bg-white rounded-lg border border-[#E2E8F0] shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-6 flex flex-col gap-4">
-              <h2 className="text-black text-lg font-bold leading-6">Danh mục theo sự kiện</h2>
+              <h2 className="text-black text-lg font-bold leading-6">{t("adminStats.categoryRatio")}</h2>
               <div className="flex items-center justify-center py-2">
                 <div className="relative">
                   <svg width="200" height="200" viewBox="0 0 160 160" fill="none">
@@ -334,19 +373,19 @@ export default function Index() {
                 <div className="ml-8 flex flex-col gap-3">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-[#8B5CF6] flex-shrink-0" />
-                    <span className="text-[#8B5CF6] text-sm">Nghệ thuật 56%</span>
+                    <span className="text-[#8B5CF6] text-sm">{isJa ? "芸術" : "Nghệ thuật"} 56%</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-[#059669] flex-shrink-0" />
-                    <span className="text-[#059669] text-sm">Giáo dục 25%</span>
+                    <span className="text-[#059669] text-sm">{isJa ? "教育" : "Giáo dục"} 25%</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-[#3B82F6] flex-shrink-0" />
-                    <span className="text-[#3B82F6] text-sm">Kinh doanh 13%</span>
+                    <span className="text-[#3B82F6] text-sm">{isJa ? "ビジネス" : "Kinh doanh"} 13%</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-[#F59E0B] flex-shrink-0" />
-                    <span className="text-[#F59E0B] text-sm">Công nghệ 6%</span>
+                    <span className="text-[#F59E0B] text-sm">{isJa ? "テクノロジー" : "Công nghệ"} 6%</span>
                   </div>
                 </div>
               </div>
@@ -354,7 +393,7 @@ export default function Index() {
 
             {/* Line chart */}
             <div className="bg-white rounded-lg border border-[#E2E8F0] shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] p-6 flex flex-col gap-4">
-              <h2 className="text-black text-lg font-bold leading-6">Tỷ lệ đăng ký & Tham dự</h2>
+              <h2 className="text-black text-lg font-bold leading-6">{t("adminStats.registrationAttendanceRatio")}</h2>
               <div className="flex-1 overflow-x-auto">
                 <div className="min-w-[360px]">
                   <svg viewBox="0 0 505 220" fill="none" className="w-full" preserveAspectRatio="xMidYMid meet">
@@ -387,11 +426,11 @@ export default function Index() {
               <div className="flex items-center justify-center gap-6">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-[3px] rounded-full bg-[#3B82F6]" />
-                  <span className="text-[#64748B] text-xs font-medium leading-[18px]">Đăng ký</span>
+                  <span className="text-[#64748B] text-xs font-medium leading-[18px]">{t("adminStats.registerLegend")}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-[3px] rounded-full bg-[#059669]" />
-                  <span className="text-[#64748B] text-xs font-medium leading-[18px]">Tham dự</span>
+                  <span className="text-[#64748B] text-xs font-medium leading-[18px]">{t("adminStats.attendLegend")}</span>
                 </div>
               </div>
             </div>

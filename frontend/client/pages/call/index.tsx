@@ -13,6 +13,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getPusherConfig } from "@/lib/chatApi";
 import { API_BASE_URL } from "@/lib/api";
 import { fetchVideoToken, rejectCall } from "@/lib/videoApi";
+import { useTranslation } from "react-i18next";
 
 // ─── Environment ─────────────────────────────────────────────────────────────
 
@@ -35,12 +36,13 @@ function CallControls({
   partnerId: number;
   onEnd: () => void;
 }) {
+  const { t } = useTranslation();
   const room = useRoomContext();
   const { localParticipant, cameraTrack } = useLocalParticipant();
   const [muted, setMuted] = useState(false);
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [callState, setCallState] = useState<CallState>("connecting");
-  const [statusMsg, setStatusMsg] = useState("Đang gọi...");
+  const [statusMsg, setStatusMsg] = useState(t("call.calling"));
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const [audioBlocked, setAudioBlocked] = useState(false);
@@ -71,7 +73,7 @@ function CallControls({
     let pusher: Pusher | null = null;
     let cancelled = false;
 
-    // Pusher: listen for "video:call-rejected" on own channel
+    // ── Pusher: listen for "video:call-rejected" on own channel ──
     async function setupRejectionListener() {
       const user = getCurrentUser();
       if (!user) return;
@@ -88,8 +90,8 @@ function CallControls({
         channel.bind("video:call-rejected", (data: { reason: string }) => {
           const msg =
             data.reason === "TIMEOUT"
-              ? "Đối phương không trả lời"
-              : "Cuộc gọi bị từ chối";
+              ? t("call.noAnswer")
+              : t("call.rejected");
           setStatusMsg(msg);
           setCallState("ended");
           // Auto-navigate back after showing message
@@ -105,7 +107,7 @@ function CallControls({
     // 35s hard timeout: if no remote participant joined, give up
     const timeoutId = window.setTimeout(() => {
       if (room.remoteParticipants.size === 0) {
-        setStatusMsg("Đối phương không trả lời");
+        setStatusMsg(t("call.noAnswer"));
         setCallState("ended");
         setTimeout(onEnd, 2500);
       }
@@ -123,13 +125,13 @@ function CallControls({
     // Remote participant joined → both sides show "connected"
     const handleParticipantConnected = () => {
       setCallState("connected");
-      setStatusMsg("Đã kết nối");
+      setStatusMsg(t("call.connected"));
     };
 
     // Remote participant left → notify remaining user and navigate back
     const handleParticipantDisconnected = () => {
       // Only act if we are still in the call (not already ending ourselves)
-      setStatusMsg("Đối phương đã kết thúc cuộc gọi");
+      setStatusMsg(t("call.partnerEnded"));
       setCallState("ended");
       setTimeout(onEnd, 2000);
     };
@@ -138,7 +140,7 @@ function CallControls({
     const handleConnected = () => {
       if (room.remoteParticipants.size > 0) {
         setCallState("connected");
-        setStatusMsg("Đã kết nối");
+        setStatusMsg(t("call.connected"));
       }
     };
 
@@ -150,7 +152,7 @@ function CallControls({
     // Edge-case: B joined before this effect ran
     if (room.remoteParticipants.size > 0) {
       setCallState("connected");
-      setStatusMsg("Đã kết nối");
+      setStatusMsg(t("call.connected"));
     }
 
     room.on(RoomEvent.ParticipantConnected, handleParticipantConnected);
@@ -340,7 +342,7 @@ function CallControls({
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
             <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" stroke="white" strokeWidth="2" strokeLinecap="round"/>
           </svg>
-          Nhấn để bật âm thanh
+          {t("call.clickToUnmuteAudio")}
         </button>
       )}
 
@@ -355,7 +357,7 @@ function CallControls({
           opacity: callState === "ended" ? 1 : 0.4,
           cursor: callState === "ended" ? "pointer" : "default",
         }}
-        title={callState === "ended" ? "Quay lại" : ""}
+        title={callState === "ended" ? t("call.goBack") : ""}
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           <path
@@ -479,7 +481,7 @@ function CallControls({
                 )}
               </div>
               <span style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 600, color: "rgba(255,255,255,0.65)" }}>
-                {muted ? "Bật tiếng" : "Tắt tiếng"}
+                {muted ? t("call.unmuteMic") : t("call.muteMic")}
               </span>
             </button>
 
@@ -506,7 +508,7 @@ function CallControls({
                 </svg>
               </div>
               <span style={{ fontFamily: "Inter, sans-serif", fontSize: "12px", fontWeight: 600, color: "rgba(255,255,255,0.65)" }}>
-                {videoEnabled ? "Tắt camera" : "Bật camera"}
+                {videoEnabled ? t("call.disableCam") : t("call.enableCam")}
               </span>
             </button>
           </div>
@@ -531,7 +533,7 @@ function CallControls({
               className="text-white font-bold tracking-widest uppercase"
               style={{ fontFamily: "Inter, sans-serif", fontSize: "14px", letterSpacing: "1.4px" }}
             >
-              {callState === "connecting" ? "Hủy gọi" : "Kết thúc"}
+              {callState === "connecting" ? t("call.cancelCall") : t("call.endCall")}
             </span>
           </div>
         </div>
@@ -544,6 +546,7 @@ function CallControls({
 // ─── Error Screen ─────────────────────────────────────────────────────────────
 
 function ErrorScreen({ message, onBack }: { message: string; onBack: () => void }) {
+  const { t } = useTranslation();
   return (
     <div
       className="w-full h-screen flex flex-col items-center justify-center"
@@ -564,14 +567,14 @@ function ErrorScreen({ message, onBack }: { message: string; onBack: () => void 
           </svg>
         </div>
         <div>
-          <h2 className="text-white font-bold text-xl mb-2">Lỗi kết nối</h2>
+          <h2 className="text-white font-bold text-xl mb-2">{t("call.connectionError")}</h2>
           <p className="text-white/60 text-sm">{message}</p>
         </div>
         <button
           onClick={onBack}
           className="px-6 py-3 rounded-xl bg-white/10 text-white font-semibold hover:bg-white/20 transition-colors"
         >
-          Quay lại chat
+          {t("call.goBackChat")}
         </button>
       </div>
     </div>
@@ -581,6 +584,7 @@ function ErrorScreen({ message, onBack }: { message: string; onBack: () => void 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function CallPage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -604,7 +608,7 @@ export default function CallPage() {
     fetchVideoToken(roomName)
       .then((t) => { if (!cancelled) setToken(t); })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Không thể lấy token phòng gọi");
+        if (!cancelled) setError(err instanceof Error ? err.message : t("call.connectionError"));
       });
     return () => { cancelled = true; };
   }, [roomName]);
@@ -617,8 +621,8 @@ export default function CallPage() {
       navigate("/chat");
       return;
     }
-    setError(err.message || "Lỗi kết nối phòng");
-  }, [navigate]);
+    setError(err.message || t("call.connectionError"));
+  }, [navigate, t]);
 
   if (error) return <ErrorScreen message={error} onBack={handleCallEnd} />;
 
@@ -631,7 +635,7 @@ export default function CallPage() {
       >
         <div className="w-16 h-16 rounded-full border-4 border-transparent border-t-[#4EDEA3] animate-spin" />
         <p className="text-white/60 text-sm" style={{ fontFamily: "Inter, sans-serif" }}>
-          Đang chuẩn bị phòng gọi...
+          {t("call.connectingRoom")}
         </p>
       </div>
     );

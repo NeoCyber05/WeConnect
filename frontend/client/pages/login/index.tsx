@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "react-i18next";
 
 function WeConnectIcon() {
   return (
@@ -35,11 +36,13 @@ function EyeIcon({ open }: { open: boolean }) {
 }
 
 export default function Index() {
+  const { t, i18n } = useTranslation();
+  const currentLang = i18n.language || "vi";
+
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [lang, setLang] = useState<"vi" | "ja">("vi");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { login, isLoggedIn } = useAuth();
@@ -59,10 +62,14 @@ export default function Index() {
     try {
       await login(email, password, from);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Đăng nhập thất bại");
+      setError(err instanceof Error ? err.message : t("auth.login.errorDefault"));
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLanguageChange = (nextLang: "vi" | "ja") => {
+    i18n.changeLanguage(nextLang);
   };
 
   return (
@@ -78,12 +85,12 @@ export default function Index() {
         {/* Hero content */}
         <div className="flex-1 flex flex-col justify-center px-12 pb-40 md:pb-48">
           <h1 className="text-white font-bold text-4xl leading-snug">
-            Kết nối khát vọng,
+            {t("auth.login.welcomeHero").split("\n")[0]}
             <br />
-            Kiến tạo cộng đồng
+            {t("auth.login.welcomeHero").split("\n")[1]}
           </h1>
           <p className="mt-6 text-slate-400 text-base leading-relaxed max-w-[400px]">
-            Gia nhập nền tảng số hàng đầu dành cho người bản xứ Nhật Bản và cộng đồng người Việt học tiếng Nhật – nơi lý tưởng để thực hành ngôn ngữ thông qua những câu chuyện thú vị.
+            {t("auth.login.welcomeDesc")}
           </p>
         </div>
 
@@ -124,18 +131,18 @@ export default function Index() {
         <div className="flex justify-end px-8 pt-12">
           <button
             className="flex items-center gap-2 group"
-            onClick={() => setLang(lang === "vi" ? "ja" : "vi")}
+            onClick={() => handleLanguageChange(currentLang.startsWith("vi") ? "ja" : "vi")}
             type="button"
           >
             <GlobeIcon />
             <span
-              className={`text-[11px] font-bold ${lang === "vi" ? "text-[#10B981]" : "text-slate-400"} transition-colors`}
+              className={`text-[11px] font-bold ${currentLang.startsWith("vi") ? "text-[#10B981]" : "text-slate-400"} transition-colors`}
             >
               TIẾNG VIỆT
             </span>
             <span className="text-slate-300 text-[11px]">|</span>
             <span
-              className={`text-[11px] font-bold ${lang === "ja" ? "text-[#10B981]" : "text-slate-400"} transition-colors`}
+              className={`text-[11px] font-bold ${currentLang.startsWith("ja") ? "text-[#10B981]" : "text-slate-400"} transition-colors`}
             >
               TIẾNG NHẬT
             </span>
@@ -152,19 +159,19 @@ export default function Index() {
         <div className="flex-1 flex items-center justify-center px-8 py-12">
           <div className="w-full max-w-[420px]">
             <h2 className="text-[#1E293B] text-[28px] font-normal mb-10 leading-snug">
-              Chào mừng trở lại
+              {t("auth.login.title")}
             </h2>
 
             {/* Email field */}
             <div className="mb-2">
               <label className="block text-[#64748B] text-[11px] font-bold tracking-widest mb-3 uppercase">
-                Email
+                {t("auth.login.email")}
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="archivist@weconnect.edu"
+                placeholder={t("auth.login.emailPlaceholder")}
                 className="w-full bg-transparent text-[#1E293B] placeholder-[#94A3B8] text-[15px] outline-none pb-3 focus:placeholder-transparent"
               />
               <div className="border-b border-[#E2E8F0]" />
@@ -173,14 +180,14 @@ export default function Index() {
             {/* Password field */}
             <div className="mt-8 mb-2">
               <label className="block text-[#64748B] text-[11px] font-bold tracking-widest mb-3 uppercase">
-                Mật Khẩu
+                {t("auth.login.password")}
               </label>
               <div className="flex items-center pb-3">
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
+                  placeholder={t("auth.login.passwordPlaceholder")}
                   className="flex-1 bg-transparent text-[#1E293B] placeholder-[#94A3B8] text-[15px] outline-none focus:placeholder-transparent"
                 />
                 <button
@@ -210,10 +217,10 @@ export default function Index() {
                     </svg>
                   )}
                 </button>
-                <span className="text-[#64748B] text-[13px]">Ghi nhớ đăng nhập</span>
+                <span className="text-[#64748B] text-[13px]">{t("auth.login.rememberMe")}</span>
               </label>
               <Link to="/forgot-password" className="text-[#10B981] font-bold text-[13px] hover:opacity-80 transition-opacity">
-                Quên mật khẩu?
+                {t("auth.login.forgotPasswordLink")}
               </Link>
             </div>
 
@@ -224,7 +231,7 @@ export default function Index() {
               disabled={loading}
               className="w-full mt-10 bg-[#0F172A] text-white text-[14px] font-normal rounded-md py-[14px] px-4 hover:bg-[#1e293b] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {loading ? "Đang đăng nhập..." : "Đăng nhập vào WeConnect"}
+              {loading ? t("auth.login.submitting") : t("auth.login.submit")}
             </button>
             {error && (
               <p className="mt-3 text-red-500 text-[13px] text-center">{error}</p>
@@ -232,9 +239,9 @@ export default function Index() {
 
             {/* Register link */}
             <p className="text-center mt-8 text-[13px]">
-              <span className="text-[#64748B]">Bạn chưa có tài khoản? </span>
+              <span className="text-[#64748B]">{t("auth.login.noAccount")}</span>
               <Link to="/register" className="text-[#10B981] font-bold hover:opacity-80 transition-opacity">
-                Đăng ký ngay
+                {t("auth.login.registerNow")}
               </Link>
             </p>
           </div>

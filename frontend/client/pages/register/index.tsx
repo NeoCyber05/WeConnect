@@ -4,6 +4,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { saveTokens } from "@/lib/auth";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "react-i18next";
 
 const WeConnectIcon = () => (
   <svg width="28" height="28" viewBox="0 0 30 28.75" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -12,6 +13,8 @@ const WeConnectIcon = () => (
 );
 
 export default function Index() {
+  const { t } = useTranslation();
+
   const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -54,7 +57,7 @@ export default function Index() {
       );
       setStep("otp_sent");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Đăng ký thất bại");
+      setError(err instanceof Error ? err.message : t("auth.register.errorDefault"));
     } finally {
       setLoading(false);
     }
@@ -79,7 +82,7 @@ export default function Index() {
       saveTokens(res.data.access_token, res.data.refresh_token, res.data.user);
       navigate("/");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Xác thực OTP thất bại");
+      setError(err instanceof Error ? err.message : t("auth.register.errorOtp"));
     } finally {
       setLoading(false);
     }
@@ -119,11 +122,11 @@ export default function Index() {
           {/* Hero text */}
           <div className="mt-16 md:mt-0 md:flex-1 flex flex-col justify-center">
             <h1 className="text-white font-bold text-4xl leading-tight mb-6">
-              Kết nối khát vọng,<br />
-              Kiến tạo cộng đồng
+              {t("auth.login.welcomeHero").split('\n')[0]}<br />
+              {t("auth.login.welcomeHero").split('\n')[1]}
             </h1>
             <p className="text-[#94A3B8] text-base leading-relaxed max-w-sm">
-              Gia nhập nền tảng số hàng đầu dành cho người bản xứ Nhật Bản và cộng đồng người Việt học tiếng Nhật – nơi lý tưởng để thực hành ngôn ngữ thông qua những câu chuyện thú vị.
+              {t("auth.login.welcomeDesc")}
             </p>
           </div>
 
@@ -152,9 +155,9 @@ export default function Index() {
         <div className="w-full max-w-[420px]">
           {/* Heading */}
           <div className="text-center mb-8">
-            <h2 className="text-[#0F172A] font-bold text-3xl mb-3">Tạo tài khoản mới</h2>
+            <h2 className="text-[#0F172A] font-bold text-3xl mb-3">{t("auth.register.title")}</h2>
             <p className="text-[#64748B] text-sm leading-relaxed">
-              Tham gia vào nền tảng giao lưu văn hóa và bảo tồn những giá trị tri thức vượt thời gian.
+              {t("auth.register.subtitle")}
             </p>
           </div>
 
@@ -162,13 +165,13 @@ export default function Index() {
             {/* Full name field */}
             <div>
               <label className="block text-[#334155] text-[11px] font-bold uppercase tracking-wide mb-2">
-                Họ tên
+                {t("auth.register.fullName")}
               </label>
               <input
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="Nguyễn Văn A"
+                placeholder={t("auth.register.fullNamePlaceholder")}
                 className="w-full h-[52px] px-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg text-[15px] text-[#0F172A] placeholder-[#94A3B8] outline-none focus:border-[#4EDEA3] focus:ring-2 focus:ring-[#4EDEA3]/20 transition-all"
               />
             </div>
@@ -176,13 +179,13 @@ export default function Index() {
             {/* Email field */}
             <div>
               <label className="block text-[#334155] text-[11px] font-bold uppercase tracking-wide mb-2">
-                Email hoặc số điện thoại
+                {t("auth.register.identifier")}
               </label>
               <input
                 type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="example@archive.org"
+                placeholder={t("auth.register.identifierPlaceholder")}
                 className="w-full h-[52px] px-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg text-[15px] text-[#0F172A] placeholder-[#94A3B8] outline-none focus:border-[#4EDEA3] focus:ring-2 focus:ring-[#4EDEA3]/20 transition-all"
               />
             </div>
@@ -190,14 +193,14 @@ export default function Index() {
             {/* Password field */}
             <div>
               <label className="block text-[#334155] text-[11px] font-bold uppercase tracking-wide mb-2">
-                Mật khẩu
+                {t("auth.register.passwordLabel")}
               </label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Nhập mật khẩu của bạn"
+                  placeholder={t("auth.register.passwordPlaceholder")}
                   className="w-full h-[52px] px-4 pr-12 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg text-[15px] text-[#0F172A] placeholder-[#94A3B8] outline-none focus:border-[#4EDEA3] focus:ring-2 focus:ring-[#4EDEA3]/20 transition-all"
                 />
                 <button
@@ -214,10 +217,10 @@ export default function Index() {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-[#334155] text-[11px] font-bold uppercase tracking-wide">
-                    Mã xác thực OTP
+                    {t("auth.register.otpLabel")}
                   </label>
                   <button type="button" onClick={handleRegister} disabled={loading} className="text-[#10B981] text-xs font-bold hover:text-[#059669] transition-colors disabled:opacity-60">
-                    Gửi lại mã
+                    {t("auth.register.resendOtp")}
                   </button>
                 </div>
                 <div className="flex gap-[10px]">
@@ -245,7 +248,7 @@ export default function Index() {
               onClick={step === "form" ? handleRegister : handleVerifyOtp}
               className="w-full h-[52px] bg-[#0F172A] hover:bg-[#1E293B] text-white font-bold text-[15px] rounded-lg transition-colors mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {loading ? "Đang xử lý..." : step === "form" ? "Đăng ký →" : "Xác nhận OTP →"}
+              {loading ? t("auth.register.submitting") : step === "form" ? t("auth.register.submit") : t("auth.register.submitOtp")}
             </button>
             {error && (
               <p className="text-red-500 text-sm text-center">{error}</p>
@@ -254,9 +257,9 @@ export default function Index() {
 
           {/* Login link */}
           <p className="text-center mt-5 text-sm">
-            <span className="text-[#64748B]">Đã có tài khoản? </span>
+            <span className="text-[#64748B]">{t("auth.register.hasAccount")}</span>
             <Link to="/login" className="text-[#0F172A] font-bold hover:underline">
-              Đăng nhập
+              {t("auth.register.loginNow")}
             </Link>
           </p>
         </div>

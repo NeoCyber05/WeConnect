@@ -2,8 +2,10 @@ import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/api";
 
 const NAV_LINKS = [
   {
@@ -100,35 +102,83 @@ const VideoIcon = () => (
   </svg>
 );
 
+interface EventOut {
+  event_id: number;
+  title: string;
+  description: string;
+  start_time: string;
+  end_time: string;
+  location: string;
+  capacity: number;
+  image_url: string | null;
+  status: string;
+  registered_count: number;
+  is_full: boolean;
+  is_registered: boolean;
+  organizer: { user_id: number; full_name: string; avatar_url?: string };
+}
+
 interface EventCardProps {
+  id: number;
   image: string;
   badge: "OFFLINE" | "ONLINE";
   title: string;
   location: string;
   locationIcon?: "map" | "video";
-  attendees: { src: string }[];
-  extraCount: number;
+  registeredCount: number;
+  capacity: number;
+  isRegistered: boolean;
+  isFull: boolean;
+  onJoinToggle: () => void;
+  isPending: boolean;
 }
 
-function EventCard({ image, badge, title, location, locationIcon = "map", attendees, extraCount }: EventCardProps) {
+function EventCard({
+  id,
+  image,
+  badge,
+  title,
+  location,
+  locationIcon = "map",
+  registeredCount,
+  capacity,
+  isRegistered,
+  isFull,
+  onJoinToggle,
+  isPending,
+}: EventCardProps) {
   const { t } = useTranslation();
   const badgeText = badge === "OFFLINE" ? t("home.offline") : t("home.online");
+
+  // Mock avatars based on registeredCount
+  const mockAvatars = [
+    "https://api.builder.io/api/v1/image/assets/TEMP/4ae07e25f49e1b0d128579d90522cadcd33102ea?width=40",
+    "https://api.builder.io/api/v1/image/assets/TEMP/e649ba19346eb08e08b62bff6dff775beffd7b6e?width=40",
+    "https://api.builder.io/api/v1/image/assets/TEMP/b6307a3da10d80972ce5a4c85d2a120940da9f28?width=40",
+  ];
+  
+  const displayedAvatarsCount = Math.min(registeredCount, 3);
+  const attendees = Array.from({ length: displayedAvatarsCount }).map((_, i) => ({
+    src: mockAvatars[i % mockAvatars.length],
+  }));
+  const extraCount = registeredCount > 3 ? registeredCount - 3 : 0;
+
   return (
-    <div className="flex h-40 items-stretch rounded-2xl border border-[#E2E8E2] bg-white overflow-hidden">
-      <div className="relative w-[130px] shrink-0 overflow-hidden">
-        <img src={image} alt={title} className="w-full h-full object-cover" />
+    <div className="flex h-40 items-stretch rounded-2xl border border-[#E2E8E2] bg-white overflow-hidden hover:shadow-md transition-shadow">
+      <Link to={`/events/${id}`} className="relative w-[130px] shrink-0 overflow-hidden">
+        <img src={image} alt={title} className="w-full h-full object-cover transition-transform hover:scale-105 duration-300" />
         <div className="absolute top-2 left-2 flex items-center px-2 py-0.5 rounded backdrop-blur-sm border border-white/10 bg-[rgba(45,58,58,0.6)]">
           <span className="text-white text-[8px] font-bold uppercase tracking-[0.4px]">{badgeText}</span>
         </div>
-      </div>
+      </Link>
       <div className="flex flex-col justify-between flex-1 p-4 min-w-0">
-        <div>
-          <p className="text-[#2D3A3A] text-[14px] font-bold leading-[1.375] mb-1 line-clamp-2">{title}</p>
+        <Link to={`/events/${id}`} className="block group">
+          <p className="text-[#2D3A3A] text-[14px] font-bold leading-[1.375] mb-1 line-clamp-2 group-hover:text-[#4A6741] transition-colors">{title}</p>
           <div className="flex items-center gap-1 text-[#6B7280]">
             {locationIcon === "map" ? <LocationIcon /> : <VideoIcon />}
             <span className="text-[10px] leading-[15px] truncate">{location}</span>
           </div>
-        </div>
+        </Link>
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             {attendees.map((a, i) => (
@@ -149,14 +199,33 @@ function EventCard({ image, badge, title, location, locationIcon = "map", attend
               </div>
             )}
           </div>
-          <button className="flex items-center justify-center px-3 py-1 rounded border border-[rgba(74,103,65,0.2)] bg-[#F1F5F0] text-[#4A6741] text-[9px] font-bold uppercase tracking-wide">
-            {t("home.join")}
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onJoinToggle();
+            }}
+            disabled={isPending || (isFull && !isRegistered)}
+            className={`flex items-center justify-center px-3 py-1 rounded border transition-colors text-[9px] font-bold uppercase tracking-wide ${
+              isRegistered
+                ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
+                : isFull
+                ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed"
+                : "border-[rgba(74,103,65,0.2)] bg-[#F1F5F0] text-[#4A6741] hover:bg-[#E2EBE0]"
+            }`}
+          >
+            {isPending
+              ? t("events.processing") || "..."
+              : isRegistered
+              ? t("events.cancelRegistration") || "Huỷ"
+              : isFull
+              ? t("events.full") || "Hết chỗ"
+              : t("home.join") || "Tham gia"}
           </button>
         </div>
       </div>
     </div>
-  );
-}
+  );}
 
 interface FriendSuggestionProps {
   avatar: string;
@@ -197,6 +266,7 @@ export default function Index() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const displayName = user?.full_name?.trim() || "bạn";
 
   useEffect(() => {
@@ -207,54 +277,41 @@ export default function Index() {
     }
   }, [user, navigate]);
 
-  const events: EventCardProps[] = [
-    {
-      image: "https://api.builder.io/api/v1/image/assets/TEMP/7270c5d43d0bb4d77617e259546378d82d9521e3?width=261",
-      badge: "OFFLINE",
-      title: "Lễ hội Trà đạo truyền thống Ocha-no-yu",
-      location: "Trung tâm Giao lưu Văn hóa Nhật Bản, Hà …",
-      locationIcon: "map",
-      attendees: [
-        { src: "https://api.builder.io/api/v1/image/assets/TEMP/4ae07e25f49e1b0d128579d90522cadcd33102ea?width=40" },
-        { src: "https://api.builder.io/api/v1/image/assets/TEMP/e649ba19346eb08e08b62bff6dff775beffd7b6e?width=40" },
-      ],
-      extraCount: 12,
+  // Fetch real events from API (limit 4)
+  const { data: apiEvents, isLoading: isLoadingEvents } = useQuery({
+    queryKey: ["featured-events"],
+    queryFn: () => apiFetch<EventOut[]>("/api/v1/events?page=1&page_size=4"),
+  });
+
+  // Toggle join mutation
+  const toggleJoinMutation = useMutation({
+    mutationFn: async ({ eventId, isRegistered }: { eventId: number; isRegistered: boolean }) => {
+      const method = isRegistered ? "DELETE" : "POST";
+      return apiFetch(`/api/v1/events/${eventId}/register`, { method });
     },
-    {
-      image: "https://api.builder.io/api/v1/image/assets/TEMP/543dd2b901326b3dd62521f999b8181b599699b0?width=261",
-      badge: "OFFLINE",
-      title: "Cuộc thi Cosplay Anime - Autumn 2023",
-      location: "Phố đi bộ Hồ Gươm, Hà Nội",
-      locationIcon: "map",
-      attendees: [
-        { src: "https://api.builder.io/api/v1/image/assets/TEMP/b6307a3da10d80972ce5a4c85d2a120940da9f28?width=40" },
-      ],
-      extraCount: 45,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["featured-events"] });
+      queryClient.invalidateQueries({ queryKey: ["events"] });
     },
-    {
-      image: "https://api.builder.io/api/v1/image/assets/TEMP/e24e9480c38a3f7b6cfe05e5ee6aaf772ed0bd44?width=261",
-      badge: "ONLINE",
-      title: "Buổi giao lưu ngôn ngữ Việt - Nhật N3+",
-      location: "Google Meet / Zoom",
-      locationIcon: "video",
-      attendees: [
-        { src: "https://api.builder.io/api/v1/image/assets/TEMP/03e1573f032baaca51d7ca60207c9a7eba524363?width=40" },
-      ],
-      extraCount: 8,
-    },
-    {
-      image: "https://api.builder.io/api/v1/image/assets/TEMP/3c25733c749ff304b3873b6cf86a8fb1397f9fac?width=261",
-      badge: "OFFLINE",
-      title: "Câu cá và chilling",
-      location: "Hồ Ba Bể , Thanh Hóa",
-      locationIcon: "map",
-      attendees: [
-        { src: "https://api.builder.io/api/v1/image/assets/TEMP/4ae07e25f49e1b0d128579d90522cadcd33102ea?width=40" },
-        { src: "https://api.builder.io/api/v1/image/assets/TEMP/e649ba19346eb08e08b62bff6dff775beffd7b6e?width=40" },
-      ],
-      extraCount: 12,
-    },
-  ];
+  });
+
+  const featuredEvents = (apiEvents || []).map((e) => {
+    const isOnline = e.location?.toLowerCase().includes("online") ||
+      e.location?.toLowerCase().includes("zoom") ||
+      e.location?.toLowerCase().includes("meet");
+    return {
+      id: e.event_id,
+      image: e.image_url || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=200&fit=crop",
+      badge: (isOnline ? "ONLINE" : "OFFLINE") as "ONLINE" | "OFFLINE",
+      title: e.title,
+      location: e.location,
+      locationIcon: (isOnline ? "video" : "map") as "video" | "map",
+      registeredCount: e.registered_count,
+      capacity: e.capacity,
+      isRegistered: e.is_registered,
+      isFull: e.is_full,
+    };
+  });
 
   const friends: FriendSuggestionProps[] = [
     {
@@ -324,11 +381,31 @@ export default function Index() {
                 <p className="text-[#6B7280] text-[12px] leading-4 ml-4">{t("home.suggestionsTitle")}</p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {events.map((event, i) => (
-                  <EventCard key={i} {...event} />
-                ))}
-              </div>
+              {isLoadingEvents ? (
+                <div className="flex justify-center py-8 w-full col-span-2">
+                  <div className="w-6 h-6 border-2 border-[#4A6741] border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : featuredEvents.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full">
+                  {featuredEvents.map((event) => (
+                    <EventCard
+                      key={event.id}
+                      {...event}
+                      isPending={toggleJoinMutation.isPending && toggleJoinMutation.variables?.eventId === event.id}
+                      onJoinToggle={() =>
+                        toggleJoinMutation.mutate({
+                          eventId: event.id,
+                          isRegistered: event.isRegistered,
+                        })
+                      }
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[#6B7280] text-xs italic ml-4 col-span-2">
+                  Chưa có sự kiện nổi bật nào.
+                </p>
+              )}
             </div>
           </div>
 

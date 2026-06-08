@@ -603,22 +603,22 @@ INSERT INTO MESSAGES (conversation_id, sender_id, content, message_type, transla
 (30, 9, 'Cố lên!', 'TEXT', NULL, '2026-05-09 04:59:14', TRUE);
 
 -- ── 6. EVENTS ──
-INSERT INTO EVENTS (organizer_id, title, description, start_time, end_time, location, capacity, image_url, status) VALUES
-(6, 'Lễ hội hoa anh đào', 'Mô tả chi tiết cho sự kiện Lễ hội hoa anh đào.', '2026-05-12 16:53:14', '2026-04-29 19:53:14', 'Tokyo', 50, 'https://images.unsplash.com/photo-1574086631915?w=800', 'UPCOMING'),
-(30, 'Học làm Sushi', 'Mô tả chi tiết cho sự kiện Học làm Sushi.', '2026-04-30 16:53:14', '2026-05-26 19:53:14', 'Hải Phòng', 20, 'https://images.unsplash.com/photo-1571929899749?w=800', 'ENDED'),
-(30, 'Leo núi Phú Sĩ', 'Mô tả chi tiết cho sự kiện Leo núi Phú Sĩ.', '2026-05-16 16:53:14', '2026-04-30 19:53:14', 'TP.HCM', 30, 'https://images.unsplash.com/photo-1558161695169?w=800', 'UPCOMING'),
-(29, 'Hội thảo du học', 'Mô tả chi tiết cho sự kiện Hội thảo du học.', '2026-05-14 16:53:14', '2026-05-16 19:53:14', 'Hà Nội', 30, 'https://images.unsplash.com/photo-1537362957161?w=800', 'UPCOMING'),
-(7, 'Giao lưu J-Pop', 'Mô tả chi tiết cho sự kiện Giao lưu J-Pop.', '2026-06-08 16:53:14', '2026-05-20 19:53:14', 'Nagoya', 20, 'https://images.unsplash.com/photo-1529404678368?w=800', 'UPCOMING'),
-(28, 'Triển lãm Manga', 'Mô tả chi tiết cho sự kiện Triển lãm Manga.', '2026-05-19 16:53:14', '2026-06-01 19:53:14', 'Huế', 30, 'https://images.unsplash.com/photo-1584641428931?w=800', 'UPCOMING'),
-(29, 'Workshop Thư pháp', 'Mô tả chi tiết cho sự kiện Workshop Thư pháp.', '2026-05-25 16:53:14', '2026-05-10 19:53:14', 'Hà Nội', 100, 'https://images.unsplash.com/photo-1551843174589?w=800', 'UPCOMING'),
-(30, 'Đêm nhạc Trịnh', 'Mô tả chi tiết cho sự kiện Đêm nhạc Trịnh.', '2026-05-26 16:53:14', '2026-05-20 19:53:14', 'Huế', 100, 'https://images.unsplash.com/photo-1505810227771?w=800', 'UPCOMING'),
-(6, 'Bóng đá cộng đồng', 'Mô tả chi tiết cho sự kiện Bóng đá cộng đồng.', '2026-05-05 16:53:14', '2026-06-07 19:53:14', 'Huế', 50, 'https://images.unsplash.com/photo-1572248045919?w=800', 'ENDED'),
-(6, 'Tiếng Nhật giao tiếp', 'Mô tả chi tiết cho sự kiện Tiếng Nhật giao tiếp.', '2026-05-05 16:53:14', '2026-05-06 19:53:14', 'Tokyo', 20, 'https://images.unsplash.com/photo-1557512050562?w=800', 'ENDED'),
-(29, 'Ngày hội việc làm IT', 'Mô tả chi tiết cho sự kiện Ngày hội việc làm IT.', '2026-05-24 16:53:14', '2026-05-11 19:53:14', 'Fukuoka', 100, 'https://images.unsplash.com/photo-1559552488577?w=800', 'UPCOMING'),
-(29, 'Tiệc trà đạo', 'Mô tả chi tiết cho sự kiện Tiệc trà đạo.', '2026-05-23 16:53:14', '2026-05-07 19:53:14', 'Tokyo', 20, 'https://images.unsplash.com/photo-1598607075312?w=800', 'UPCOMING'),
-(29, 'Cắm hoa Ikebana', 'Mô tả chi tiết cho sự kiện Cắm hoa Ikebana.', '2026-05-28 16:53:14', '2026-05-05 19:53:14', 'Tokyo', 50, 'https://images.unsplash.com/photo-1545544322133?w=800', 'UPCOMING'),
-(29, 'Hùng biện tiếng Nhật', 'Mô tả chi tiết cho sự kiện Hùng biện tiếng Nhật.', '2026-05-16 16:53:14', '2026-05-07 19:53:14', 'Nagoya', 50, 'https://images.unsplash.com/photo-1564975697993?w=800', 'UPCOMING'),
-(28, 'Offline fan anime', 'Mô tả chi tiết cho sự kiện Offline fan anime.', '2026-05-12 16:53:14', '2026-05-29 19:53:14', 'Osaka', 50, 'https://images.unsplash.com/photo-1591598203252?w=800', 'UPCOMING');
+INSERT INTO EVENTS (organizer_id, title, category, description, start_time, end_time, location, capacity, image_url, status) VALUES
+(6, 'Lễ hội hoa anh đào', 'Nghệ thuật', 'Mô tả chi tiết cho sự kiện Lễ hội hoa anh đào.', '2026-04-12 10:00:00', '2026-04-19 18:00:00', 'Tokyo', 50, 'https://images.unsplash.com/photo-1574086631915?w=800', 'ENDED'),
+(30, 'Học làm Sushi', 'Nghệ thuật', 'Mô tả chi tiết cho sự kiện Học làm Sushi.', '2026-04-30 10:00:00', '2026-05-02 18:00:00', 'Hải Phòng', 20, 'https://images.unsplash.com/photo-1571929899749?w=800', 'ENDED'),
+(30, 'Leo núi Phú Sĩ', 'Khác', 'Mô tả chi tiết cho sự kiện Leo núi Phú Sĩ.', '2026-06-05 08:00:00', '2026-06-15 17:00:00', 'TP.HCM', 30, 'https://images.unsplash.com/photo-1558161695169?w=800', 'ONGOING'),
+(29, 'Hội thảo du học', 'Giáo dục', 'Mô tả chi tiết cho sự kiện Hội thảo du học.', '2026-06-15 09:00:00', '2026-06-16 17:00:00', 'Hà Nội', 30, 'https://images.unsplash.com/photo-1537362957161?w=800', 'UPCOMING'),
+(7, 'Giao lưu J-Pop', 'Nghệ thuật', 'Mô tả chi tiết cho sự kiện Giao lưu J-Pop.', '2026-06-07 19:00:00', '2026-06-09 22:00:00', 'Nagoya', 20, 'https://images.unsplash.com/photo-1529404678368?w=800', 'ONGOING'),
+(28, 'Triển lãm Manga', 'Nghệ thuật', 'Mô tả chi tiết cho sự kiện Triển lãm Manga.', '2026-05-19 09:00:00', '2026-06-01 18:00:00', 'Huế', 30, 'https://images.unsplash.com/photo-1584641428931?w=800', 'ENDED'),
+(29, 'Workshop Thư pháp', 'Giáo dục', 'Mô tả chi tiết cho sự kiện Workshop Thư pháp.', '2026-06-25 09:00:00', '2026-06-25 12:00:00', 'Hà Nội', 100, 'https://images.unsplash.com/photo-1551843174589?w=800', 'UPCOMING'),
+(30, 'Đêm nhạc Trịnh', 'Nghệ thuật', 'Mô tả chi tiết cho sự kiện Đêm nhạc Trịnh.', '2026-05-20 20:00:00', '2026-05-20 22:30:00', 'Huế', 100, 'https://images.unsplash.com/photo-1505810227771?w=800', 'ENDED'),
+(6, 'Bóng đá cộng đồng', 'Khác', 'Mô tả chi tiết cho sự kiện Bóng đá cộng đồng.', '2026-05-05 08:00:00', '2026-05-05 11:00:00', 'Huế', 50, 'https://images.unsplash.com/photo-1572248045919?w=800', 'ENDED'),
+(6, 'Tiếng Nhật giao tiếp', 'Giáo dục', 'Mô tả chi tiết cho sự kiện Tiếng Nhật giao tiếp.', '2026-05-05 18:30:00', '2026-05-05 20:30:00', 'Tokyo', 20, 'https://images.unsplash.com/photo-1557512050562?w=800', 'ENDED'),
+(29, 'Ngày hội việc làm IT', 'Công nghệ', 'Mô tả chi tiết cho sự kiện Ngày hội việc làm IT.', '2026-06-24 08:30:00', '2026-06-24 16:30:00', 'Fukuoka', 100, 'https://images.unsplash.com/photo-1559552488577?w=800', 'UPCOMING'),
+(29, 'Tiệc trà đạo', 'Nghệ thuật', 'Mô tả chi tiết cho sự kiện Tiệc trà đạo.', '2026-06-23 15:00:00', '2026-06-23 17:00:00', 'Tokyo', 20, 'https://images.unsplash.com/photo-1598607075312?w=800', 'UPCOMING'),
+(29, 'Cắm hoa Ikebana', 'Nghệ thuật', 'Mô tả chi tiết cho sự kiện Cắm hoa Ikebana.', '2026-06-28 09:00:00', '2026-06-28 11:30:00', 'Tokyo', 50, 'https://images.unsplash.com/photo-1545544322133?w=800', 'UPCOMING'),
+(29, 'Hùng biện tiếng Nhật', 'Giáo dục', 'Mô tả chi tiết cho sự kiện Hùng biện tiếng Nhật.', '2026-06-08 08:00:00', '2026-06-09 18:00:00', 'Nagoya', 50, 'https://images.unsplash.com/photo-1564975697993?w=800', 'ONGOING'),
+(28, 'Offline fan anime', 'Khác', 'Mô tả chi tiết cho sự kiện Offline fan anime.', '2026-06-12 14:00:00', '2026-06-12 17:00:00', 'Osaka', 50, 'https://images.unsplash.com/photo-1591598203252?w=800', 'UPCOMING');
 
 -- ── 7. EVENT_REGISTRATIONS & FEEDBACK ──
 INSERT INTO EVENT_REGISTRATIONS (event_id, user_id, registered_at) VALUES

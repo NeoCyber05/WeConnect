@@ -129,6 +129,7 @@ const categoryColors: Record<string, string> = {
   "Kinh doanh": "bg-slate-900 text-white",
   "Giáo dục": "bg-slate-900 text-white",
   "Nghệ thuật": "bg-slate-900 text-white",
+  "Khác": "bg-slate-900 text-white",
 };
 
 export default function Index() {
@@ -158,7 +159,7 @@ export default function Index() {
 
   const events: Event[] = (apiEvents ?? []).map(mapEventOutToEvent);
   
-  const CATEGORIES = ["Công nghệ", "Kinh doanh", "Giáo dục", "Nghệ thuật"];
+  const CATEGORIES = ["Công nghệ", "Kinh doanh", "Giáo dục", "Nghệ thuật", "Khác"];
 
   const filtered = events.filter((e) => {
     const matchesSearch = e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
