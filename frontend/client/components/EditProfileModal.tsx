@@ -88,7 +88,7 @@ export default function EditProfileModal({ isOpen, onClose, initialData }: EditP
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-wc-dark font-bold text-xl">Chỉnh sửa hồ sơ</DialogTitle>
         </DialogHeader>

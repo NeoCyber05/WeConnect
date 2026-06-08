@@ -1,5 +1,104 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { apiFetch } from "@/lib/api";
+
+const parseVietnameseDateTime = (str: string) => {
+  const regex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?:\s+(SA|CH|AM|PM))?$/i;
+  const match = str.trim().match(regex);
+  if (!match) return null;
+  let [_, d, m, y, h, min, ampm] = match;
+  let hour = parseInt(h, 10);
+  if (ampm) {
+    ampm = ampm.toUpperCase();
+    if ((ampm === 'CH' || ampm === 'PM') && hour < 12) hour += 12;
+    if ((ampm === 'SA' || ampm === 'AM') && hour === 12) hour = 0;
+  }
+  const YYYY = y;
+  const MM = m.padStart(2, '0');
+  const DD = d.padStart(2, '0');
+  const HH = hour.toString().padStart(2, '0');
+  const mm = min.padStart(2, '0');
+  return `${YYYY}-${MM}-${DD}T${HH}:${mm}`;
+};
+
+const formatVietnameseDateTime = (isoStr: string) => {
+  if (!isoStr) return "";
+  const [date, time] = isoStr.split("T");
+  if (!date || !time) return isoStr;
+  const [y, m, d] = date.split("-");
+  let [H, min] = time.split(":");
+  let hour = parseInt(H, 10);
+  let ampm = "SA";
+  if (hour >= 12) {
+    ampm = "CH";
+    if (hour > 12) hour -= 12;
+  }
+  if (hour === 0) hour = 12;
+  return `${d}/${m}/${y} ${hour.toString().padStart(2, '0')}:${min} ${ampm}`;
+};
+
+function DateTimePickerInput({ name, value, onChange }: { name: string, value: string, onChange: (e: any) => void }) {
+  const [textValue, setTextValue] = useState(formatVietnameseDateTime(value));
+  const [lastPushedValue, setLastPushedValue] = useState(value);
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (value !== lastPushedValue) {
+      setTextValue(formatVietnameseDateTime(value));
+      setLastPushedValue(value);
+    }
+  }, [value, lastPushedValue]);
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newText = e.target.value;
+    setTextValue(newText);
+    const parsed = parseVietnameseDateTime(newText);
+    if (parsed && parsed !== value) {
+      setLastPushedValue(parsed);
+      onChange({ target: { name, value: parsed } });
+    }
+  };
+
+  const handleNativeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    onChange({ target: { name, value: val } });
+  };
+
+  const handleBlur = () => {
+    setTextValue(formatVietnameseDateTime(value));
+  };
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        value={textValue}
+        onChange={handleTextChange}
+        onBlur={handleBlur}
+        placeholder="DD/MM/YYYY HH:mm SA"
+        className="h-[33px] w-full pl-8 pr-[10px] text-[13px] text-black border border-slate-200 rounded-[6px] outline-none focus:border-slate-400 transition-colors"
+      />
+      <div 
+        className="absolute left-[8px] top-1/2 -translate-y-1/2 cursor-pointer text-slate-400 hover:text-emerald-600 z-10"
+        onClick={() => {
+          try { hiddenInputRef.current?.showPicker(); } catch (e) { hiddenInputRef.current?.focus(); }
+        }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="4" width="18" height="17" rx="2" />
+          <path d="M8 2v4M16 2v4M3 10h18" />
+        </svg>
+      </div>
+      <input
+        type="datetime-local"
+        ref={hiddenInputRef}
+        value={value ? value.slice(0, 16) : ""}
+        onChange={handleNativeChange}
+        className="absolute w-0 h-0 opacity-0 pointer-events-none"
+        style={{ border: 'none', padding: 0 }}
+      />
+    </div>
+  );
+}
 
 interface Event {
   id: number;
@@ -358,7 +457,7 @@ export default function EditEventModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-[500px] flex flex-col overflow-hidden">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-[620px] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="px-5 pt-3 pb-[10px] border-b border-slate-100">
           {/* Drag dots */}
@@ -455,51 +554,13 @@ export default function EditEventModal({
               <label className="text-xs font-medium text-black leading-[18px]">
                 Ngày & Giờ bắt đầu
               </label>
-              <div className="relative">
-                <div className="absolute left-[10px] top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <g clipPath="url(#cal-clip)">
-                      <path d="M4 1V3" stroke="#94A3B8" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M8 1V3" stroke="#94A3B8" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M9.5 2H2.5C1.94772 2 1.5 2.44772 1.5 3V10C1.5 10.5523 1.94772 11 2.5 11H9.5C10.0523 11 10.5 10.5523 10.5 10V3C10.5 2.44772 10.0523 2 9.5 2Z" stroke="#94A3B8" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M1.5 5H10.5" stroke="#94A3B8" strokeLinecap="round" strokeLinejoin="round" />
-                    </g>
-                    <defs><clipPath id="cal-clip"><rect width="12" height="12" fill="white" /></clipPath></defs>
-                  </svg>
-                </div>
-                <input
-                  type="datetime-local"
-                  name="date"
-                  value={form.date}
-                  onChange={handleChange}
-                  className="h-[33px] w-full pl-7 pr-[10px] text-[13px] text-black border border-slate-200 rounded-[6px] outline-none focus:border-slate-400 transition-colors"
-                />
-              </div>
+              <DateTimePickerInput name="date" value={form.date} onChange={handleChange} />
             </div>
             <div className="flex flex-col gap-0.5 flex-1">
               <label className="text-xs font-medium text-black leading-[18px]">
                 Thời gian kết thúc
               </label>
-              <div className="relative">
-                <div className="absolute left-[10px] top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <g clipPath="url(#cal-clip-end)">
-                      <path d="M4 1V3" stroke="#94A3B8" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M8 1V3" stroke="#94A3B8" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M9.5 2H2.5C1.94772 2 1.5 2.44772 1.5 3V10C1.5 10.5523 1.94772 11 2.5 11H9.5C10.0523 11 10.5 10.5523 10.5 10V3C10.5 2.44772 10.0523 2 9.5 2Z" stroke="#94A3B8" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M1.5 5H10.5" stroke="#94A3B8" strokeLinecap="round" strokeLinejoin="round" />
-                    </g>
-                    <defs><clipPath id="cal-clip-end"><rect width="12" height="12" fill="white" /></clipPath></defs>
-                  </svg>
-                </div>
-                <input
-                  type="datetime-local"
-                  name="endDate"
-                  value={form.endDate}
-                  onChange={handleChange}
-                  className="h-[33px] w-full pl-7 pr-[10px] text-[13px] text-black border border-slate-200 rounded-[6px] outline-none focus:border-slate-400 transition-colors"
-                />
-              </div>
+              <DateTimePickerInput name="endDate" value={form.endDate} onChange={handleChange} />
             </div>
           </div>
 
