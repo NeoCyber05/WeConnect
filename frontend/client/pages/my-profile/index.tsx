@@ -5,7 +5,6 @@ import EditHobbiesModal from "@/components/EditHobbiesModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { Globe } from "lucide-react";
 import {
@@ -44,14 +43,6 @@ interface UserOut {
 const EditIcon = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M1.5 12H2.56875L9.9 4.66875L8.83125 3.6L1.5 10.9312V12ZM0 13.5V10.3125L9.9 0.43125C10.05 0.29375 10.2156 0.1875 10.3969 0.1125C10.5781 0.0375 10.7688 0 10.9688 0C11.1687 0 11.3625 0.0375 11.55 0.1125C11.7375 0.1875 11.9 0.3 12.0375 0.45L13.0688 1.5C13.2188 1.6375 13.3281 1.8 13.3969 1.9875C13.4656 2.175 13.5 2.3625 13.5 2.55C13.5 2.75 13.4656 2.94062 13.3969 3.12188C13.3281 3.30313 13.2188 3.46875 13.0688 3.61875L3.1875 13.5H0Z" fill="white"/>
-  </svg>
-);
-
-const LogoutIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-    <polyline points="16 17 21 12 16 7" />
-    <line x1="21" y1="12" x2="9" y2="12" />
   </svg>
 );
 
@@ -186,7 +177,6 @@ export default function Index() {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { logout } = useAuth();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
@@ -418,13 +408,6 @@ export default function Index() {
                   className="flex-1 sm:flex-none px-4 sm:px-6 py-3 rounded-2xl border border-wc-dark/10 bg-white/10 backdrop-blur-sm shadow-sm text-wc-dark font-bold text-sm sm:text-base hover:bg-wc-light-green transition-colors text-center"
                 >
                   {t("profile.editProfile")}
-                </button>
-                <button 
-                  onClick={() => logout()}
-                  className="p-3 rounded-2xl border border-red-100 bg-red-50/50 text-red-500 hover:bg-red-50 transition-colors shadow-sm shrink-0"
-                  title={t("profile.logout")}
-                >
-                  <LogoutIcon />
                 </button>
               </div>
             </div>

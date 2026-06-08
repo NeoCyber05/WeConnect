@@ -35,7 +35,9 @@ const resources = {
         events: "Sự kiện",
         games: "Trò chơi",
         manage: "Quản lý",
-        searchPlaceholder: "Tìm kiếm người dùng hoặc bạn bè"
+        searchPlaceholder: "Tìm kiếm người dùng hoặc bạn bè",
+        viewProfile: "Xem hồ sơ",
+        logout: "Đăng xuất"
       },
       home: {
         welcomeBack: "CHÀO MỪNG TRỞ LẠI",
@@ -293,7 +295,9 @@ const resources = {
         events: "イベント",
         games: "ゲーム",
         manage: "管理",
-        searchPlaceholder: "ユーザーや友達を検索"
+        searchPlaceholder: "ユーザーや友達を検索",
+        viewProfile: "プロフィールを見る",
+        logout: "ログアウト"
       },
       home: {
         welcomeBack: "おかえりなさい",

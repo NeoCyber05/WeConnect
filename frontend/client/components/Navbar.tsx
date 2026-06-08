@@ -4,6 +4,13 @@ import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import SearchPopup from "./SearchPopup";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface UserOut {
   user_id: number;
@@ -66,6 +73,7 @@ export default function Navbar() {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -182,18 +190,31 @@ export default function Navbar() {
             </div>
           )}
           <div className="border-l border-wc-border pl-3">
-            <Link to="/profile" className="block">
-              <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-wc-green/10 bg-wc-slate hover:opacity-80 transition-opacity cursor-pointer">
-                <img
-                  src={user?.avatar_url 
-                    ? (user.avatar_url.startsWith("/") ? `${import.meta.env.VITE_API_URL}${user.avatar_url}` : user.avatar_url)
-                    : "https://api.builder.io/api/v1/image/assets/TEMP/970853f39e1b18632ca69640ab7ac67726e7dc95?width=72"
-                  }
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-wc-green/10 bg-wc-slate hover:opacity-80 transition-opacity cursor-pointer">
+                  <img
+                    src={user?.avatar_url 
+                      ? (user.avatar_url.startsWith("/") ? `${import.meta.env.VITE_API_URL}${user.avatar_url}` : user.avatar_url)
+                      : "https://api.builder.io/api/v1/image/assets/TEMP/970853f39e1b18632ca69640ab7ac67726e7dc95?width=72"
+                    }
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuItem onClick={() => navigate("/profile")}>
+                  {t("navbar.viewProfile")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => logout()}
+                  className="text-red-500 focus:text-red-500 focus:bg-red-50"
+                >
+                  {t("navbar.logout")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           {/* Hamburger button on mobile */}
           <button
