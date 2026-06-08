@@ -280,6 +280,18 @@ const resources = {
         registrationAttendanceRatio: "Tỷ lệ đăng ký & Tham dự",
         registerLegend: "Đăng ký",
         attendLegend: "Tham dự"
+      },
+      eventCategories: {
+        "Nghệ thuật": "Nghệ thuật",
+        "Văn hóa": "Văn hóa",
+        "Văn hoá": "Văn hóa",
+        "Ẩm thực": "Ẩm thực",
+        "Giáo dục": "Giáo dục",
+        "Thể thao": "Thể thao",
+        "Giải trí": "Giải trí",
+        "Công nghệ": "Công nghệ",
+        "Kinh doanh": "Kinh doanh",
+        "Khác": "Khác"
       }
     }
   },
@@ -560,6 +572,18 @@ const resources = {
         registrationAttendanceRatio: "登録率と参加率",
         registerLegend: "登録",
         attendLegend: "参加"
+      },
+      eventCategories: {
+        "Nghệ thuật": "芸術",
+        "Văn hóa": "文化",
+        "Văn hoá": "文化",
+        "Ẩm thực": "グルメ",
+        "Giáo dục": "教育",
+        "Thể thao": "スポーツ",
+        "Giải trí": "エンターテイメント",
+        "Công nghệ": "テクノロジー",
+        "Kinh doanh": "ビジネス",
+        "Khác": "その他"
       }
     }
   }
