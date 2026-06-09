@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -25,6 +26,7 @@ interface EditHobbiesModalProps {
 }
 
 export default function EditHobbiesModal({ isOpen, onClose, selectedHobbyIds }: EditHobbiesModalProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [currentSelectedIds, setCurrentSelectedIds] = useState<number[]>(selectedHobbyIds);
@@ -90,7 +92,7 @@ export default function EditHobbiesModal({ isOpen, onClose, selectedHobbyIds }: 
                             : "bg-white border-wc-border text-wc-gray hover:border-wc-green hover:text-wc-green"
                         }`}
                       >
-                        {hobby.name}
+                        {t(`hobbiesList.${hobby.name}`, { defaultValue: hobby.name })}
                       </button>
                     );
                   })}

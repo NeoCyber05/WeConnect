@@ -292,6 +292,21 @@ const resources = {
         "Công nghệ": "Công nghệ",
         "Kinh doanh": "Kinh doanh",
         "Khác": "Khác"
+      },
+      hobbiesList: {
+        "Anime": "Anime",
+        "Phim ảnh": "Phim ảnh",
+        "Nhiếp ảnh": "Nhiếp ảnh",
+        "Đọc sách": "Đọc sách",
+        "Tiếng Nhật": "Tiếng Nhật",
+        "Tiếng Anh": "Tiếng Anh",
+        "Du lịch": "Du lịch",
+        "Thể thao": "Thể thao",
+        "Âm nhạc": "Âm nhạc",
+        "Ẩm thực": "Ẩm thực",
+        "Trà đạo": "Trà đạo",
+        "UI/UX Design": "UI/UX Design",
+        "Lập trình": "Lập trình"
       }
     }
   },
@@ -584,6 +599,21 @@ const resources = {
         "Công nghệ": "テクノロジー",
         "Kinh doanh": "ビジネス",
         "Khác": "その他"
+      },
+      hobbiesList: {
+        "Anime": "アニメ",
+        "Phim ảnh": "映画",
+        "Nhiếp ảnh": "写真",
+        "Đọc sách": "読書",
+        "Tiếng Nhật": "日本語",
+        "Tiếng Anh": "英語",
+        "Du lịch": "旅行",
+        "Thể thao": "スポーツ",
+        "Âm nhạc": "音楽",
+        "Ẩm thực": "グルメ",
+        "Trà đạo": "茶道",
+        "UI/UX Design": "UI/UXデザイン",
+        "Lập trình": "プログラミング"
       }
     }
   }
