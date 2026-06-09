@@ -462,7 +462,7 @@ export default function Index() {
                         key={hobby.hobby_id}
                         className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-wc-light-green border border-wc-green/10 shadow-sm"
                       >
-                        <span className="text-wc-green text-sm font-semibold">{hobby.name}</span>
+                        <span className="text-wc-green text-sm font-semibold">{t(`hobbiesList.${hobby.name}`, { defaultValue: hobby.name })}</span>
                       </div>
                     ))
                   : hobbies.map(({ label, icon }) => (
