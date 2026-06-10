@@ -13,5 +13,6 @@ COPY . .
 
 RUN mkdir -p /app/uploads/avatars /app/uploads/covers /app/uploads/events
 
-# Dùng shell form để $PORT được giãn ra (Railway/Render gán PORT động, mặc định 8001)
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8001}
+# exec-form + sh để vừa giãn được $PORT (Railway gán động) vừa cho uvicorn làm PID 1
+# nhận SIGTERM trực tiếp (deploy/rollover sạch, không bị treo container).
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8001}"]
