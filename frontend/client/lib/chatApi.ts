@@ -58,6 +58,7 @@ export function listMessages(conversationId: number) {
 }
 
 export function sendMessage(conversationId: number, content: string, type: string = "TEXT") {
+  console.log("[sendMessage] convId:", conversationId, "content:", content, "type:", type);
   return apiFetch<{ data: ChatMessage }>(`/api/v1/conversations/${conversationId}/messages`, {
     method: "POST",
     body: JSON.stringify({ content, type }),
@@ -69,7 +70,9 @@ export function sendMessage(conversationId: number, content: string, type: strin
  * The message content is the room code; the chat UI renders it as a join card.
  */
 export async function inviteFriendToGameRoom(friendId: number, roomCode: string) {
+  console.log("[inviteFriendToGameRoom] friendId:", friendId, "roomCode:", roomCode);
   const conversation = await createOrGetConversation(friendId);
+  console.log("[inviteFriendToGameRoom] conversation:", conversation);
   return sendMessage(conversation.data.conversation_id, roomCode, "GAME_INVITE");
 }
 
