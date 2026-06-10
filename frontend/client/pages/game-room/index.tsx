@@ -191,17 +191,11 @@ export default function Index() {
   };
 
   const handleInviteFriend = async (friend: Friend) => {
-    console.log("[handleInviteFriend] clicked", friend);
-    if (invitedFriends.includes(friend.id)) {
-      console.log("[handleInviteFriend] already invited, skip");
-      return;
-    }
+    if (invitedFriends.includes(friend.id)) return;
     setInvitedFriends((prev) => [...prev, friend.id]);
     try {
       await inviteFriendToGameRoom(Number(friend.id), roomCode);
-      console.log("[handleInviteFriend] success");
     } catch (err) {
-      console.error("[handleInviteFriend] error:", err);
       // Roll back the "Đã mời" state so the user can retry
       setInvitedFriends((prev) => prev.filter((id) => id !== friend.id));
       alert(err instanceof Error ? err.message : "Không gửi được lời mời");
