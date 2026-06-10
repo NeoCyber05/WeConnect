@@ -35,7 +35,7 @@ pnpm dev
 Tất cả tài khoản dùng mật khẩu chung: **`Password@123`**
 
 | Email                         | Vai trò   | Trạng thái        | Ghi chú             |
-| ------------------------------| ----------| ------------------| --------------------|
+| -------------------------------| -----------| -------------------| ---------------------|
 | `nguyen.tuan@gmail.com`       | USER      | Đã xác thực       | Học N3              |
 | `tran.linh@gmail.com`         | USER      | Đã xác thực       | Học N4              |
 | `pham.anh@gmail.com`          | USER      | Đã xác thực       | Level N2            |

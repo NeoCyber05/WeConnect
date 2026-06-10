@@ -1,6 +1,8 @@
 -- Migration: game multiplayer. Apply once to an existing weconnect DB.
--- Safe to run against a DB where GAME_ROOMS.started_at already exists
--- (the ADD COLUMN for started_at is wrapped to ignore "duplicate column").
+-- Safe to run against a DB where GAME_ROOMS.started_at already exists.
+-- If your database name is different, change the line below before running.
+
+USE weconnect;
 
 -- 1. Columns -----------------------------------------------------------
 ALTER TABLE GAME_ROOMS  ADD COLUMN paused_at    TIMESTAMP NULL;
