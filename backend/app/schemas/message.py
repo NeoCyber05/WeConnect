@@ -4,7 +4,7 @@ from typing import Literal, Optional
 from pydantic import BaseModel, field_validator
 
 
-MessageType = Literal["TEXT", "IMAGE", "FILE"]
+MessageType = Literal["TEXT", "IMAGE", "FILE", "GAME_INVITE"]
 Direction = Literal["before", "after"]
 
 

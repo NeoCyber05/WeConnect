@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useGameRoom } from "./useGameRoom";
 import * as clock from "@/lib/gameClock";
+import { inviteFriendToGameRoom } from "@/lib/chatApi";
 
 interface UserOut {
   user_id: number;
@@ -189,9 +190,16 @@ export default function Index() {
     setShowEmojiDrawer(false);
   };
 
-  const handleInviteFriend = (friend: Friend) => {
+  const handleInviteFriend = async (friend: Friend) => {
     if (invitedFriends.includes(friend.id)) return;
     setInvitedFriends((prev) => [...prev, friend.id]);
+    try {
+      await inviteFriendToGameRoom(Number(friend.id), roomCode);
+    } catch (err) {
+      // Roll back the "Đã mời" state so the user can retry
+      setInvitedFriends((prev) => prev.filter((id) => id !== friend.id));
+      alert(err instanceof Error ? err.message : "Không gửi được lời mời");
+    }
   };
 
   const handleLeaveRoom = () => {

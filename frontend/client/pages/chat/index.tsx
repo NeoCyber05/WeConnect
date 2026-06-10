@@ -132,6 +132,11 @@ const searchResults: SearchResult[] = [
 
 const EMPTY_LAST_MESSAGE = "Chưa có tin nhắn";
 
+function previewContent(content: string, type?: string): string {
+  if (type === "GAME_INVITE") return "🎮 Lời mời vào phòng game";
+  return content;
+}
+
 function formatChatTime(value?: string | null): string {
   if (!value) return "";
   const date = new Date(value);
@@ -165,7 +170,7 @@ function containsJapanese(text: string): boolean {
 function toConversation(data: ChatConversation, currentUserId: number | null): Conversation {
   const isMine = data.last_message?.sender_id === currentUserId;
   const lastMessage = data.last_message
-    ? `${isMine ? "Bạn: " : ""}${data.last_message.content}`
+    ? `${isMine ? "Bạn: " : ""}${previewContent(data.last_message.content, data.last_message.type)}`
     : EMPTY_LAST_MESSAGE;
 
   return {
@@ -882,6 +887,7 @@ function ChatMessage({
   isTranslating: boolean;
 }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [showTranslation, setShowTranslation] = useState(
     msg.translation !== undefined
   );
@@ -900,6 +906,42 @@ function ChatMessage({
     await onTranslate(msg.messageId);
     setShowTranslation(true);
   };
+
+  // Game-room invitation card — message content is the room code
+  if (msg.type === "GAME_INVITE") {
+    const roomCode = msg.content.trim();
+    const isMine = msg.from === "me";
+    return (
+      <div className={cn("flex", isMine ? "justify-end" : "justify-start")}>
+        <div className="flex flex-col gap-1 max-w-[85%] sm:max-w-[75%]">
+          <div className="flex flex-col gap-3 px-4 py-3.5 rounded-2xl border border-[#E2E8E2] bg-white shadow-sm">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[#F1F5F0] flex items-center justify-center shrink-0">
+                <span className="text-lg">🎮</span>
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[13px] font-bold text-[#2D3A3A] truncate">
+                  {isMine ? "Bạn đã mời vào phòng game" : "Lời mời vào phòng game"}
+                </span>
+                <span className="text-[11px] text-[#6B7280]">
+                  Phòng #{roomCode}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate(`/game?code=${encodeURIComponent(roomCode)}`)}
+              className="w-full py-2 rounded-xl bg-[#4A6741] hover:bg-[#3d5836] text-white text-[12px] font-bold transition-colors"
+            >
+              Tham gia
+            </button>
+          </div>
+          <span className={cn("text-[10px] text-[#6B7280] px-1", isMine && "text-right")}>
+            {msg.time}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   if (msg.from === "other") {
     return (
@@ -1238,7 +1280,7 @@ export default function Index() {
           const isMine = message.sender_id === currentUserId;
           return {
             ...conversation,
-            lastMessage: `${isMine ? "Bạn: " : ""}${message.content}`,
+            lastMessage: `${isMine ? "Bạn: " : ""}${previewContent(message.content, message.type)}`,
             lastMessageId: message.message_id,
             time: formatChatTime(message.created_at),
             unreadCount:

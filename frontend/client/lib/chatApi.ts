@@ -57,11 +57,20 @@ export function listMessages(conversationId: number) {
   );
 }
 
-export function sendMessage(conversationId: number, content: string) {
+export function sendMessage(conversationId: number, content: string, type: string = "TEXT") {
   return apiFetch<{ data: ChatMessage }>(`/api/v1/conversations/${conversationId}/messages`, {
     method: "POST",
-    body: JSON.stringify({ content, type: "TEXT" }),
+    body: JSON.stringify({ content, type }),
   });
+}
+
+/**
+ * Invite a friend into a game room by sending them a GAME_INVITE chat message.
+ * The message content is the room code; the chat UI renders it as a join card.
+ */
+export async function inviteFriendToGameRoom(friendId: number, roomCode: string) {
+  const conversation = await createOrGetConversation(friendId);
+  return sendMessage(conversation.data.conversation_id, roomCode, "GAME_INVITE");
 }
 
 export function markConversationRead(conversationId: number, lastReadMessageId?: number) {
