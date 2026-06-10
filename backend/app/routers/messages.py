@@ -188,11 +188,21 @@ def authorize_pusher_channel(
 ):
     conversation_id = _parse_channel_id(channel_name, "private-conversation-")
     user_id = _parse_channel_id(channel_name, "private-user-")
+    game_room_id = _parse_channel_id(channel_name, "private-game-room-")
 
     if conversation_id is not None:
         _get_conversation_for_user(db, conversation_id, current_user.user_id)
     elif user_id is not None and user_id == current_user.user_id:
         pass
+    elif game_room_id is not None:
+        from app.models.game import GameParticipant
+        member = db.query(GameParticipant).filter(
+            GameParticipant.room_id == game_room_id,
+            GameParticipant.user_id == current_user.user_id,
+            GameParticipant.left_at.is_(None),
+        ).first()
+        if not member:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Không có quyền truy cập kênh game")
     else:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Không có quyền truy cập kênh Pusher")
 
