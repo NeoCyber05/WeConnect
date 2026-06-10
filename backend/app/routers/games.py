@@ -208,6 +208,7 @@ def join_game_room(
     db.add(participant)
     db.commit()
 
+    _broadcast(room, "game:player-joined", {"user_id": current_user.user_id})
     return _build_room_out(room, db)
 
 
@@ -311,6 +312,7 @@ def leave_game_room(
             room.host_id = active_participants[0].user_id
             db.commit()
 
+    _broadcast(room, "game:player-left", {"user_id": current_user.user_id})
     return {"status": "ok", "message": "Đã rời khỏi phòng thành công"}
 
 
@@ -520,3 +522,110 @@ def reveal_answer(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Câu hỏi không tồn tại")
     q = db.query(GameQuestion).filter(GameQuestion.question_id == room.question_ids[idx]).first()
     return {"question_index": idx, "correct_index": q.correct_index}
+
+
+@router.get("/rooms/{room_id}/messages", response_model=List[GameMessageOut])
+def list_game_messages(
+    room_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    rows = (
+        db.query(GameMessage, User)
+        .join(User, User.user_id == GameMessage.sender_id)
+        .filter(GameMessage.room_id == room_id)
+        .order_by(GameMessage.message_id.desc())
+        .limit(50)
+        .all()
+    )
+    rows.reverse()
+    return [{
+        "message_id": m.message_id, "room_id": m.room_id, "sender_id": m.sender_id,
+        "sender_name": u.full_name, "content": m.content, "created_at": m.created_at,
+    } for m, u in rows]
+
+
+@router.post("/rooms/{room_id}/messages", response_model=GameMessageOut)
+def send_game_message(
+    room_id: int,
+    body: GameMessageCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    room = db.query(GameRoom).filter(GameRoom.room_id == room_id).first()
+    if not room:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Phòng game không tồn tại")
+    content = (body.content or "").strip()
+    if not content:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Nội dung tin nhắn trống")
+    msg = GameMessage(room_id=room_id, sender_id=current_user.user_id, content=content)
+    db.add(msg)
+    db.commit()
+    db.refresh(msg)
+    payload = {
+        "message_id": msg.message_id, "room_id": room_id, "sender_id": current_user.user_id,
+        "sender_name": current_user.full_name, "content": content, "created_at": msg.created_at,
+    }
+    _broadcast(room, "game:message", payload)
+    return payload
+
+
+@router.post("/rooms/{room_id}/ready")
+def toggle_ready(
+    room_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    participant = _active_participant(room_id, current_user.user_id, db)
+    if not participant:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Bạn không tham gia phòng này")
+    participant.is_ready = not bool(participant.is_ready)
+    db.commit()
+    room = db.query(GameRoom).filter(GameRoom.room_id == room_id).first()
+    _broadcast(room, "game:ready", {"user_id": current_user.user_id, "is_ready": participant.is_ready})
+    return {"status": "ok", "is_ready": participant.is_ready}
+
+
+def _require_host(room_id: int, user: User, db: Session) -> GameRoom:
+    room = db.query(GameRoom).filter(GameRoom.room_id == room_id).first()
+    if not room:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Phòng game không tồn tại")
+    if room.host_id != user.user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Chỉ chủ phòng mới có quyền này")
+    return room
+
+
+@router.post("/rooms/{room_id}/pause")
+def pause_room(room_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    room = _require_host(room_id, current_user, db)
+    if room.status != "PLAYING" or room.paused_at is not None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Không thể tạm dừng lúc này")
+    room.paused_at = _utcnow()
+    db.commit()
+    _broadcast(room, "game:paused", {"paused_at": room.paused_at})
+    return {"status": "ok"}
+
+
+@router.post("/rooms/{room_id}/resume")
+def resume_room(room_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    room = _require_host(room_id, current_user, db)
+    if room.status != "PLAYING" or room.paused_at is None or not room.started_at:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Trận đấu không đang tạm dừng")
+    now = _utcnow()
+    room.started_at = ge.resume_started_at(room.started_at, room.paused_at, now)
+    room.paused_at = None
+    db.commit()
+    _broadcast(room, "game:resumed", {"started_at": room.started_at})
+    return {"status": "ok"}
+
+
+@router.post("/rooms/{room_id}/end")
+def end_room(room_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    room = _require_host(room_id, current_user, db)
+    if room.status == "ENDED":
+        return {"status": "ok"}
+    room.status = "ENDED"
+    room.ended_at = _utcnow()
+    db.commit()
+    _broadcast(room, "game:ended", {"room_id": room.room_id, "leaderboard": _leaderboard(room, db)})
+    return {"status": "ok"}
