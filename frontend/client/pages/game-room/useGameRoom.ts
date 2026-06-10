@@ -5,7 +5,7 @@ import { apiFetch } from "@/lib/api";
 import * as clock from "@/lib/gameClock";
 import {
   getGameState, startRoom, submitAnswer, revealAnswer, listGameMessages, sendGameMessage,
-  toggleReady, pauseRoom, resumeRoom, endRoom, subscribeGameRoom,
+  toggleReady, pauseRoom, resumeRoom, endRoom, subscribeGameRoom, joinRoomByCode,
   type LeaderboardEntry, type QuestionOut,
 } from "@/lib/gameApi";
 
@@ -38,6 +38,17 @@ export function useGameRoom(roomCode: string) {
     enabled: !!roomId,
     refetchInterval: 4000, // fallback when Pusher is unavailable
   });
+
+  // Join the room when landing on the page (invite link, shared code, refresh).
+  // The backend endpoint is idempotent, so re-joining (e.g. the host) is a no-op.
+  const joinedRef = useRef(false);
+  useEffect(() => {
+    if (!roomCode || joinedRef.current) return;
+    joinedRef.current = true;
+    joinRoomByCode(roomCode)
+      .then(() => refetchState())
+      .catch(() => { joinedRef.current = false; });
+  }, [roomCode, refetchState]);
 
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [messages, setMessages] = useState<ChatLine[]>([]);

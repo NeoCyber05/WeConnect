@@ -54,6 +54,9 @@ export interface GameMessageOut {
 
 const base = (roomId: number) => `/api/v1/games/rooms/${roomId}`;
 
+export const joinRoomByCode = (code: string) =>
+  apiFetch(`/api/v1/games/rooms/join`, { method: "POST", body: JSON.stringify({ code }) });
+
 export const getGameState = (roomId: number) => apiFetch<GameState>(`${base(roomId)}/state`);
 export const startRoom = (roomId: number) => apiFetch(`${base(roomId)}/start`, { method: "POST" });
 export const submitAnswer = (roomId: number, question_index: number, selected_index: number) =>
