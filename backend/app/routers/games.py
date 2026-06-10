@@ -371,3 +371,75 @@ def start_game_room(
 
     _broadcast(room, "game:started", {"room_id": room.room_id, "started_at": room.started_at})
     return {"status": "ok", "message": "Trận đấu đã bắt đầu thành công"}
+
+
+def _visible_questions(room: GameRoom, elapsed: int, db: Session) -> list[dict]:
+    """Questions from index 0..current_index. correct_index only for windows already closed."""
+    if not room.question_ids:
+        return []
+    current = ge.question_index(elapsed)
+    last = min(current, ge.TOTAL_QUESTIONS - 1)
+    out: list[dict] = []
+    for idx in range(0, last + 1):
+        qid = room.question_ids[idx]
+        q = db.query(GameQuestion).filter(GameQuestion.question_id == qid).first()
+        if not q:
+            continue
+        window_closed = (idx < current) or (ge.seconds_into_cycle(elapsed) >= ge.ANSWER_WINDOW_SECONDS)
+        out.append({
+            "question_index": idx,
+            "category": q.category,
+            "question": q.question,
+            "description": q.description,
+            "options": q.options,
+            "hint": q.hint,
+            "correct_index": q.correct_index if window_closed else None,
+        })
+    return out
+
+
+@router.get("/rooms/{room_id}/state", response_model=GameStateOut)
+def get_game_state(
+    room_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    room = db.query(GameRoom).filter(GameRoom.room_id == room_id).first()
+    if not room:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Phòng game không tồn tại")
+
+    now = _utcnow()
+    if room.started_at:
+        elapsed = ge.elapsed_seconds(room.started_at, room.paused_at, now)
+    else:
+        elapsed = 0
+
+    # natural end
+    if room.status == "PLAYING" and room.started_at and ge.match_ended(elapsed) and not room.ended_at:
+        room.status = "ENDED"
+        room.ended_at = now
+        db.commit()
+        _broadcast(room, "game:ended", {"room_id": room.room_id, "leaderboard": _leaderboard(room, db)})
+
+    my_answers = [
+        a.question_index for a in db.query(GameAnswer.question_index).filter(
+            GameAnswer.room_id == room_id, GameAnswer.user_id == current_user.user_id
+        ).all()
+    ]
+
+    return {
+        "room_id": room.room_id,
+        "code": room.code,
+        "status": room.status,
+        "host_id": room.host_id,
+        "started_at": room.started_at,
+        "paused_at": room.paused_at,
+        "server_now": now,
+        "total_questions": ge.TOTAL_QUESTIONS,
+        "cycle_seconds": ge.CYCLE_SECONDS,
+        "answer_window_seconds": ge.ANSWER_WINDOW_SECONDS,
+        "current_index": ge.question_index(elapsed) if room.status == "PLAYING" else 0,
+        "questions": _visible_questions(room, elapsed, db) if room.status in ("PLAYING", "ENDED") else [],
+        "my_answers": my_answers,
+        "leaderboard": _leaderboard(room, db),
+    }
