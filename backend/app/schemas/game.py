@@ -63,3 +63,75 @@ class GameOut(BaseModel):
     badge_text: Optional[str] = None
 
     model_config = {"from_attributes": True}
+
+
+class QuestionOut(BaseModel):
+    question_index: int
+    category: str
+    question: str
+    description: Optional[str] = None
+    options: List[str]
+    hint: Optional[str] = None
+    correct_index: Optional[int] = None  # only present once the window has closed
+
+    model_config = {"from_attributes": True}
+
+
+class AnswerRequest(BaseModel):
+    question_index: int
+    selected_index: int
+
+
+class AnswerResult(BaseModel):
+    is_correct: bool
+    correct_index: int
+    points: int
+    new_score: int
+
+
+class LeaderboardEntry(BaseModel):
+    user_id: int
+    full_name: str
+    avatar_url: Optional[str] = None
+    score: int
+    is_ready: bool
+
+
+class GameStateOut(BaseModel):
+    room_id: int
+    code: str
+    status: str
+    host_id: int
+    started_at: Optional[datetime] = None
+    paused_at: Optional[datetime] = None
+    server_now: datetime
+    total_questions: int
+    cycle_seconds: int
+    answer_window_seconds: int
+    current_index: int
+    questions: List[QuestionOut]          # only revealed-or-current questions
+    my_answers: List[int]                 # question_index values this user has answered
+    leaderboard: List[LeaderboardEntry]
+
+    model_config = {
+        "from_attributes": True,
+        "json_encoders": {datetime: lambda v: v.strftime("%Y-%m-%dT%H:%M:%SZ") if v else None},
+    }
+
+
+class GameMessageCreate(BaseModel):
+    content: str
+
+
+class GameMessageOut(BaseModel):
+    message_id: int
+    room_id: int
+    sender_id: int
+    sender_name: str
+    content: str
+    created_at: datetime
+
+    model_config = {
+        "from_attributes": True,
+        "json_encoders": {datetime: lambda v: v.strftime("%Y-%m-%dT%H:%M:%SZ") if v else None},
+    }
