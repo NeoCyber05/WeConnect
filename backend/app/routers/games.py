@@ -3,14 +3,59 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import Optional, List
 from datetime import datetime, timezone
+from fastapi.encoders import jsonable_encoder
 import random
 import string
 from app.dependencies import get_db, get_current_user
 from app.models.user import User
-from app.models.game import Game, GameRoom, GameParticipant
-from app.schemas.game import GameOut, GameRoomOut, GameRoomCreate, JoinRoomRequest, ScoreUpdateRequest
+from app.models.game import Game, GameRoom, GameParticipant, GameMessage, GameQuestion, GameAnswer
+from app.schemas.game import (
+    GameOut, GameRoomOut, GameRoomCreate, JoinRoomRequest, ScoreUpdateRequest,
+    AnswerRequest, AnswerResult, GameStateOut, QuestionOut, LeaderboardEntry,
+    GameMessageCreate, GameMessageOut,
+)
+from app.utils import game_engine as ge
+from app.utils.pusher import trigger_event
 
 router = APIRouter()
+
+
+def _game_channel(room_id: int) -> str:
+    return f"private-game-room-{room_id}"
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def _leaderboard(room: GameRoom, db: Session) -> list[dict]:
+    rows = (
+        db.query(User, GameParticipant)
+        .join(GameParticipant, GameParticipant.user_id == User.user_id)
+        .filter(GameParticipant.room_id == room.room_id, GameParticipant.left_at.is_(None))
+        .all()
+    )
+    entries = [{
+        "user_id": u.user_id,
+        "full_name": u.full_name,
+        "avatar_url": u.avatar_url,
+        "score": gp.score or 0,
+        "is_ready": bool(gp.is_ready),
+    } for u, gp in rows]
+    entries.sort(key=lambda e: e["score"], reverse=True)
+    return entries
+
+
+def _broadcast(room: GameRoom, event: str, data: dict) -> None:
+    trigger_event(_game_channel(room.room_id), event, jsonable_encoder(data))
+
+
+def _active_participant(room_id: int, user_id: int, db: Session) -> GameParticipant | None:
+    return db.query(GameParticipant).filter(
+        GameParticipant.room_id == room_id,
+        GameParticipant.user_id == user_id,
+        GameParticipant.left_at.is_(None),
+    ).first()
 
 
 @router.get("", response_model=List[GameOut])
@@ -299,24 +344,30 @@ def start_game_room(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Bắt đầu trận đấu (chỉ dành cho chủ phòng)."""
     room = db.query(GameRoom).filter(GameRoom.room_id == room_id).first()
     if not room:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Phòng game không tồn tại"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Phòng game không tồn tại")
     if room.host_id != current_user.user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Chỉ chủ phòng mới có thể bắt đầu trận đấu"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Chỉ chủ phòng mới có thể bắt đầu trận đấu")
     if room.status != "WAITING":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Phòng game đã bắt đầu hoặc đã kết thúc"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Phòng game đã bắt đầu hoặc đã kết thúc")
+
+    pool = db.query(GameQuestion.question_id).filter(GameQuestion.game_type == room.room_type).all()
+    pool_ids = [row[0] for row in pool]
+    if len(pool_ids) < 1:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Chưa có câu hỏi cho loại game này")
+    random.shuffle(pool_ids)
+    chosen = pool_ids[: ge.TOTAL_QUESTIONS]
+    # if the pool is smaller than TOTAL_QUESTIONS, repeat to fill
+    while len(chosen) < ge.TOTAL_QUESTIONS:
+        chosen.append(pool_ids[len(chosen) % len(pool_ids)])
+
+    room.question_ids = chosen
     room.status = "PLAYING"
-    room.started_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    room.started_at = _utcnow()
+    room.paused_at = None
+    room.ended_at = None
     db.commit()
+
+    _broadcast(room, "game:started", {"room_id": room.room_id, "started_at": room.started_at})
     return {"status": "ok", "message": "Trận đấu đã bắt đầu thành công"}
