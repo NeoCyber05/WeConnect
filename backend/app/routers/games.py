@@ -443,3 +443,80 @@ def get_game_state(
         "my_answers": my_answers,
         "leaderboard": _leaderboard(room, db),
     }
+
+
+@router.post("/rooms/{room_id}/answer", response_model=AnswerResult)
+def submit_answer(
+    room_id: int,
+    body: AnswerRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    room = db.query(GameRoom).filter(GameRoom.room_id == room_id).first()
+    if not room:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Phòng game không tồn tại")
+    if room.status != "PLAYING" or room.paused_at is not None or not room.started_at:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Trận đấu không trong trạng thái nhận câu trả lời")
+
+    participant = _active_participant(room_id, current_user.user_id, db)
+    if not participant:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Bạn không tham gia phòng này")
+
+    now = _utcnow()
+    elapsed = ge.elapsed_seconds(room.started_at, room.paused_at, now)
+    current = ge.question_index(elapsed)
+    if body.question_index != current:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Câu hỏi đã chuyển sang câu khác")
+    if not ge.is_answer_window_open(elapsed):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Đã hết thời gian trả lời câu này")
+
+    qid = room.question_ids[current]
+    question = db.query(GameQuestion).filter(GameQuestion.question_id == qid).first()
+    if not question:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Câu hỏi không tồn tại")
+
+    is_correct = body.selected_index == question.correct_index
+    points = ge.score_for_answer(is_correct, ge.seconds_into_cycle(elapsed))
+
+    answer = GameAnswer(
+        room_id=room_id, user_id=current_user.user_id, question_index=current,
+        selected_index=body.selected_index, is_correct=is_correct, points=points,
+    )
+    db.add(answer)
+    try:
+        db.flush()
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Bạn đã trả lời câu này rồi")
+
+    participant.score = (participant.score or 0) + points
+    db.commit()
+
+    _broadcast(room, "game:score", {
+        "user_id": current_user.user_id, "question_index": current,
+        "leaderboard": _leaderboard(room, db),
+    })
+
+    return {"is_correct": is_correct, "correct_index": question.correct_index, "points": points, "new_score": participant.score}
+
+
+@router.get("/rooms/{room_id}/questions/{idx}/answer")
+def reveal_answer(
+    room_id: int,
+    idx: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    room = db.query(GameRoom).filter(GameRoom.room_id == room_id).first()
+    if not room or not room.started_at or not room.question_ids:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Phòng game không tồn tại")
+    now = _utcnow()
+    elapsed = ge.elapsed_seconds(room.started_at, room.paused_at, now)
+    current = ge.question_index(elapsed)
+    window_closed = (idx < current) or (idx == current and ge.seconds_into_cycle(elapsed) >= ge.ANSWER_WINDOW_SECONDS)
+    if not window_closed:
+        raise HTTPException(status_code=status.HTTP_425_TOO_EARLY, detail="Chưa đến lúc công bố đáp án")
+    if idx < 0 or idx >= len(room.question_ids):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Câu hỏi không tồn tại")
+    q = db.query(GameQuestion).filter(GameQuestion.question_id == room.question_ids[idx]).first()
+    return {"question_index": idx, "correct_index": q.correct_index}
