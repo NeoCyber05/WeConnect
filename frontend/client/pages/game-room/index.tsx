@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { useGameRoom } from "./useGameRoom";
+import * as clock from "@/lib/gameClock";
 
 interface UserOut {
   user_id: number;
@@ -24,30 +26,11 @@ interface GameRoomOut {
   participants: Array<{ user_id: number; full_name: string; avatar_url: string | null; score: number }>;
 }
 
-type MessageType = "system" | "other" | "me";
-
-interface Message {
-  id: number;
-  name: string;
-  text: string;
-  type: MessageType;
-}
-
 interface Friend {
   id: string;
   name: string;
   status: "online" | "offline";
   avatarColor: string;
-}
-
-interface Question {
-  id: number;
-  category: string;
-  question: string;
-  description: string;
-  options: string[];
-  correctIndex: number;
-  hint: string;
 }
 
 // ── CUSTOM SVG ICONS ──
@@ -112,134 +95,10 @@ const SendIcon = () => (
   </svg>
 );
 
-// ── VEctoR SVG AVATARS FOR CHARACTERS ──
-
-const LeMinhAvatar = () => (
-  <svg className="w-12 h-12 rounded-2xl bg-[#FEF3C7] shadow-sm flex-shrink-0" viewBox="0 0 100 100">
-    <circle cx="50" cy="50" r="50" fill="#FEF3C7"/>
-    <path d="M20 90 C 20 65, 80 65, 80 90" fill="#1E3A8A"/>
-    <path d="M40 65 L 50 80 L 60 65" fill="#FEE2E2"/>
-    <path d="M48 72 L 52 72 L 54 85 L 50 90 L 46 85 Z" fill="#DC2626"/>
-    <circle cx="50" cy="45" r="22" fill="#FDBA74"/>
-    <path d="M28 40 C 25 20, 75 20, 72 40 C 65 30, 35 30, 28 40 Z" fill="#1F2937"/>
-    <rect x="42" y="24" width="16" height="6" rx="2" fill="#1F2937"/>
-    <circle cx="43" cy="45" r="2" fill="#1F2937"/>
-    <circle cx="57" cy="45" r="2" fill="#1F2937"/>
-    <path d="M46 55 Q 50 59 54 55" stroke="#1F2937" stroke-width="2" fill="none" stroke-linecap="round"/>
-  </svg>
-);
-
-const HoangAnhAvatar = () => (
-  <svg className="w-12 h-12 rounded-2xl bg-[#E0E7FF] shadow-sm flex-shrink-0" viewBox="0 0 100 100">
-    <circle cx="50" cy="50" r="50" fill="#E0E7FF"/>
-    <path d="M20 90 C 20 70, 80 70, 80 90" fill="#4F46E5"/>
-    <path d="M42 70 L 50 82 L 58 70" fill="#FEE2E2"/>
-    <circle cx="50" cy="48" r="20" fill="#FDBA74"/>
-    <path d="M30 40 C 30 25, 70 25, 70 40 C 65 30, 35 30, 30 40 Z" fill="#111827"/>
-    <circle cx="44" cy="48" r="2" fill="#111827"/>
-    <circle cx="56" cy="48" r="2" fill="#111827"/>
-    <path d="M47 56 Q 50 59 53 56" stroke="#111827" stroke-width="2" fill="none" stroke-linecap="round"/>
-  </svg>
-);
-
-const MaiLinhAvatar = () => (
-  <svg className="w-12 h-12 rounded-2xl bg-[#FCE7F3] shadow-sm flex-shrink-0" viewBox="0 0 100 100">
-    <circle cx="50" cy="50" r="50" fill="#FCE7F3"/>
-    <path d="M20 90 C 20 70, 80 70, 80 90" fill="#0F172A"/>
-    <path d="M43 70 L 50 82 L 57 70" fill="#FEE2E2"/>
-    <circle cx="50" cy="48" r="19" fill="#FDBA74"/>
-    <path d="M28 40 C 25 15, 75 15, 72 40 C 76 65, 76 75, 72 80 C 68 60, 32 60, 28 80 C 24 75, 24 65, 28 40 Z" fill="#1E293B"/>
-    <circle cx="44" cy="48" r="2" fill="#1E293B"/>
-    <circle cx="56" cy="48" r="2" fill="#1E293B"/>
-    <path d="M47 55 Q 50 58 53 55" stroke="#E11D48" stroke-width="2" fill="none" stroke-linecap="round"/>
-  </svg>
-);
-
-const TuanAvatar = () => (
-  <svg className="w-12 h-12 rounded-2xl bg-[#E2E8F0] shadow-sm flex-shrink-0" viewBox="0 0 100 100">
-    <circle cx="50" cy="50" r="50" fill="#E2E8F0"/>
-    <path d="M20 90 C 20 72, 80 72, 80 90" fill="#0284C7"/>
-    <path d="M42 72 L 50 82 L 58 72" fill="#FEE2E2"/>
-    <circle cx="50" cy="49" r="19" fill="#FDBA74"/>
-    <path d="M30 42 C 28 28, 72 28, 70 42 C 65 33, 35 33, 30 42 Z" fill="#78350F"/>
-    <circle cx="44" cy="48" r="2" fill="#78350F"/>
-    <circle cx="56" cy="48" r="2" fill="#78350F"/>
-    <path d="M47 56 Q 50 59 53 56" stroke="#78350F" stroke-width="2" fill="none" stroke-linecap="round"/>
-  </svg>
-);
-
-// ── MOCK QUESTION BANK ──
-
-const questions: Question[] = [
-  {
-    id: 1,
-    category: "So tài nhanh",
-    question: "Thủ đô của Việt Nam là thành phố nào?",
-    description: "Ai chọn đáp án đúng nhanh nhất sẽ ghi điểm",
-    options: ["A. Đà Nẵng", "B. Hà Nội", "C. TP. Hồ Chí Minh", "D. Huế"],
-    correctIndex: 1, // B
-    hint: "Trả lời nhanh để giành điểm! Mỗi câu chỉ có 10 giây.",
-  },
-  {
-    id: 2,
-    category: "Kanji N3",
-    question: "Cách đọc Hiragana chính xác của từ '試験' (Kỳ thi) là gì?",
-    description: "Hãy chọn đáp án đúng nhất",
-    options: ["A. しけん (shiken)", "B. じけん (jiken)", "C. しっけん (shikken)", "D. ちけん (chiken)"],
-    correctIndex: 0, // A
-    hint: "Lưu ý âm đục và âm ngắt!",
-  },
-  {
-    id: 3,
-    category: "Văn hóa Nhật Bản",
-    question: "Món ăn truyền thống ăn vào ngày Tết dương lịch ở Nhật Bản là gì?",
-    description: "Món ăn đựng trong các hộp gỗ sơn mài (Jubako) sang trọng",
-    options: ["A. Sushi", "B. Osechi Ryori", "C. Tempura", "D. Ramen"],
-    correctIndex: 1, // B
-    hint: "Món ăn mang ý nghĩa may mắn và sung túc cả năm.",
-  },
-  {
-    id: 4,
-    category: "Địa lý Nhật Bản",
-    question: "Ngọn núi cao nhất và là biểu tượng của nước Nhật có tên là gì?",
-    description: "Ngọn núi cao 3.776 mét so với mực nước biển",
-    options: ["A. Núi Phú Sĩ (Fuji)", "B. Núi Aso", "C. Núi Tateyama", "D. Núi Kita"],
-    correctIndex: 0, // A
-    hint: "Một ngọn núi lửa đang ngủ yên nằm giữa tỉnh Shizuoka và Yamanashi.",
-  },
-  {
-    id: 5,
-    category: "Giao tiếp Nhật Bản",
-    question: "Khi được người khác cảm ơn, câu đáp lại lịch sự 'Không có chi' là gì?",
-    description: "Chọn câu trả lời phù hợp trong đời sống",
-    options: [
-      "A. Arigatou gozaimasu",
-      "B. Douitashimashite",
-      "C. Sumimasen",
-      "D. Shitsurei shimasu",
-    ],
-    correctIndex: 1, // B
-    hint: "Douitashimashite là câu trả lời tiêu chuẩn.",
-  },
-];
-
-// ── CHAT BOT REPLIES ──
-
-const botReplies = [
-  "Đúng thế! Trận đấu đang kịch tính quá.",
-  "Câu tiếp theo chắc chắn mình sẽ nhanh hơn!",
-  "Hà Nội là chuẩn rồi, câu này dễ quá haha.",
-  "Minh chơi đỉnh thật sự đấy!",
-  "Ai có đáp án câu tiếp theo chưa?",
-  "Tập trung trả lời đi mọi người ơi, sắp hết giờ trận đấu rồi!",
-  "Sẵn sàng chiến đấu tiếp nào!",
-  "Giao diện này mượt mà quá, chơi không bị giật lag tí nào.",
-];
-
 export default function Index() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const roomCode = new URLSearchParams(window.location.search).get("code") || "ROOM-2034";
+  const roomCode = new URLSearchParams(window.location.search).get("code") || "";
+  const g = useGameRoom(roomCode);
 
   // Fetch current user
   const { data: currentUser } = useQuery({
@@ -247,7 +106,7 @@ export default function Index() {
     queryFn: () => apiFetch<UserOut>("/api/v1/users/me"),
   });
 
-  // Fetch game room details
+  // Fetch game room details (for static metadata like max_players)
   const { data: roomData } = useQuery({
     queryKey: ["game-room", roomCode],
     queryFn: () => apiFetch<GameRoomOut>(`/api/v1/games/rooms/code/${roomCode}`),
@@ -255,107 +114,16 @@ export default function Index() {
     refetchInterval: 3000,
   });
 
-  const isMeHost = roomData && currentUser ? Number(currentUser.user_id) === Number(roomData.host_id) : false;
-  // Leave room mutation
-  const leaveRoomMutation = useMutation({
-    mutationFn: () => apiFetch(`/api/v1/games/rooms/${roomData?.room_id}/leave`, { method: "POST" }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["game-rooms"] });
-      navigate("/games");
-    },
-    onError: () => {
-      navigate("/games");
-    }
-  });
-
-  // Start room mutation
-  const startRoomMutation = useMutation({
-    mutationFn: () =>
-      apiFetch(`/api/v1/games/rooms/${roomData?.room_id}/start`, { method: "POST" }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["game-room", roomCode] });
-    },
-  });
-
-  const handleStartMatch = () => {
-    if (isMeHost && roomData?.room_id) {
-      startRoomMutation.mutate();
-    }
-  };
-
-  // ── STATE VARIABLES ──
-  
-  const [gameState, setGameState] = useState<"waiting" | "playing" | "paused" | "ended">("waiting");
+  // ── UI STATE VARIABLES ──
   const [activeTab, setActiveTab] = useState<"game" | "scores" | "chat">("game");
   const [isChatCollapsed, setIsChatCollapsed] = useState(false);
-  
-  // Timers
-  const [matchTime, setMatchTime] = useState(585); // 09:45 in seconds
-  const [questionTimer, setQuestionTimer] = useState(10); // 10 seconds per question
-  
-  // Scores
-  const [scoreMe, setScoreMe] = useState(0);
-  const [scoreHoangAnh, setScoreHoangAnh] = useState(0);
-  const [scoreMaiLinh, setScoreMaiLinh] = useState(0);
-  const [scoreTuan, setScoreTuan] = useState(0);
-
-  // Score synchronization mutation
-  const updateScoreMutation = useMutation({
-    mutationFn: (newScore: number) =>
-      apiFetch(`/api/v1/games/rooms/${roomData?.room_id}/score`, {
-        method: "PUT",
-        body: JSON.stringify({ score: newScore }),
-      }),
-  });
-
-  // Sync scoreMe to backend database when it changes
-  useEffect(() => {
-    if (roomData?.room_id) {
-      updateScoreMutation.mutate(scoreMe);
-    }
-  }, [scoreMe, roomData?.room_id]);
-
-  // Ready states
-  const [readyMe, setReadyMe] = useState(true);
-  const [readyHoangAnh, setReadyHoangAnh] = useState(false);
-
-  // Game loop index
-  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [isAnswered, setIsAnswered] = useState(false);
-
-  // Chat
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      name: "Hệ thống",
-      text: "Phòng game đã sẵn sàng. Chúc người chơi có những giây phút thư giãn!",
-      type: "system",
-    },
-    {
-      id: 2,
-      name: "Hoàng Anh",
-      text: "Mọi người đã sẵn sàng chưa? Trận này sẽ gay cấn lắm đây!",
-      type: "other",
-    },
-    {
-      id: 3,
-      name: `Bạn (${currentUser?.full_name || "Lê Minh"})`,
-      text: "Bắt đầu luôn thôi nào! Đang rất hào hứng đây.",
-      type: "me",
-    },
-  ]);
-  const [unreadMessageCount, setUnreadMessageCount] = useState(3);
-  const [showEmojiDrawer, setShowEmojiDrawer] = useState(false);
-
-  // Modals
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [showPauseModal, setShowPauseModal] = useState(false);
   const [showResultModal, setShowResultModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
-
-  // Invites state
   const [invitedFriends, setInvitedFriends] = useState<string[]>([]);
+  const [showEmojiDrawer, setShowEmojiDrawer] = useState(false);
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -366,139 +134,26 @@ export default function Index() {
     queryKey: ["my-friends"],
     queryFn: () => apiFetch<{ data: any[] }>("/api/v1/friends?page_size=100"),
   });
-  const friendsList = (friendsResponse?.data ?? []).map((f: any) => ({
+  const friendsList: Friend[] = (friendsResponse?.data ?? []).map((f: any) => ({
     id: String(f.user_id),
     name: f.full_name,
-    status: "online" as const,
+    status: "online" as "online" | "offline",
     avatarColor: "bg-blue-100",
   }));
 
-  // Current Question
-  const activeQuestion = questions[currentQuestionIdx];
-
-  // ── GAME LOGIC TIMERS ──
-
-  // Total Match Timer
+  // Show result modal when game ends
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    if (gameState === "playing") {
-      interval = setInterval(() => {
-        setMatchTime((t) => {
-          if (t <= 1) {
-            setGameState("ended");
-            setShowResultModal(true);
-            if (interval) clearInterval(interval);
-            return 0;
-          }
-          return t - 1;
-        });
-      }, 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [gameState]);
-
-  // Question Timer Loop
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    if (gameState === "playing" && !isAnswered) {
-      interval = setInterval(() => {
-        setQuestionTimer((qt) => {
-          if (qt <= 1) {
-            // Time ran out!
-            handleTimeOut();
-            return 10;
-          }
-          return qt - 1;
-        });
-      }, 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [gameState, isAnswered, currentQuestionIdx]);
-
-  // Synchronize game state and timer from room data (database)
-  useEffect(() => {
-    if (!roomData) return;
-
-    if (roomData.status === "WAITING") {
-      // Only reset when transitioning from a different state
-      setGameState((prev) => {
-        if (prev !== "waiting") {
-          setMatchTime(600);
-          setQuestionTimer(10);
-          setCurrentQuestionIdx(0);
-          setIsAnswered(false);
-          setSelectedAnswer(null);
-          setShowResultModal(false);
-        }
-        return "waiting";
-      });
-    } else if (roomData.status === "PLAYING") {
-      if (roomData.started_at) {
-        // Ensure UTC parsing: append Z if not present
-        const rawTs = roomData.started_at;
-        const utcStr = rawTs.endsWith("Z") || rawTs.includes("+") ? rawTs : rawTs + "Z";
-        const startedAtMs = new Date(utcStr).getTime();
-        const nowMs = Date.now();
-        const elapsedSeconds = Math.max(0, Math.floor((nowMs - startedAtMs) / 1000));
-
-        const totalDuration = 600; // 10 minutes
-        const remaining = Math.max(0, totalDuration - elapsedSeconds);
-
-        // Only set to playing state – never directly end from sync effect
-        // The local countdown timer handles the "ended" transition
-        setGameState((prev) => {
-          if (prev === "waiting" || prev === "ended") {
-            // First time entering PLAYING state – sync the match time
-            setMatchTime(remaining);
-          }
-          return "playing";
-        });
-
-        // Sync current question index
-        const cycleSeconds = 12.5;
-        const totalQuestions = questions.length;
-        const qIdx = Math.min(Math.floor(elapsedSeconds / cycleSeconds), totalQuestions - 1);
-
-        if (qIdx !== currentQuestionIdx) {
-          setCurrentQuestionIdx(qIdx);
-          setIsAnswered(false);
-          setSelectedAnswer(null);
-        }
-
-        const inCycleSeconds = elapsedSeconds % cycleSeconds;
-        if (inCycleSeconds < 10) {
-          if (!isAnswered) {
-            const remainingTimer = Math.max(1, Math.ceil(10 - inCycleSeconds));
-            setQuestionTimer(remainingTimer);
-          }
-        } else {
-          if (!isAnswered) {
-            setIsAnswered(true);
-            setSelectedAnswer(null);
-            setQuestionTimer(0);
-          }
-        }
-      } else {
-        // started_at not set yet (race condition) – just switch to playing
-        setGameState("playing");
-      }
-    } else if (roomData.status === "ENDED") {
-      setGameState("ended");
+    if (g.gameStatus === "ENDED") {
       setShowResultModal(true);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomData]);
+  }, [g.gameStatus]);
 
   // Scroll to bottom of chat
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages]);
+  }, [g.messages]);
 
   // Format MM:SS
   const formatTime = (seconds: number) => {
@@ -507,330 +162,71 @@ export default function Index() {
     return `${m}:${s}`;
   };
 
+  // Ready status of current user
+  const myEntry = g.leaderboard.find((p) => Number(p.user_id) === Number(currentUser?.user_id));
+  const readyMe = myEntry?.is_ready ?? false;
+
   // ── INTERACTIVE EVENT HANDLERS ──
 
-  // Trigger when 10s runs out without response
-  const handleTimeOut = () => {
-    setIsAnswered(true);
-    setSelectedAnswer(null);
-
-    // Simulated Bot Scores on timeout
-    simulateBotAnswering(false);
-
-    // System message
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        name: "Hệ thống",
-        text: `Hết giờ trả lời câu hỏi số ${activeQuestion.id}! Đáp án đúng là: ${
-          activeQuestion.options[activeQuestion.correctIndex]
-        }`,
-        type: "system",
-      },
-    ]);
-
-    // Go to next question after 2.5 seconds
-    setTimeout(() => {
-      goToNextQuestion();
-    }, 2500);
-  };
-
-  // Check user answer selection
-  const handleSelectAnswer = (idx: number) => {
-    if (isAnswered || gameState !== "playing") return;
-
-    setSelectedAnswer(idx);
-    setIsAnswered(true);
-
-    const isCorrect = idx === activeQuestion.correctIndex;
-    let pointsEarned = 0;
-
-    if (isCorrect) {
-      // Base score 10 + speed bonus depending on remaining seconds
-      pointsEarned = 10 + Math.round(questionTimer);
-      setScoreMe((s) => s + pointsEarned);
-
-      // System notification
-      const userName = currentUser?.full_name || "Lê Minh";
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now(),
-          name: "Hệ thống",
-          text: `Bạn (${userName}) đã trả lời chính xác câu ${activeQuestion.id} trong ${10 - questionTimer}s và nhận được +${pointsEarned} điểm!`,
-          type: "system",
-        },
-      ]);
-    } else {
-      const userName = currentUser?.full_name || "Lê Minh";
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now(),
-          name: "Hệ thống",
-          text: `Bạn (${userName}) đã trả lời sai câu ${activeQuestion.id}. Đáp án đúng là: ${activeQuestion.options[activeQuestion.correctIndex]}`,
-          type: "system",
-        },
-      ]);
-    }
-
-    // Bot behaviors simulation
-    simulateBotAnswering(isCorrect);
-
-    // Auto advance to next question
-    setTimeout(() => {
-      goToNextQuestion();
-    }, 2500);
-  };
-
-  // Simulate other bots' answering to build leaderboard tension
-  const simulateBotAnswering = (userWasCorrect: boolean) => {
-    // 1. Hoàng Anh has 70% chance to be correct
-    const haCorrect = Math.random() < 0.7;
-    const haPoints = haCorrect ? 10 + Math.floor(Math.random() * 8) : 0;
-    if (haCorrect) setScoreHoangAnh((s) => s + haPoints);
-
-    // 2. Mai Linh has 60% chance to be correct
-    const mlCorrect = Math.random() < 0.6;
-    const mlPoints = mlCorrect ? 10 + Math.floor(Math.random() * 7) : 0;
-    if (mlCorrect) setScoreMaiLinh((s) => s + mlPoints);
-
-    // 3. Tuấn has 50% chance to be correct
-    const tCorrect = Math.random() < 0.5;
-    const tPoints = tCorrect ? 10 + Math.floor(Math.random() * 6) : 0;
-    if (tCorrect) setScoreTuan((s) => s + tPoints);
-
-    // Broadcast messages for who answered correctly
-    setTimeout(() => {
-      const correctBots: string[] = [];
-      if (haCorrect) correctBots.push(`Hoàng Anh (+${haPoints} điểm)`);
-      if (mlCorrect) correctBots.push(`Mai Linh (+${mlPoints} điểm)`);
-      if (tCorrect) correctBots.push(`Tuấn (+${tPoints} điểm)`);
-
-      if (correctBots.length > 0) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: Date.now() + 1,
-            name: "Hệ thống",
-            text: `${correctBots.join(", ")} đã trả lời chính xác câu hỏi!`,
-            type: "system",
-          },
-        ]);
-        setUnreadMessageCount((c) => c + 1);
-      }
-    }, 800);
-  };
-
-  // Progress to next question
-  const goToNextQuestion = () => {
-    setSelectedAnswer(null);
-    setIsAnswered(false);
-    setQuestionTimer(10);
-
-    if (currentQuestionIdx < questions.length - 1) {
-      setCurrentQuestionIdx((prev) => prev + 1);
-    } else {
-      // Game ended
-      setGameState("ended");
-      setShowResultModal(true);
-      
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now(),
-          name: "Hệ thống",
-          text: "Trận đấu trắc nghiệm kết thúc! Xin chúc mừng tất cả các tuyển thủ.",
-          type: "system",
-        },
-      ]);
-    }
-  };
-
-  // Toggle user ready state in sidebar
-  const handleToggleReady = () => {
-    const nextState = !readyMe;
-    setReadyMe(nextState);
-
-    // Sync notification
-    const userName = currentUser?.full_name || "Lê Minh";
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        name: "Hệ thống",
-        text: `Bạn (${userName}) đã thay đổi trạng thái sang: ${nextState ? "SẴN SÀNG" : "ĐANG CHỜ"}`,
-        type: "system",
-      },
-    ]);
-    setUnreadMessageCount((c) => c + 1);
-  };
-
-  // Send message
   const handleSend = () => {
     if (!message.trim()) return;
-
-    const userText = message.trim();
-    const userName = currentUser?.full_name || "Lê Minh";
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        name: `Bạn (${userName})`,
-        text: userText,
-        type: "me",
-      },
-    ]);
+    g.send(message.trim());
     setMessage("");
-
-    // Bots auto replies after 1.5 seconds
-    setTimeout(() => {
-      const randomReply = botReplies[Math.floor(Math.random() * botReplies.length)];
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + 2,
-          name: "Hoàng Anh",
-          text: randomReply,
-          type: "other",
-        },
-      ]);
-      setUnreadMessageCount((c) => c + 1);
-    }, 1500);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      if (message.trim()) {
+        g.send(message.trim());
+        setMessage("");
+      }
     }
   };
 
-  // Insert emoji
   const handleAddEmoji = (emoji: string) => {
     setMessage((m) => m + emoji);
     setShowEmojiDrawer(false);
   };
 
-  // Invite mock friends
   const handleInviteFriend = (friend: Friend) => {
     if (invitedFriends.includes(friend.id)) return;
     setInvitedFriends((prev) => [...prev, friend.id]);
-
-    const userName = currentUser?.full_name || "Lê Minh";
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        name: "Hệ thống",
-        text: `Bạn (${userName}) đã gửi lời mời tham gia phòng game cho ${friend.name}.`,
-        type: "system",
-      },
-    ]);
   };
 
-  // Restart match (podium restart button)
-  const handleRestartGame = () => {
-    setScoreMe(0);
-    setScoreHoangAnh(0);
-    setScoreMaiLinh(0);
-    setScoreTuan(0);
-    setCurrentQuestionIdx(0);
-    setQuestionTimer(10);
-    setMatchTime(585);
-    setSelectedAnswer(null);
-    setIsAnswered(false);
-    setGameState("playing");
-    setShowResultModal(false);
-
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        name: "Hệ thống",
-        text: "Trận đấu mới đã được bắt đầu lại!",
-        type: "system",
-      },
-    ]);
-  };
-
-  // Pause action click
-  const handlePauseMatch = () => {
-    if (!isMeHost) return;
-    setGameState("paused");
-    setShowPauseModal(true);
-
-    const hostName = roomData?.participants?.find((p) => Number(p.user_id) === Number(roomData.host_id))?.full_name || "chủ phòng";
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        name: "Hệ thống",
-        text: `Trận đấu đã tạm dừng bởi chủ phòng ${hostName}.`,
-        type: "system",
-      },
-    ]);
-  };
-
-  // Resume action click
-  const handleResumeMatch = () => {
-    if (!isMeHost) return;
-    setGameState("playing");
-    setShowPauseModal(false);
-
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        name: "Hệ thống",
-        text: "Trận đấu được tiếp tục diễn ra!",
-        type: "system",
-      },
-    ]);
-  };
-
-  // End early click
-  const handleEndMatchEarly = () => {
-    if (!isMeHost) return;
-    setGameState("ended");
-    setShowPauseModal(false);
-    setShowResultModal(true);
-
-    const hostName = roomData?.participants?.find((p) => Number(p.user_id) === Number(roomData.host_id))?.full_name || "chủ phòng";
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        name: "Hệ thống",
-        text: `Trận đấu đã kết thúc sớm bởi chủ phòng ${hostName}.`,
-        type: "system",
-      },
-    ]);
-  };
-
-  // Leave room confirmation
   const handleLeaveRoom = () => {
     const confirmLeave = window.confirm("Bạn có chắc chắn muốn rời phòng game này không?");
     if (confirmLeave) {
-      if (roomData?.room_id) {
-        leaveRoomMutation.mutate();
-      } else {
-        navigate("/games");
-      }
+      g.leave();
     }
   };
 
-  // ── SORTED PLAYERS FOR LEADERBOARD ──
-  const players = (roomData?.participants || []).map((participant) => {
-    const isMe = Number(participant.user_id) === Number(currentUser?.user_id);
-    const score = isMe ? scoreMe : (participant.score || 0);
+  const handlePauseMatch = () => {
+    if (!g.isHost) return;
+    g.pause();
+    setShowPauseModal(true);
+  };
 
-    const nameInitial = participant.full_name.substring(0, 2);
-    const avatarElement = participant.avatar_url ? (
+  const handleResumeMatch = () => {
+    if (!g.isHost) return;
+    g.resume();
+    setShowPauseModal(false);
+  };
+
+  const handleEndMatchEarly = () => {
+    if (!g.isHost) return;
+    g.end();
+    setShowPauseModal(false);
+  };
+
+  // ── SORTED PLAYERS FOR LEADERBOARD ──
+  const players = g.leaderboard.map((entry) => {
+    const isMe = Number(entry.user_id) === Number(currentUser?.user_id);
+    const nameInitial = entry.full_name.substring(0, 2);
+    const avatarElement = entry.avatar_url ? (
       <img
-        src={participant.avatar_url}
-        alt={participant.full_name}
+        src={entry.avatar_url}
+        alt={entry.full_name}
         className="w-8 h-8 rounded-full object-cover"
       />
     ) : (
@@ -840,12 +236,12 @@ export default function Index() {
     );
 
     return {
-      id: String(participant.user_id),
-      name: participant.full_name,
+      id: String(entry.user_id),
+      name: entry.full_name,
       isMe,
-      score,
+      score: entry.score,
       avatar: avatarElement,
-      status: (isMe ? readyMe : true) ? "ready" : "waiting",
+      status: entry.is_ready ? "ready" : "waiting",
     };
   });
 
@@ -854,7 +250,7 @@ export default function Index() {
       id: "me",
       name: currentUser.full_name,
       isMe: true,
-      score: scoreMe,
+      score: 0,
       avatar: currentUser.avatar_url ? (
         <img src={currentUser.avatar_url} alt={currentUser.full_name} className="w-8 h-8 rounded-full object-cover" />
       ) : (
@@ -862,13 +258,11 @@ export default function Index() {
           {currentUser.full_name.substring(0, 2)}
         </div>
       ),
-      status: readyMe ? "ready" : "waiting",
+      status: "waiting" as const,
     }
   ] : [];
 
   const playersList = players.length > 0 ? players : fallbackPlayer;
-
-  // Dynamic ranks sorting
   const sortedPlayers = [...playersList].sort((a, b) => b.score - a.score);
   const maxScore = Math.max(...playersList.map((p) => p.score), 1);
 
@@ -908,19 +302,19 @@ export default function Index() {
             <div
               className={cn(
                 "flex items-center gap-2 px-3 py-1 rounded-full border",
-                gameState === "waiting" 
+                g.gameStatus === "WAITING" 
                   ? "bg-amber-50/50 border-amber-200/50 text-amber-600" 
                   : "bg-[#F1F5F0] border-[#E2E8E2] text-[#4A6741]"
               )}
             >
               <div className={cn(
                 "w-2 h-2 rounded-full",
-                gameState === "waiting" ? "bg-amber-500 animate-pulse" : "bg-green-500 animate-pulse"
+                g.gameStatus === "WAITING" ? "bg-amber-500 animate-pulse" : "bg-green-500 animate-pulse"
               )} />
               <span className="text-[11px] font-bold tracking-[0.55px] uppercase">
-                {gameState === "waiting" 
+                {g.gameStatus === "WAITING" 
                   ? "Đang chờ" 
-                  : (gameState === "paused" ? "Đang tạm dừng" : "Trận đấu đang diễn ra")}
+                  : (g.paused ? "Đang tạm dừng" : "Trận đấu đang diễn ra")}
               </span>
             </div>
 
@@ -991,7 +385,7 @@ export default function Index() {
             </span>
             <div className="flex flex-col items-center justify-center w-full rounded-2xl p-4 bg-[#2D3A3A] shadow-inner">
               <span className="text-[36px] font-black leading-10 tracking-[3.6px] text-white">
-                {formatTime(matchTime)}
+                {formatTime(g.matchLeft)}
               </span>
               <div className="flex items-center gap-1.5 mt-1 opacity-60">
                 <TimerIcon />
@@ -1005,26 +399,26 @@ export default function Index() {
           {/* Player List */}
           <div className="flex flex-col gap-4 p-4 flex-grow overflow-y-auto">
             <span className="text-[10px] font-bold tracking-[1px] uppercase text-gray-500">
-              Người tham gia ({(roomData?.participants || []).length}/{roomData?.max_players || 10})
+              Người tham gia ({g.leaderboard.length}/{roomData?.max_players || 10})
             </span>
             <div className="flex flex-col gap-3">
-              {(roomData?.participants || []).map((participant, index) => {
-                const isMe = Number(participant.user_id) === Number(currentUser?.user_id);
-                const isHost = Number(participant.user_id) === Number(roomData?.host_id);
-                const nameInitial = participant.full_name.substring(0, 2);
+              {g.leaderboard.map((entry) => {
+                const isMe = Number(entry.user_id) === Number(currentUser?.user_id);
+                const isHost = Number(entry.user_id) === Number(roomData?.host_id);
+                const nameInitial = entry.full_name.substring(0, 2);
 
                 return (
                   <div
-                    key={participant.user_id}
+                    key={entry.user_id}
                     className={`flex items-center gap-4 p-4 rounded-2xl border relative ${
                       isMe ? "border-green-200/50 bg-[#F1F5F0]" : "border-[#E2E8E2] bg-slate-50"
                     }`}
                   >
                     <div className="relative flex-shrink-0">
-                      {participant.avatar_url ? (
+                      {entry.avatar_url ? (
                         <img
-                          src={participant.avatar_url}
-                          alt={participant.full_name}
+                          src={entry.avatar_url}
+                          alt={entry.full_name}
                           className="w-12 h-12 rounded-2xl object-cover"
                         />
                       ) : (
@@ -1039,20 +433,20 @@ export default function Index() {
                       )}
                       <div
                         className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white ${
-                          (isMe ? readyMe : true) ? "bg-green-500" : "bg-blue-500"
+                          entry.is_ready ? "bg-green-500" : "bg-blue-500"
                         }`}
                       />
                     </div>
                     <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                       <span className="text-[14px] font-bold leading-5 text-[#2D3A3A] truncate">
-                        {isMe ? `Bạn (${participant.full_name})` : participant.full_name}
+                        {isMe ? `Bạn (${entry.full_name})` : entry.full_name}
                       </span>
                       <span
                         className={`text-[10px] font-semibold tracking-[0.25px] uppercase ${
-                          (isMe ? readyMe : true) ? "text-[#4A6741]" : "text-blue-500"
+                          entry.is_ready ? "text-[#4A6741]" : "text-blue-500"
                         }`}
                       >
-                        {(isMe ? readyMe : true) ? "Trạng thái: Sẵn sàng" : "Trạng thái: Đang chờ"}
+                        {entry.is_ready ? "Trạng thái: Sẵn sàng" : "Trạng thái: Đang chờ"}
                       </span>
                     </div>
                   </div>
@@ -1076,13 +470,13 @@ export default function Index() {
           <div className="flex gap-2 p-4 border-t border-[#E2E8E2] bg-white flex-shrink-0">
             <button
               onClick={handlePauseMatch}
-              disabled={gameState !== "playing" || !isMeHost}
+              disabled={g.gameStatus !== "PLAYING" || g.paused || !g.isHost}
               className="flex-1 py-2 rounded-lg text-[12px] font-bold border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
             >
               Dừng trận
             </button>
             <button
-              onClick={handleToggleReady}
+              onClick={g.ready}
               className="flex-1 py-2 rounded-lg text-[12px] font-bold text-white transition duration-200"
               style={{ background: readyMe ? "#3B82F6" : "#4A6741" }}
             >
@@ -1102,7 +496,7 @@ export default function Index() {
             "flex-grow flex items-center justify-center p-6 overflow-y-auto",
             activeTab === "game" ? "flex" : "hidden md:flex"
           )}>
-            {gameState === "waiting" ? (
+            {g.gameStatus === "WAITING" ? (
               <div className="relative w-full max-w-[600px] bg-white border border-[#E2E8E2] rounded-[32px] p-8 shadow-sm overflow-hidden flex flex-col items-center justify-center text-center min-h-[380px]">
                 {/* Decorative game console icon */}
                 <div className="w-20 h-20 bg-slate-50 border border-slate-100 rounded-3xl flex items-center justify-center mb-6 text-4xl shadow-inner animate-bounce">
@@ -1112,18 +506,17 @@ export default function Index() {
                   Phòng chờ game
                 </h2>
                 <p className="text-sm text-gray-500 max-w-[340px] mb-8 font-medium leading-relaxed">
-                  {isMeHost 
+                  {g.isHost 
                     ? "Tất cả người chơi đã sẵn sàng? Hãy nhấn nút bắt đầu phía dưới để tiến hành so tài ngay!" 
                     : "Đang chờ chủ phòng bắt đầu trận đấu. Đừng rời màn hình nhé!"}
                 </p>
 
-                {isMeHost ? (
+                {g.isHost ? (
                   <button
-                    onClick={handleStartMatch}
-                    disabled={startRoomMutation.isPending}
-                    className="px-8 py-3.5 bg-[#4A6741] hover:bg-[#3c5435] disabled:opacity-50 text-white font-extrabold rounded-2xl transition duration-200 shadow-lg shadow-green-100 flex items-center gap-2 text-sm uppercase tracking-wider active:scale-95 cursor-pointer"
+                    onClick={g.start}
+                    className="px-8 py-3.5 bg-[#4A6741] hover:bg-[#3c5435] text-white font-extrabold rounded-2xl transition duration-200 shadow-lg shadow-green-100 flex items-center gap-2 text-sm uppercase tracking-wider active:scale-95 cursor-pointer"
                   >
-                    {startRoomMutation.isPending ? "Đang khởi tạo..." : "Bắt đầu trận đấu"}
+                    Bắt đầu trận đấu
                   </button>
                 ) : (
                   <div className="flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-[#F1F5F0] border border-green-100">
@@ -1155,25 +548,24 @@ export default function Index() {
                     <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" />
                   </svg>
                   <span className="text-[12px] font-extrabold tracking-wide uppercase">
-                    {activeQuestion.category}
+                    {g.activeQuestion?.category}
                   </span>
                 </div>
 
                 {/* Question Text */}
                 <h2 className="text-[20px] font-extrabold text-center text-[#2D3A3A] mb-1.5 max-w-[500px]">
-                  {activeQuestion.question}
+                  {g.activeQuestion?.question}
                 </h2>
                 <p className="text-[12px] text-gray-500 font-semibold mb-6">
-                  {activeQuestion.description}
+                  {g.activeQuestion?.description}
                 </p>
 
                 {/* 4 Answer Grid Options */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full mb-6">
-                  {activeQuestion.options.map((opt, idx) => {
-                    const isSelected = selectedAnswer === idx;
-                    const isCorrect = idx === activeQuestion.correctIndex;
-                    const showWrong = isSelected && !isCorrect;
-                    const showRight = isAnswered && isCorrect;
+                  {g.activeQuestion?.options.map((opt, idx) => {
+                    const isSelected = g.selected === idx;
+                    const showRight = g.reveal === idx;
+                    const showWrong = g.selected === idx && g.reveal !== null && g.reveal !== idx;
 
                     let borderClass = "border-[#E2E8E2] hover:border-green-300";
                     let bgClass = "bg-white";
@@ -1195,8 +587,8 @@ export default function Index() {
                     return (
                       <button
                         key={idx}
-                        onClick={() => handleSelectAnswer(idx)}
-                        disabled={isAnswered || gameState !== "playing"}
+                        onClick={() => g.answer(idx)}
+                        disabled={!g.windowOpen || g.alreadyAnswered}
                         className={`answer-card px-5 py-4 rounded-2xl border text-center transition duration-200 cursor-pointer disabled:cursor-default ${borderClass} ${bgClass}`}
                       >
                         <span className={`text-[14px] font-bold ${textClass}`}>
@@ -1213,8 +605,8 @@ export default function Index() {
                     <div
                       className="h-full rounded-full transition-all duration-1000"
                       style={{
-                        width: `${(questionTimer / 10) * 100}%`,
-                        background: questionTimer <= 3 ? "#EF4444" : "#22C55E",
+                        width: `${(g.secondsLeft / clock.ANSWER_WINDOW_SECONDS) * 100}%`,
+                        background: g.secondsLeft <= 3 ? "#EF4444" : "#22C55E",
                       }}
                     />
                   </div>
@@ -1226,8 +618,8 @@ export default function Index() {
                     </svg>
                     <span>
                       Trả lời nhanh để giành điểm! Mỗi câu chỉ có{" "}
-                      <strong className={questionTimer <= 3 ? "text-red-500 font-bold" : "text-green-600 font-bold"}>
-                        {questionTimer} giây
+                      <strong className={g.secondsLeft <= 3 ? "text-red-500 font-bold" : "text-green-600 font-bold"}>
+                        {g.secondsLeft} giây
                       </strong>.
                     </span>
                   </div>
@@ -1283,7 +675,7 @@ export default function Index() {
               ref={chatContainerRef}
               className="flex-1 overflow-y-auto px-6 py-4 flex flex-col gap-3"
             >
-              {messages.map((msg) => (
+              {g.messages.map((msg) => (
                 <div key={msg.id}>
                   {msg.type === "system" && (
                     <div className="flex items-start gap-2">
@@ -1739,17 +1131,16 @@ export default function Index() {
 
             {/* Buttons control */}
             <div className="flex items-center justify-end gap-3 border-t border-[#E2E8E2] pt-4">
+              {g.isHost && (
+                <button
+                  onClick={g.start}
+                  className="px-5 py-2.5 rounded-xl border border-[#4A6741] text-[#4A6741] font-bold hover:bg-[#F1F5F0] transition duration-200 cursor-pointer"
+                >
+                  Chơi lại
+                </button>
+              )}
               <button
-                onClick={handleRestartGame}
-                className="px-5 py-2.5 rounded-xl border border-[#4A6741] text-[#4A6741] font-bold hover:bg-[#F1F5F0] transition duration-200 cursor-pointer"
-              >
-                Chơi lại
-              </button>
-              <button
-                onClick={() => {
-                  setShowResultModal(false);
-                  navigate("/games");
-                }}
+                onClick={g.leave}
                 className="px-5 py-2.5 rounded-xl bg-[#4A6741] text-white font-bold hover:bg-[#3c5435] transition duration-200 cursor-pointer"
               >
                 Thoát phòng
