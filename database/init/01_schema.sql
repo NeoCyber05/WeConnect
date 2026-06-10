@@ -169,6 +169,10 @@ CREATE TABLE GAME_ROOMS (
     max_players INT          DEFAULT 10,
     status      VARCHAR(20)  DEFAULT 'WAITING', -- WAITING | PLAYING | ENDED
     created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    started_at  TIMESTAMP    NULL,
+    paused_at   TIMESTAMP    NULL,
+    ended_at    TIMESTAMP    NULL,
+    question_ids JSON        NULL,
     FOREIGN KEY (host_id) REFERENCES USERS(user_id) ON DELETE CASCADE
 );
 
@@ -180,6 +184,7 @@ CREATE TABLE GAME_PARTICIPANTS (
     joined_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     left_at        TIMESTAMP NULL,
     score          INT       DEFAULT 0,
+    is_ready       BOOLEAN   DEFAULT FALSE,
     FOREIGN KEY (room_id)  REFERENCES GAME_ROOMS(room_id) ON DELETE CASCADE,
     FOREIGN KEY (user_id)  REFERENCES USERS(user_id)     ON DELETE CASCADE
 );
@@ -215,6 +220,35 @@ CREATE TABLE GAMES (
     icon_bg     VARCHAR(50),
     badge_bg    VARCHAR(50),
     badge_text  VARCHAR(50)
+);
+
+-- ── 17. GAME_QUESTIONS ───────────────────────────────────────
+CREATE TABLE GAME_QUESTIONS (
+    question_id   BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    game_type     VARCHAR(50)  NOT NULL,        -- QUIZ | KANJI
+    category      VARCHAR(100) NOT NULL,
+    question      TEXT         NOT NULL,
+    description   VARCHAR(255),
+    options       JSON         NOT NULL,
+    correct_index TINYINT      NOT NULL,
+    hint          VARCHAR(255),
+    difficulty    TINYINT      DEFAULT 1
+);
+CREATE INDEX idx_game_questions_type ON GAME_QUESTIONS(game_type);
+
+-- ── 18. GAME_ANSWERS ─────────────────────────────────────────
+CREATE TABLE GAME_ANSWERS (
+    answer_id      BIGINT    AUTO_INCREMENT PRIMARY KEY,
+    room_id        BIGINT    NOT NULL,
+    user_id        BIGINT    NOT NULL,
+    question_index INT       NOT NULL,
+    selected_index TINYINT   NOT NULL,
+    is_correct     BOOLEAN   NOT NULL,
+    points         INT       NOT NULL DEFAULT 0,
+    answered_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_answer_room_user_q (room_id, user_id, question_index),
+    FOREIGN KEY (room_id) REFERENCES GAME_ROOMS(room_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES USERS(user_id)     ON DELETE CASCADE
 );
 
 -- ============================================================
