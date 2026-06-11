@@ -415,7 +415,7 @@ def translate_message(
                 f"Return only the translated text:\n\n{message.content}"
             )
             response = client.models.generate_content(
-                model="gemini-1.5-flash-latest",
+                model="gemini-2.5-flash",
                 contents=prompt,
             )
             message.translated_content = (response.text or "").strip()
