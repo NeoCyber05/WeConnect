@@ -340,7 +340,15 @@ const resources = {
         "Vẽ tranh": "Vẽ tranh",
         "Yoga": "Yoga",
         "Kỹ thuật": "Kỹ thuật",
-        "Ẩm thực": "Ẩm thực"
+        "Gaming": "Gaming",
+        "Công nghệ": "Công nghệ",
+        "GIẢI TRÍ": "GIẢI TRÍ",
+        "HỌC THUẬT": "HỌC THUẬT",
+        "KHÁM PHÁ": "KHÁM PHÁ",
+        "KỸ THUẬT": "KỸ THUẬT",
+        "NGHỆ THUẬT": "NGHỆ THUẬT",
+        "NGÔN NGỮ": "NGÔN NGỮ",
+        "SỨC KHOẺ": "SỨC KHOẺ"
       },
       locations: {
         "Hà Nội": "Hà Nội",
@@ -731,7 +739,15 @@ const resources = {
         "Vẽ tranh": "イラスト",
         "Yoga": "ヨガ",
         "Kỹ thuật": "技術",
-        "Ẩm thực": "グルメ"
+        "Gaming": "ゲーム",
+        "Công nghệ": "テクノロジー",
+        "GIẢI TRÍ": "エンターテイメント",
+        "HỌC THUẬT": "学術",
+        "KHÁM PHÁ": "探検",
+        "KỸ THUẬT": "技術",
+        "NGHỆ THUẬT": "芸術",
+        "NGÔN NGỮ": "言語",
+        "SỨC KHOẺ": "健康"
       },
       locations: {
         "Hà Nội": "ハノイ",

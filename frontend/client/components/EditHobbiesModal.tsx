@@ -78,7 +78,7 @@ export default function EditHobbiesModal({ isOpen, onClose, selectedHobbyIds }: 
           <div className="space-y-6">
             {groupedHobbies && Object.entries(groupedHobbies).map(([category, hobbies]) => (
               <div key={category} className="space-y-3">
-                <h4 className="text-sm font-bold text-wc-gray uppercase tracking-wider">{category}</h4>
+                <h4 className="text-sm font-bold text-wc-gray uppercase tracking-wider">{t(`hobbiesList.${category}`, { defaultValue: category })}</h4>
                 <div className="flex flex-wrap gap-2">
                   {hobbies.map((hobby) => {
                     const isSelected = currentSelectedIds.includes(hobby.hobby_id);
