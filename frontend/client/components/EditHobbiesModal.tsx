@@ -44,11 +44,11 @@ export default function EditHobbiesModal({ isOpen, onClose, selectedHobbyIds }: 
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["me"] });
-      toast({ title: "Thành công", description: "Sở thích đã được cập nhật." });
+      toast({ title: t("profile.success"), description: t("profile.hobbiesUpdated") });
       onClose();
     },
     onError: (error: Error) => {
-      toast({ title: "Lỗi", description: error.message, variant: "destructive" });
+      toast({ title: t("profile.error"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -72,7 +72,7 @@ export default function EditHobbiesModal({ isOpen, onClose, selectedHobbyIds }: 
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle className="text-wc-dark font-bold text-xl">Chọn sở thích của bạn</DialogTitle>
+          <DialogTitle className="text-wc-dark font-bold text-xl">{t("profile.editHobbies")}</DialogTitle>
         </DialogHeader>
         <div className="overflow-y-auto max-h-[50vh] pr-2 py-2">
           <div className="space-y-6">
@@ -108,14 +108,14 @@ export default function EditHobbiesModal({ isOpen, onClose, selectedHobbyIds }: 
             onClick={onClose}
             className="border-wc-border text-wc-gray"
           >
-            Hủy
+            {t("profile.cancel")}
           </Button>
           <Button
             onClick={handleSave}
             disabled={mutation.isPending}
             className="bg-wc-green hover:bg-wc-green/90 text-white font-bold px-8"
           >
-            {mutation.isPending ? "Đang lưu..." : "Lưu thay đổi"}
+            {mutation.isPending ? t("profile.saving") : t("profile.save")}
           </Button>
         </DialogFooter>
       </DialogContent>
