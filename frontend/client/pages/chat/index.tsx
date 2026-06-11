@@ -1053,6 +1053,26 @@ function ChatMessage({
 
 // ─── Chat Window ──────────────────────────────────────────────────────────────
 
+function getEmojiPickerLanguage(i18nLanguage: string) {
+  const lang = i18nLanguage.split("-")[0].toLowerCase();
+  const supported: Record<string, string> = {
+    en: "en",
+    ja: "ja",
+    jp: "ja",
+    ko: "ko",
+    zh: "zh",
+    fr: "fr",
+    de: "de",
+    es: "es",
+    it: "it",
+    pt: "pt",
+    ru: "ru",
+    ar: "ar",
+    tr: "tr",
+  };
+  return supported[lang] || "en";
+}
+
 function ChatWindow({
   conv,
   messages,
@@ -1080,7 +1100,7 @@ function ChatWindow({
   onBack?: () => void;
   className?: string;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [inputValue, setInputValue] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -1325,7 +1345,14 @@ function ChatWindow({
             </button>
             {showEmojiPicker && (
               <div ref={emojiPickerRef} className="absolute bottom-full right-0 mb-2 z-50">
-                <EmojiPicker onEmojiClick={handleAddEmoji} width={300} height={350} />
+                <EmojiPicker
+                  {...({
+                    onEmojiClick: handleAddEmoji,
+                    width: 300,
+                    height: 350,
+                    language: getEmojiPickerLanguage(i18n.language),
+                  } as any)}
+                />
               </div>
             )}
           </div>
