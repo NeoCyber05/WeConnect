@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import EditEventModal, { Event } from "@/components/EditEventModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import { getImageUrl } from "@/lib/utils";
 
 interface EventOut {
   event_id: number;
@@ -83,7 +84,7 @@ function mapEventOutToEvent(e: EventOut): Event {
     endDate: formatDateTimeLocal(e.end_time),
     location: e.location || "",
     description: e.description || "",
-    coverImage: e.image_url || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=200&fit=crop",
+    coverImage: getImageUrl(e.image_url, "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=200&fit=crop"),
     status: isCancelled ? "cancelled" : (isClosed ? "closed" : timeStatus),
     timeStatus,
     isClosed,

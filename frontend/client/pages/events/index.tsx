@@ -81,6 +81,8 @@ interface UserOut {
   role: string;
 }
 
+import { getImageUrl } from "@/lib/utils";
+
 function mapEventOut(event: EventOut): EventData & { organizer_id: number } {
   const isOnline = event.location?.toLowerCase().includes("online") ||
     event.location?.toLowerCase().includes("zoom") ||
@@ -96,7 +98,7 @@ function mapEventOut(event: EventOut): EventData & { organizer_id: number } {
   return {
     id: event.event_id,
     title: event.title,
-    image: event.image_url || "https://api.builder.io/api/v1/image/assets/TEMP/fd5eae51d044af4bbeae69c20d5f11fb1e8465b6?width=576",
+    image: getImageUrl(event.image_url, "https://api.builder.io/api/v1/image/assets/TEMP/fd5eae51d044af4bbeae69c20d5f11fb1e8465b6?width=576"),
     badge: isOnline ? "ONLINE" : "OFFLINE",
     badgeOnline: isOnline,
     date,
@@ -125,10 +127,15 @@ function EventCard({ event, currentUserId }: { event: EventData & { organizer_id
   return (
     <div className="flex flex-col rounded-2xl border border-wc-border bg-white overflow-hidden hover:shadow-lg transition-shadow">
       <Link to={`/events/${event.id}`} className="flex flex-col flex-1">
-        <div className="relative h-48 overflow-hidden">
+        <div className="relative h-48 overflow-hidden bg-[#F6F3F5]">
           <img
             src={event.image}
             alt={event.title}
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.onerror = null; // Prevent infinite loop if fallback also fails
+              target.src = "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=200&fit=crop";
+            }}
             className="w-full h-full object-cover transition-transform hover:scale-105 duration-500"
           />
           <div
@@ -144,7 +151,7 @@ function EventCard({ event, currentUserId }: { event: EventData & { organizer_id
 
         <div className="flex flex-col flex-1 p-4">
           <h3 className="text-[18px] font-bold text-wc-dark leading-7 mb-2 hover:text-wc-green transition-colors">
-            {event.title}
+            {t(`eventTitles.${event.title}`, { defaultValue: event.title })}
           </h3>
 
           <div className="flex flex-col gap-2 flex-1">
@@ -154,7 +161,7 @@ function EventCard({ event, currentUserId }: { event: EventData & { organizer_id
             </div>
             <div className="flex items-center gap-2">
               <LocationIcon type={event.locationType} />
-              <span className="text-xs text-wc-gray leading-4 truncate">{event.location}</span>
+              <span className="text-xs text-wc-gray leading-4 truncate">{t(`locations.${event.location}`, { defaultValue: event.location })}</span>
             </div>
           </div>
         </div>
@@ -307,11 +314,11 @@ export default function Index() {
                   className="w-full px-4 py-2.5 bg-wc-bg border-none rounded-xl text-sm focus:ring-2 focus:ring-wc-green/20 transition-all appearance-none cursor-pointer"
                 >
                   <option value="all">{t("events.categoryAll")}</option>
-                  <option value="Công nghệ">Công nghệ</option>
-                  <option value="Kinh doanh">Kinh doanh</option>
-                  <option value="Giáo dục">Giáo dục</option>
-                  <option value="Nghệ thuật">Nghệ thuật</option>
-                  <option value="Khác">Khác</option>
+                  <option value="Công nghệ">{t("eventCategories.Công nghệ", { defaultValue: "Công nghệ" })}</option>
+                  <option value="Kinh doanh">{t("eventCategories.Kinh doanh", { defaultValue: "Kinh doanh" })}</option>
+                  <option value="Giáo dục">{t("eventCategories.Giáo dục", { defaultValue: "Giáo dục" })}</option>
+                  <option value="Nghệ thuật">{t("eventCategories.Nghệ thuật", { defaultValue: "Nghệ thuật" })}</option>
+                  <option value="Khác">{t("eventCategories.Khác", { defaultValue: "Khác" })}</option>
                 </select>
               </div>
 
