@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile, status
 from fastapi.encoders import jsonable_encoder
 from google import genai
@@ -21,6 +23,7 @@ from app.schemas.message import (
 from app.utils.media import save_chat_file
 from app.utils.pusher import authenticate_channel, trigger_event
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -412,18 +415,20 @@ def translate_message(
                 f"Return only the translated text:\n\n{message.content}"
             )
             response = client.models.generate_content(
-                model="gemini-3.1-flash-lite",
+                model="gemini-1.5-flash",
                 contents=prompt,
             )
             message.translated_content = (response.text or "").strip()
             db.commit()
             db.refresh(message)
         except APIError as exc:
+            logger.exception("Gemini API error during translation")
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail=f"Error communicating with Gemini API: {str(exc)}",
             )
         except Exception as exc:
+            logger.exception("Unexpected error during translation")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"An error occurred during translation: {str(exc)}",
