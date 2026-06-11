@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import { useTranslation } from "react-i18next";
+import { getImageUrl } from "@/lib/utils";
 
 interface StatsOverview {
   total_events: number;
@@ -170,7 +171,7 @@ export default function Index() {
     rank: `#${i + 1}`,
     rankBg: i === 0 ? "bg-[#ECFDF5]" : "bg-[#F0FDF4]",
     rankColor: i === 0 ? "text-[#059669]" : "text-[#16A34A]",
-    img: e.image_url || localizedFeaturedEvents[i]?.img || "",
+    img: getImageUrl(e.image_url, localizedFeaturedEvents[i]?.img || ""),
   }));
 
   const displayedFeaturedEvents = topEvents.length > 0 ? topEvents : localizedFeaturedEvents;
@@ -320,7 +321,16 @@ export default function Index() {
                 {displayedFeaturedEvents.map((event) => (
                   <div key={event.id} className="flex items-center gap-3 px-2 py-2 rounded-[10px]">
                     <div className="w-10 h-10 rounded flex-shrink-0 bg-[#F1F5F9] overflow-hidden">
-                      <img src={event.img} alt={event.title} className="w-full h-full object-cover" />
+                      <img 
+                        src={event.img} 
+                        alt={event.title} 
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.onerror = null;
+                          target.src = "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=80&h=80&fit=crop";
+                        }}
+                        className="w-full h-full object-cover" 
+                      />
                     </div>
                     <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                       <p className="text-black text-xs font-bold leading-4 truncate">{event.title}</p>

@@ -5,6 +5,7 @@ import EditEventModal, { Event } from "@/components/EditEventModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import { useTranslation } from "react-i18next";
+import { getImageUrl } from "@/lib/utils";
 
 interface FeedbackOut {
   feedback_id: number;
@@ -54,7 +55,7 @@ function mapEventOutToEditEvent(e: EventOut): Event {
     endDate: e.end_time || e.start_time,
     location: e.location,
     description: e.description,
-    coverImage: e.image_url || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=200&fit=crop",
+    coverImage: getImageUrl(e.image_url, "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=200&fit=crop"),
     status,
     timeStatus: apiStatus === "FINISHED" ? "finished" : "ongoing",
     isClosed: apiStatus === "FINISHED",
@@ -87,7 +88,7 @@ const BackArrowIcon = () => (
 );
 
 export default function Index() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
@@ -187,19 +188,19 @@ export default function Index() {
 
         <div className="relative rounded-lg overflow-hidden h-[280px] sm:h-[360px] lg:h-[450px] bg-[#F6F3F5] mb-6">
           <img
-            src={event.image_url || "https://api.builder.io/api/v1/image/assets/TEMP/78e3156d16c6300089b55bfaf620fc8759e9c921?width=2264"}
+            src={getImageUrl(event.image_url, "https://api.builder.io/api/v1/image/assets/TEMP/78e3156d16c6300089b55bfaf620fc8759e9c921?width=2264")}
             alt={event.title}
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[rgba(19,27,46,0.85)] via-[rgba(19,27,46,0)] to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
             <div className="inline-flex items-center bg-brand-green px-3 py-1 rounded-sm mb-3">
-              <span className="text-white text-[10px] font-bold tracking-[1.5px] uppercase">{event.status}</span>
+              <span className="text-white text-[10px] font-bold tracking-[1.5px] uppercase">{t(`eventStatus.${event.status}`, { defaultValue: event.status })}</span>
             </div>
             {event.category && (
               <div className="mb-3">
                 <span className="inline-block bg-white/20 backdrop-blur-md text-white text-[11px] font-bold px-3 py-1 rounded-sm uppercase tracking-wider border border-white/30">
-                  {t(`eventCategories.${event.category}`, event.category)}
+                  {t(`eventCategories.${event.category}`, { defaultValue: event.category })}
                 </span>
               </div>
             )}
@@ -344,7 +345,7 @@ export default function Index() {
                   <div>
                     <p className="text-[#57657B] text-[10px] font-bold tracking-[1px] uppercase mb-0.5">{t("events.category")}</p>
                     <span className="inline-block bg-wc-light-green text-wc-green text-xs font-bold px-3 py-1 rounded-full">
-                      {event.category}
+                      {t(`eventCategories.${event.category}`, { defaultValue: event.category })}
                     </span>
                   </div>
                 </div>
@@ -357,11 +358,11 @@ export default function Index() {
                 <div>
                   <p className="text-[#57657B] text-[10px] font-bold tracking-[1px] uppercase mb-0.5">{t("events.time")}</p>
                   <p className="text-[#1B1B1D] text-sm font-semibold leading-5">
-                    {event.start_time ? new Date(event.start_time).toLocaleDateString("vi-VN", { year: "numeric", month: "long", day: "numeric", weekday: "long" }) : ""}
+                    {event.start_time ? new Date(event.start_time).toLocaleDateString(i18n.language === 'ja' ? 'ja-JP' : 'vi-VN', { year: "numeric", month: "long", day: "numeric", weekday: "long" }) : ""}
                   </p>
                   <p className="text-[#45464D] text-xs leading-4">
-                    {event.start_time ? new Date(event.start_time).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : ""}
-                    {event.end_time ? ` 〜 ${new Date(event.end_time).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}` : ""}
+                    {event.start_time ? new Date(event.start_time).toLocaleTimeString(i18n.language === 'ja' ? 'ja-JP' : 'vi-VN', { hour: "2-digit", minute: "2-digit" }) : ""}
+                    {event.end_time ? ` 〜 ${new Date(event.end_time).toLocaleTimeString(i18n.language === 'ja' ? 'ja-JP' : 'vi-VN', { hour: "2-digit", minute: "2-digit" })}` : ""}
                   </p>
                 </div>
               </div>

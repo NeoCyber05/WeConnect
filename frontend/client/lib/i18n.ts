@@ -47,6 +47,8 @@ const resources = {
         logout: "Đăng xuất"
       },
       home: {
+        defaultName: "bạn",
+        noFeaturedEvents: "Chưa có sự kiện nổi bật nào.",
         welcomeBack: "CHÀO MỪNG TRỞ LẠI",
         heroTitle: "Konnichiwa, {{name}}-san!",
         heroDescription: "Khám phá những sự kiện văn hóa Nhật Bản mới nhất và kết nối với cộng đồng yêu thích Xứ sở Mặt trời mọc ngay hôm nay.",
@@ -107,7 +109,8 @@ const resources = {
         cancelRegistration: "Huỷ đăng ký",
         registerNow: "Đăng ký tham gia sự kiện này",
         processing: "Đang xử lý...",
-        deleteConfirm: "Bạn có chắc chắn muốn xoá sự kiện này?"
+        deleteConfirm: "Bạn có chắc chắn muốn xoá sự kiện này?",
+        eventDetails: "Chi tiết sự kiện"
       },
       friends: {
         friendRequests: "Lời mời kết bạn",
@@ -160,7 +163,14 @@ const resources = {
         players: "Người chơi",
         join: "Tham gia",
         waiting: "Đang chờ",
-        playing: "Đang đấu"
+        playing: "Đang đấu",
+        createRoomBtn: "Tạo phòng",
+        createNewRoom: "Tạo phòng chơi mới",
+        selectGame: "Chọn trò chơi",
+        maxPlayers: "Số người chơi tối đa",
+        playersCount: "{{count}} người chơi",
+        cancel: "Hủy",
+        creating: "Đang tạo..."
       },
       chat: {
         chat: "Trò chuyện",
@@ -306,7 +316,61 @@ const resources = {
         "Ẩm thực": "Ẩm thực",
         "Trà đạo": "Trà đạo",
         "UI/UX Design": "UI/UX Design",
-        "Lập trình": "Lập trình"
+        "Lập trình": "Lập trình",
+        "Nấu ăn" : "Nấu ăn",
+        "Manga": "Manga",
+        "Vẽ tranh": "Vẽ tranh",
+        "Yoga": "Yoga"
+      },
+      locations: {
+        "Hà Nội": "Hà Nội",
+        "Hồ Chí Minh": "Hồ Chí Minh",
+        "Đà Nẵng": "Đà Nẵng",
+        "Hải Phòng": "Hải Phòng",
+        "Huế": "Huế",
+        "Tokyo": "Tokyo",
+        "Osaka": "Osaka",
+        "Kyoto": "Kyoto",
+        "Nagoya": "Nagoya",
+        "TP.HCM": "TP.HCM",
+        "Cần Thơ": "Cần Thơ",
+        "Fukuoka": "Fukuoka"
+      },
+      eventTitles: {
+        "Lễ hội hoa anh đào": "Lễ hội hoa anh đào",
+        "Học làm Sushi": "Học làm Sushi",
+        "Bóng đá cộng đồng": "Bóng đá cộng đồng",
+        "Tiếng Nhật giao tiếp": "Tiếng Nhật giao tiếp",
+        "Triển lãm Manga": "Triển lãm Manga",
+        "Đêm nhạc Trịnh": "Đêm nhạc Trịnh",
+        "Leo núi Phú Sĩ": "Leo núi Phú Sĩ",
+        "Giao lưu J-Pop": "Giao lưu J-Pop",
+        "Hùng biện tiếng Nhật": "Hùng biện tiếng Nhật",
+        "Offline fan anime": "Offline fan anime",
+        "Hội thảo du học": "Hội thảo du học",
+        "Tiệc trà đạo": "Tiệc trà đạo",
+        "Ngày hội việc làm IT": "Ngày hội việc làm IT",
+        "Workshop Thư pháp": "Workshop Thư pháp",
+        "Cắm hoa Ikebana": "Cắm hoa Ikebana"
+      },
+      gameTitles: {
+        "Luyện đọc Kanji": "Luyện đọc Kanji",
+        "Trắc nghiệm Kanji": "Trắc nghiệm Kanji",
+        "Đố vui văn hóa Nhật Bản": "Đố vui văn hóa Nhật Bản",
+        "Kiến thức chung": "Kiến thức chung"
+      },
+      gameDescriptions: {
+        "Luyện đọc Kanji": "Trắc nghiệm Kanji • 2-4 người",
+        "Trắc nghiệm Kanji": "Trắc nghiệm Kanji • 2-4 người",
+        "Đố vui văn hóa Nhật Bản": "Kiến thức chung • 4-10 người",
+        "Kiến thức chung": "Kiến thức chung • 4-10 người"
+      },
+      eventStatus: {
+        "UPCOMING": "SẮP DIỄN RA",
+        "ONGOING": "ĐANG DIỄN RA",
+        "FINISHED": "ĐÃ KẾT THÚC",
+        "CANCELLED": "ĐÃ HỦY",
+        "ENDED": "ĐÃ KẾT THÚC"
       }
     }
   },
@@ -354,6 +418,8 @@ const resources = {
         logout: "ログアウト"
       },
       home: {
+        defaultName: "あなた",
+        noFeaturedEvents: "注目のイベントはまだありません。",
         welcomeBack: "おかえりなさい",
         heroTitle: "こんにちは、{{name}}さん！",
         heroDescription: "最新の日本文化イベントを探索し、日出ずる国を愛するコミュニティと今すぐつながりましょう。",
@@ -385,6 +451,7 @@ const resources = {
         join: "参加する",
         backToList: "イベント一覧に戻る",
         eventInfo: "イベント情報",
+        eventDetails: "イベント詳細",
         organizer: "主催者",
         viewProfile: "プロフィールを見る",
         feedback: "レビューとフィードバック",
@@ -467,7 +534,14 @@ const resources = {
         players: "プレイヤー",
         join: "参加する",
         waiting: "待機中",
-        playing: "対戦中"
+        playing: "対戦中",
+        createRoomBtn: "ルーム作成",
+        createNewRoom: "新しいルームを作成",
+        selectGame: "ゲームを選択",
+        maxPlayers: "最大プレイヤー数",
+        playersCount: "{{count}}人",
+        cancel: "キャンセル",
+        creating: "作成中..."
       },
       chat: {
         chat: "チャット",
@@ -613,7 +687,61 @@ const resources = {
         "Ẩm thực": "グルメ",
         "Trà đạo": "茶道",
         "UI/UX Design": "UI/UXデザイン",
-        "Lập trình": "プログラミング"
+        "Lập trình": "プログラミング",
+        "Nấu ăn" : "料理",
+        "Manga": "マンガ",
+        "Vẽ tranh": "イラスト",
+        "Yoga": "ヨガ"
+      },
+      locations: {
+        "Hà Nội": "ハノイ",
+        "Hồ Chí Minh": "ホーチミン",
+        "Đà Nẵng": "ダナン",
+        "Hải Phòng": "ハイフォン",
+        "Huế": "フエ",
+        "Tokyo": "東京",
+        "Osaka": "大阪",
+        "Kyoto": "京都",
+        "Nagoya": "名古屋",
+        "TP.HCM": "ホーチミン市",
+        "Cần Thơ": "カントー",
+        "Fukuoka": "福岡"
+      },
+      eventTitles: {
+        "Lễ hội hoa anh đào": "桜祭り",
+        "Học làm Sushi": "寿司作り教室",
+        "Bóng đá cộng đồng": "コミュニティサッカー",
+        "Tiếng Nhật giao tiếp": "日本語コミュニケーション",
+        "Triển lãm Manga": "マンガ展",
+        "Đêm nhạc Trịnh": "トリン音楽の夜",
+        "Leo núi Phú Sĩ": "富士登山",
+        "Giao lưu J-Pop": "J-Pop交流",
+        "Hùng biện tiếng Nhật": "日本語弁論大会",
+        "Offline fan anime": "アニメファンのオフ会",
+        "Hội thảo du học": "留学セミナー",
+        "Tiệc trà đạo": "茶道パーティー",
+        "Ngày hội việc làm IT": "IT就職フェア",
+        "Workshop Thư pháp": "書道ワークショップ",
+        "Cắm hoa Ikebana": "生け花"
+      },
+      gameTitles: {
+        "Luyện đọc Kanji": "漢字リーディング練習",
+        "Trắc nghiệm Kanji": "漢字クイズ",
+        "Đố vui văn hóa Nhật Bản": "日本文化クイズ",
+        "Kiến thức chung": "一般知識"
+      },
+      gameDescriptions: {
+        "Luyện đọc Kanji": "漢字クイズ • 2-4人",
+        "Trắc nghiệm Kanji": "漢字クイズ • 2-4人",
+        "Đố vui văn hóa Nhật Bản": "一般知識 • 4-10人",
+        "Kiến thức chung": "一般知識 • 4-10人"
+      },
+      eventStatus: {
+        "UPCOMING": "今後の予定",
+        "ONGOING": "開催中",
+        "FINISHED": "終了",
+        "CANCELLED": "キャンセル",
+        "ENDED": "終了"
       }
     }
   }

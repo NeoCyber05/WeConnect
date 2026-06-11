@@ -2,6 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import { getImageUrl } from "@/lib/utils";
 
 const StarFull = () => (
   <svg width="22" height="21" viewBox="0 0 22 21" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -109,7 +110,7 @@ export default function Index() {
           <div className="flex flex-col sm:flex-row items-start gap-5">
             <div className="w-full sm:w-[140px] flex-shrink-0">
               <img
-                src={event.image_url || "https://api.builder.io/api/v1/image/assets/TEMP/803c3de7ce411d9f4e7d4bc98154a2da6da183bc?width=280"}
+                src={getImageUrl(event.image_url, "https://api.builder.io/api/v1/image/assets/TEMP/803c3de7ce411d9f4e7d4bc98154a2da6da183bc?width=280")}
                 alt={event.title}
                 className="w-full sm:w-[140px] h-[100px] object-cover rounded-lg"
               />
@@ -219,7 +220,7 @@ export default function Index() {
               {(participants ?? []).map(p => (
                 <div key={p.user_id} className="flex items-center gap-2">
                   <img
-                    src={p.avatar_url || "https://api.builder.io/api/v1/image/assets/TEMP/1aa6cda7cbb8af6978846088580c88c40f54f3f7?width=48"}
+                    src={getImageUrl(p.avatar_url, "https://api.builder.io/api/v1/image/assets/TEMP/1aa6cda7cbb8af6978846088580c88c40f54f3f7?width=48")}
                     alt={p.full_name}
                     className="w-6 h-6 rounded-full object-cover flex-shrink-0"
                   />
