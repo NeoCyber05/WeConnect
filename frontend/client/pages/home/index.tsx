@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import { getFriendSuggestions, sendFriendRequest } from "@/lib/friendsApi";
-
+import { getImageUrl } from "@/lib/utils";
 const NAV_LINKS = [
   {
     label: "Trang chủ",
@@ -166,8 +166,17 @@ function EventCard({
 
   return (
     <div className="flex h-40 items-stretch rounded-2xl border border-[#E2E8E2] bg-white overflow-hidden hover:shadow-md transition-shadow">
-      <Link to={`/events/${id}`} className="relative w-[130px] shrink-0 overflow-hidden">
-        <img src={image} alt={title} className="w-full h-full object-cover transition-transform hover:scale-105 duration-300" />
+      <Link to={`/events/${id}`} className="relative w-[130px] shrink-0 overflow-hidden bg-[#F6F3F5]">
+        <img 
+          src={image} 
+          alt={title} 
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.onerror = null;
+            target.src = "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=200&fit=crop";
+          }}
+          className="w-full h-full object-cover transition-transform hover:scale-105 duration-300" 
+        />
         <div className="absolute top-2 left-2 flex items-center px-2 py-0.5 rounded backdrop-blur-sm border border-white/10 bg-[rgba(45,58,58,0.6)]">
           <span className="text-white text-[8px] font-bold uppercase tracking-[0.4px]">{badgeText}</span>
         </div>
@@ -277,7 +286,7 @@ export default function Index() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const displayName = user?.full_name?.trim() || "bạn";
+  const displayName = user?.full_name?.trim() || t("home.defaultName", { defaultValue: "bạn" });
 
   useEffect(() => {
     if (user?.role === "ORGANIZER") {
@@ -311,10 +320,10 @@ export default function Index() {
       e.location?.toLowerCase().includes("meet");
     return {
       id: e.event_id,
-      image: e.image_url || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=200&fit=crop",
+      image: getImageUrl(e.image_url, "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=200&fit=crop"),
       badge: (isOnline ? "ONLINE" : "OFFLINE") as "ONLINE" | "OFFLINE",
-      title: e.title,
-      location: e.location,
+      title: t(`eventTitles.${e.title}`, { defaultValue: e.title }),
+      location: t(`locations.${e.location}`, { defaultValue: e.location }),
       locationIcon: (isOnline ? "video" : "map") as "video" | "map",
       registeredCount: e.registered_count,
       capacity: e.capacity,
@@ -322,8 +331,6 @@ export default function Index() {
       isFull: e.is_full,
     };
   });
-
-  const API_URL = (import.meta.env.VITE_API_URL as string) || "";
 
   // Fetch friend suggestions from API
   const { data: suggestionsData } = useQuery({
@@ -340,13 +347,11 @@ export default function Index() {
 
   const suggestions = (suggestionsData?.data ?? []).slice(0, 3).map((u) => ({
     userId: u.user_id,
-    avatar: u.avatar_url
-      ? u.avatar_url.startsWith("http") ? u.avatar_url : `${API_URL}${u.avatar_url}`
-      : "https://api.builder.io/api/v1/image/assets/TEMP/44f473e4387daf47f645da8834b4b9424a6c82d8?width=112",
+    avatar: getImageUrl(u.avatar_url, "https://api.builder.io/api/v1/image/assets/TEMP/44f473e4387daf47f645da8834b4b9424a6c82d8?width=112"),
     matchPercent: Math.floor(60 + Math.random() * 38),
     name: u.full_name,
-    meta: [u.japanese_level, u.location].filter(Boolean).join(" • ") || "WeConnect",
-    tags: u.hobbies.slice(0, 3),
+    meta: [u.japanese_level, t(`locations.${u.location}`, { defaultValue: u.location })].filter(Boolean).join(" • ") || "WeConnect",
+    tags: u.hobbies.slice(0, 3).map(hobby => t(`hobbiesList.${hobby}`, { defaultValue: hobby })),
     onAdd: () => sendRequestMutation.mutate(u.user_id),
     isPending: sendRequestMutation.isPending && sendRequestMutation.variables === u.user_id,
   }));
@@ -417,7 +422,7 @@ export default function Index() {
                 </div>
               ) : (
                 <p className="text-[#6B7280] text-xs italic ml-4 col-span-2">
-                  Chưa có sự kiện nổi bật nào.
+                  {t("home.noFeaturedEvents", { defaultValue: "Chưa có sự kiện nổi bật nào." })}
                 </p>
               )}
             </div>

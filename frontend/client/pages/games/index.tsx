@@ -108,8 +108,8 @@ export default function Index() {
     return {
       id: game.game_id,
       type: game.game_type,
-      name: game.name,
-      description: game.description || "",
+      name: t(`gameTitles.${game.name}`, { defaultValue: game.name }),
+      description: t(`gameDescriptions.${game.name}`, { defaultValue: game.description || "" }),
       iconBg: game.icon_bg || "bg-gray-100",
       badgeBg: game.badge_bg || "bg-slate-100",
       badgeText: game.badge_text || "text-slate-500",
@@ -239,7 +239,7 @@ export default function Index() {
                       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                         <path d="M9 15H11V11H15V9H11V5H9V9H5V11H9V15ZM10 20C8.61667 20 7.31667 19.7375 6.1 19.2125C4.88333 18.6875 3.825 17.975 2.925 17.075C2.025 16.175 1.3125 15.1167 0.7875 13.9C0.2625 12.6833 0 11.3833 0 10C0 8.61667 0.2625 7.31667 0.7875 6.1C1.3125 4.88333 2.025 3.825 2.925 2.925C3.825 2.025 4.88333 1.3125 6.1 0.7875C7.31667 0.2625 8.61667 0 10 0C11.3833 0 12.6833 0.2625 13.9 0.7875C15.1167 1.3125 16.175 2.025 17.075 2.925C17.975 3.825 18.6875 4.88333 19.2125 6.1C19.7375 7.31667 20 8.61667 20 10C20 11.3833 19.7375 12.6833 19.2125 13.9C18.6875 15.1167 17.975 16.175 17.075 17.075C16.175 17.975 15.1167 18.6875 13.9 19.2125C12.6833 19.7375 11.3833 20 10 20ZM10 18C12.2333 18 14.125 17.225 15.675 15.675C17.225 14.125 18 12.2333 18 10C18 7.76667 17.225 5.875 15.675 4.325C14.125 2.775 12.2333 2 10 2C7.76667 2 5.875 2.775 4.325 4.325C2.775 5.875 2 7.76667 2 10C2 12.2333 2.775 14.125 4.325 15.675C5.875 17.225 7.76667 18 10 18Z" fill="white"/>
                       </svg>
-                      Tạo phòng
+                      {t("games.createRoomBtn")}
                     </button>
                     <button
                       onClick={() => joinRandomMutation.mutate(currentType)}
@@ -439,12 +439,12 @@ export default function Index() {
               </svg>
             </button>
 
-            <h3 className="text-xl font-bold mb-5" style={{ color: "#2D3A3A" }}>Tạo phòng chơi mới</h3>
+            <h3 className="text-xl font-bold mb-5" style={{ color: "#2D3A3A" }}>{t("games.createNewRoom")}</h3>
 
             <div className="flex flex-col gap-4">
               {/* Game selection */}
               <div>
-                <label className="text-xs font-bold uppercase tracking-[0.7px] text-gray-500 block mb-2">Chọn trò chơi</label>
+                <label className="text-xs font-bold uppercase tracking-[0.7px] text-gray-500 block mb-2">{t("games.selectGame")}</label>
                 <select
                   value={selectedGameId}
                   onChange={(e) => handleGameChange(e.target.value)}
@@ -452,7 +452,7 @@ export default function Index() {
                 >
                   {apiGames.map((g) => (
                     <option key={g.game_id} value={g.game_id}>
-                      {g.name}
+                      {t(`gameTitles.${g.name}`, { defaultValue: g.name })}
                     </option>
                   ))}
                 </select>
@@ -460,21 +460,21 @@ export default function Index() {
 
               {/* Max players selection */}
               <div>
-                <label className="text-xs font-bold uppercase tracking-[0.7px] text-gray-500 block mb-2">Số người chơi tối đa</label>
+                <label className="text-xs font-bold uppercase tracking-[0.7px] text-gray-500 block mb-2">{t("games.maxPlayers")}</label>
                 <select
                   value={maxPlayers}
                   onChange={(e) => setMaxPlayers(Number(e.target.value))}
                   className="w-full px-4 py-3 rounded-2xl border border-[#E2E8E2] bg-[#F8FAFC] text-sm text-gray-700 outline-none focus:ring-2 focus:ring-[#4A6741]/30 focus:border-[#4A6741]/40"
                 >
                   {selectedGameId && apiGames.find(g => g.game_id === selectedGameId)?.game_type === "CHESS" ? (
-                    <option value="2">2 người chơi</option>
+                    <option value="2">{t("games.playersCount", { count: 2 })}</option>
                   ) : selectedGameId && apiGames.find(g => g.game_id === selectedGameId)?.game_type === "KANJI" ? (
                     [2, 3, 4].map(n => (
-                      <option key={n} value={n}>{n} người chơi</option>
+                      <option key={n} value={n}>{t("games.playersCount", { count: n })}</option>
                     ))
                   ) : (
                     [2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
-                      <option key={n} value={n}>{n} người chơi</option>
+                      <option key={n} value={n}>{t("games.playersCount", { count: n })}</option>
                     ))
                   )}
                 </select>
@@ -486,7 +486,7 @@ export default function Index() {
                   onClick={() => setShowCreateModal(false)}
                   className="flex-1 px-4 py-3 border border-[#E2E8E2] bg-white hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-2xl transition-colors"
                 >
-                  Hủy
+                  {t("games.cancel")}
                 </button>
                 <button
                   onClick={() => {
@@ -502,7 +502,7 @@ export default function Index() {
                   className="flex-1 px-4 py-3 text-white text-sm font-semibold rounded-2xl shadow-sm transition-opacity hover:opacity-90 active:opacity-80 disabled:opacity-50"
                   style={{ background: "#4A6741" }}
                 >
-                  {createRoomMutation.isPending ? "Đang tạo..." : "Tạo phòng"}
+                  {createRoomMutation.isPending ? t("games.creating") : t("games.createRoomBtn")}
                 </button>
               </div>
             </div>

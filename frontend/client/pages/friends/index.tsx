@@ -157,7 +157,7 @@ function FriendRequestCard({
             {user.full_name}
           </Link>
           <p className="text-[10px] text-[#6B7280]">
-            {[user.japanese_level, user.location].filter(Boolean).join(" • ")}
+            {[user.japanese_level, user.location ? t(`locations.${user.location}`, { defaultValue: user.location }) : null].filter(Boolean).join(" • ")}
           </p>
         </div>
         <div className="flex gap-2">
@@ -209,7 +209,7 @@ function SuggestionCard({
           {user.full_name}
         </Link>
         <p className="text-[10px] text-[#6B7280]">
-          {[user.japanese_level, user.location].filter(Boolean).join(" • ")}
+          {[user.japanese_level, user.location ? t(`locations.${user.location}`, { defaultValue: user.location }) : null].filter(Boolean).join(" • ")}
         </p>
         {user.hobbies.length > 0 && (
           <div className="flex gap-1 mt-1 flex-wrap">
@@ -218,7 +218,7 @@ function SuggestionCard({
                 key={tag}
                 className="px-[6px] py-[2px] text-[8px] font-medium text-[#6B7280] bg-[#F1F5F9] rounded"
               >
-                {tag}
+                {t(`hobbiesList.${tag}`, { defaultValue: tag })}
               </span>
             ))}
           </div>
@@ -494,7 +494,7 @@ export default function FriendsPage() {
                         {friend.full_name}
                       </Link>
                       <p className="text-xs text-[#6B7280]">
-                        {[friend.japanese_level, friend.location]
+                        {[friend.japanese_level, friend.location ? t(`locations.${friend.location}`, { defaultValue: friend.location }) : null]
                           .filter(Boolean)
                           .join(" • ")}
                       </p>
@@ -589,8 +589,7 @@ export default function FriendsPage() {
             </div>
             <div className="flex flex-col gap-4">
               <p className="text-xs font-medium italic text-[#2D3A3A] leading-[1.625]">
-                "Những người bạn tốt cũng giống như tài khoản trong ngân hàng
-                niềm tin. Bạn càng giữ được lâu thì càng giá trị."
+                {t("friends.quoteText")}
               </p>
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full bg-[#4A6741]/20 shrink-0" />
