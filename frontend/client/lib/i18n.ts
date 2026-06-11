@@ -338,7 +338,9 @@ const resources = {
         "Nấu ăn" : "Nấu ăn",
         "Manga": "Manga",
         "Vẽ tranh": "Vẽ tranh",
-        "Yoga": "Yoga"
+        "Yoga": "Yoga",
+        "Kỹ thuật": "Kỹ thuật",
+        "Ẩm thực": "Ẩm thực"
       },
       locations: {
         "Hà Nội": "Hà Nội",
@@ -727,7 +729,9 @@ const resources = {
         "Nấu ăn" : "料理",
         "Manga": "マンガ",
         "Vẽ tranh": "イラスト",
-        "Yoga": "ヨガ"
+        "Yoga": "ヨガ",
+        "Kỹ thuật": "技術",
+        "Ẩm thực": "グルメ"
       },
       locations: {
         "Hà Nội": "ハノイ",
