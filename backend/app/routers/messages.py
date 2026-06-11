@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Form, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile, status
 from fastapi.encoders import jsonable_encoder
 from google import genai
 from google.genai.errors import APIError
@@ -18,6 +18,7 @@ from app.schemas.message import (
     MessageTranslateRequest,
     TypingRequest,
 )
+from app.utils.media import save_chat_file
 from app.utils.pusher import authenticate_channel, trigger_event
 
 router = APIRouter()
@@ -442,3 +443,14 @@ def translate_message(
             "target_language": body.target_language,
         }
     }
+
+
+# ── POST /upload — Upload file chung (chat, v.v.) ────────────────────────────
+@router.post("/upload")
+def upload_file(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
+    """Upload file chung cho chat và các tính năng khác (≤ 50MB)."""
+    url = save_chat_file(file, "chat", max_mb=50)
+    return {"data": {"url": url}}

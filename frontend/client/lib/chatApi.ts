@@ -104,3 +104,12 @@ export function translateMessage(messageId: number, targetLanguage: "VI" | "JA" 
 export function getPusherConfig() {
   return apiFetch<{ data: PusherConfig }>("/api/v1/pusher/config");
 }
+
+export function uploadChatFile(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+  return apiFetch<{ data: { url: string } }>("/api/v1/upload", {
+    method: "POST",
+    body: formData,
+  });
+}

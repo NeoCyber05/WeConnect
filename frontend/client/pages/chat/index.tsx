@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Pusher from "pusher-js";
+import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
 import Navbar from "@/components/Navbar";
 import { API_BASE_URL } from "@/lib/api";
 import { getAccessToken, getCurrentUser } from "@/lib/auth";
@@ -13,6 +14,7 @@ import {
   sendMessage as sendChatMessage,
   sendTypingStatus,
   translateMessage,
+  uploadChatFile,
   type ChatConversation,
   type ChatMessage as ApiChatMessage,
 } from "@/lib/chatApi";
@@ -134,6 +136,8 @@ const EMPTY_LAST_MESSAGE = "Chưa có tin nhắn";
 
 function previewContent(content: string, type?: string): string {
   if (type === "GAME_INVITE") return "🎮 Lời mời vào phòng game";
+  if (type === "FILE") return "📎 File đính kèm";
+  if (type === "IMAGE") return "🖼️ Ảnh";
   return content;
 }
 
@@ -366,34 +370,22 @@ function IconChevronDown() {
   );
 }
 
-function IconAddCircle() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <path
-        d="M9 15H11V11H15V9H11V5H9V9H5V11H9V15ZM10 20C8.61667 20 7.31667 19.7375 6.1 19.2125C4.88333 18.6875 3.825 17.975 2.925 17.075C2.025 16.175 1.3125 15.1167 0.7875 13.9C0.2625 12.6833 0 11.3833 0 10C0 8.61667 0.2625 7.31667 0.7875 6.1C1.3125 4.88333 2.025 3.825 2.925 2.925C3.825 2.025 4.88333 1.3125 6.1 0.7875C7.31667 0.2625 8.61667 0 10 0C11.3833 0 12.6833 0.2625 13.9 0.7875C15.1167 1.3125 16.175 2.025 17.075 2.925C17.975 3.825 18.6875 4.88333 19.2125 6.1C19.7375 7.31667 20 8.61667 20 10C20 11.3833 19.7375 12.6833 19.2125 13.9C18.6875 15.1167 17.975 16.175 17.075 17.075C16.175 17.975 15.1167 18.6875 13.9 19.2125C12.6833 19.7375 11.3833 20 10 20ZM10 18C12.2333 18 14.125 17.225 15.675 15.675C17.225 14.125 18 12.2333 18 10C18 7.76667 17.225 5.875 15.675 4.325C14.125 2.775 12.2333 2 10 2C7.76667 2 5.875 2.775 4.325 4.325C2.775 5.875 2 7.76667 2 10C2 12.2333 2.775 14.125 4.325 15.675C5.875 17.225 7.76667 18 10 18Z"
-        fill="#6B7280"
-      />
-    </svg>
-  );
-}
-
-function IconImage() {
+function IconFile() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
       <path
-        d="M2 18C1.45 18 0.979167 17.8042 0.5875 17.4125C0.195833 17.0208 0 16.55 0 16V2C0 1.45 0.195833 0.979167 0.5875 0.5875C0.979167 0.195833 1.45 0 2 0H16C16.55 0 17.0208 0.195833 17.4125 0.5875C17.8042 0.979167 18 1.45 18 2V16C18 16.55 17.8042 17.0208 17.4125 17.4125C17.0208 17.8042 16.55 18 16 18H2ZM2 16H16V2H2V16ZM3 14H15L11.25 9L8.25 13L6 10L3 14Z"
-        fill="#6B7280"
+        d="M10 1H3C2.46957 1 1.96086 1.21071 1.58579 1.58579C1.21071 1.96086 1 2.46957 1 3V15C1 15.5304 1.21071 16.0391 1.58579 16.4142C1.96086 16.7893 2.46957 17 3 17H15C15.5304 17 16.0391 16.7893 16.4142 16.4142C16.7893 16.0391 17 15.5304 17 15V8L10 1Z"
+        stroke="#6B7280"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
-    </svg>
-  );
-}
-
-function IconNote() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
       <path
-        d="M2 16H11V11H16V2H2V16ZM2 18C1.45 18 0.979167 17.8042 0.5875 17.4125C0.195833 17.0208 0 16.55 0 16V2C0 1.45 0.195833 0.979167 0.5875 0.5875C0.979167 0.195833 1.45 0 2 0H16C16.55 0 17.0208 0.195833 17.4125 0.5875C17.8042 0.979172 18 1.45 18 2V12L12 18H2ZM4 11V9H9V11H4ZM4 7V5H14V7H4Z"
-        fill="#6B7280"
+        d="M10 1V8H17"
+        stroke="#6B7280"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
@@ -943,6 +935,55 @@ function ChatMessage({
     );
   }
 
+  // File or image message
+  if (msg.type === "FILE" || msg.type === "IMAGE") {
+    const isMine = msg.from === "me";
+    const isImage = msg.type === "IMAGE" || /^\/(uploads\/|http).*\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(msg.content);
+    const fileUrl = msg.content.startsWith("/") ? `${API_BASE_URL}${msg.content}` : msg.content;
+    const fileName = msg.content.split("/").pop() || "file";
+
+    if (isImage) {
+      return (
+        <div className={cn("flex", isMine ? "justify-end" : "justify-start")}>
+          <div className="flex flex-col gap-1 max-w-[70%] sm:max-w-[60%]">
+            <div className={cn("rounded-2xl overflow-hidden shadow-sm", isMine ? "rounded-tr-none bg-[#4A6741]" : "rounded-tl-none bg-white border border-[#E2E8E2]")}>
+              <img src={fileUrl} alt="image" className="max-w-full h-auto object-cover" />
+            </div>
+            <span className={cn("text-[10px] text-[#6B7280] px-1", isMine && "text-right")}>
+              {msg.time}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className={cn("flex", isMine ? "justify-end" : "justify-start")}>
+        <div className="flex flex-col gap-1 max-w-[85%] sm:max-w-[75%]">
+          <a
+            href={fileUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              "flex items-center gap-2 px-3 py-2.5 rounded-2xl shadow-sm transition-colors",
+              isMine
+                ? "rounded-tr-none bg-[#4A6741] text-white hover:bg-[#3d5836]"
+                : "rounded-tl-none bg-white border border-[#E2E8E2] text-[#2D3A3A] hover:bg-[#F9FAF9]"
+            )}
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="shrink-0">
+              <path d="M2 16H11V11H16V2H2V16ZM2 18C1.45 18 0.979167 17.8042 0.5875 17.4125C0.195833 17.0208 0 16.55 0 16V2C0 1.45 0.195833 0.979167 0.5875 0.5875C0.979167 0.195833 1.45 0 2 0H16C16.55 0 17.0208 0.195833 17.4125 0.5875C17.8042 0.979172 18 1.45 18 2V12L12 18H2ZM4 11V9H9V11H4ZM4 7V5H14V7H4Z" fill="currentColor"/>
+            </svg>
+            <span className="text-sm truncate">{fileName}</span>
+          </a>
+          <span className={cn("text-[10px] text-[#6B7280] px-1", isMine && "text-right")}>
+            {msg.time}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   if (msg.from === "other") {
     return (
       <div className="flex items-start gap-3 max-w-[85%] sm:max-w-[75%]">
@@ -1033,7 +1074,7 @@ function ChatWindow({
   typingUserId: number | null;
   translatingIds: Set<number>;
   currentUserId: number | null;
-  onSend: (content: string) => Promise<void>;
+  onSend: (content: string, type?: string) => Promise<void>;
   onTyping: (isTyping: boolean) => void;
   onTranslate: (messageId: number) => Promise<void>;
   onBack?: () => void;
@@ -1042,8 +1083,34 @@ function ChatWindow({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [inputValue, setInputValue] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(event.target as Node)
+      ) {
+        setShowEmojiPicker(false);
+      }
+    }
+    if (showEmojiPicker) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showEmojiPicker]);
+
+  const handleAddEmoji = (emojiData: EmojiClickData) => {
+    setInputValue((v) => v + emojiData.emoji);
+    setShowEmojiPicker(false);
+  };
 
   const handleStartCall = async () => {
     if (!conv || currentUserId === null) return;
@@ -1103,7 +1170,25 @@ function ChatWindow({
 
     setInputValue("");
     onTyping(false);
-    await onSend(content);
+    await onSend(content, "TEXT");
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !conv) return;
+
+    setIsUploadingFile(true);
+    try {
+      const response = await uploadChatFile(file);
+      await onSend(response.data.url, "FILE");
+    } catch (error) {
+      console.error("Upload file failed:", error);
+    } finally {
+      setIsUploadingFile(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
   };
 
   if (!conv) {
@@ -1204,15 +1289,21 @@ function ChatWindow({
         <form onSubmit={handleSubmit} className="flex items-center gap-2">
           {/* Attachment buttons */}
           <div className="flex items-center gap-0 pr-2">
-            <button className="p-2 text-[#6B7280] hover:text-[#2D3A3A] hover:bg-[#F9FAF9] rounded-full transition-colors">
-              <IconAddCircle />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploadingFile}
+              className="p-2 text-[#6B7280] hover:text-[#2D3A3A] hover:bg-[#F9FAF9] rounded-full transition-colors disabled:opacity-50"
+              title="Gửi file"
+            >
+              <IconFile />
             </button>
-            <button className="p-2 text-[#6B7280] hover:text-[#2D3A3A] hover:bg-[#F9FAF9] rounded-full transition-colors">
-              <IconImage />
-            </button>
-            <button className="p-2 text-[#6B7280] hover:text-[#2D3A3A] hover:bg-[#F9FAF9] rounded-full transition-colors">
-              <IconNote />
-            </button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+            />
           </div>
 
           {/* Input */}
@@ -1222,18 +1313,27 @@ function ChatWindow({
               value={inputValue}
               onChange={handleInputChange}
               placeholder={t("chat.typeMessage")}
-              disabled={isSending}
+              disabled={isSending || isUploadingFile}
               className="w-full py-2.5 pl-4 pr-12 rounded-full bg-[rgba(241,245,249,0.8)] text-sm text-[#2D3A3A] placeholder-[#6B7280] outline-none focus:ring-2 focus:ring-[#4A6741]/20 transition-all"
             />
-            <button className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A6741] hover:opacity-80 transition-opacity">
+            <button
+              type="button"
+              onClick={() => setShowEmojiPicker((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A6741] hover:opacity-80 transition-opacity"
+            >
               <IconEmoji />
             </button>
+            {showEmojiPicker && (
+              <div ref={emojiPickerRef} className="absolute bottom-full right-0 mb-2 z-50">
+                <EmojiPicker onEmojiClick={handleAddEmoji} width={300} height={350} />
+              </div>
+            )}
           </div>
 
           {/* Send button */}
           <button
             type="submit"
-            disabled={!inputValue.trim() || isSending}
+            disabled={!inputValue.trim() || isSending || isUploadingFile}
             className="w-10 h-10 rounded-full bg-[#4A6741] flex items-center justify-center shadow-md hover:bg-[#3d5836] transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <IconSend />
@@ -1518,12 +1618,12 @@ export default function Index() {
     );
   };
 
-  const handleSend = async (content: string) => {
+  const handleSend = async (content: string, type: string = "TEXT") => {
     if (!activeConv) return;
 
     setIsSending(true);
     try {
-      const response = await sendChatMessage(activeConv.conversationId, content);
+      const response = await sendChatMessage(activeConv.conversationId, content, type);
       const sentMessage = toMessage(response.data, currentUserId);
       setMessages((items) =>
         items.some((message) => message.messageId === sentMessage.messageId)
