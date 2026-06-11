@@ -35,7 +35,7 @@ class MessageReadRequest(BaseModel):
 
 
 class MessageTranslateRequest(BaseModel):
-    target_language: Literal["VI", "JA"] = "VI"
+    target_language: Literal["VI", "JA", "EN"] = "VI"
 
     @field_validator("target_language", mode="before")
     @classmethod

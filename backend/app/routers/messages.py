@@ -403,7 +403,8 @@ def translate_message(
                 detail="Gemini API key is not configured.",
             )
 
-        target_language = "Vietnamese" if body.target_language == "VI" else "Japanese"
+        target_language_map = {"VI": "Vietnamese", "JA": "Japanese", "EN": "English"}
+        target_language = target_language_map.get(body.target_language, "Vietnamese")
         try:
             client = genai.Client(api_key=settings.GEMINI_API_KEY)
             prompt = (

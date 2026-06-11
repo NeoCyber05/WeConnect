@@ -878,7 +878,7 @@ function ChatMessage({
   onTranslate: (messageId: number) => Promise<void>;
   isTranslating: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [showTranslation, setShowTranslation] = useState(
     msg.translation !== undefined
@@ -995,43 +995,43 @@ function ChatMessage({
             <p
               className="text-sm text-[#2D3A3A] leading-[1.625]"
               style={{
-                fontFamily: msg.isJapanese
+                fontFamily: containsJapanese(msg.content)
                   ? "'Noto Sans JP', 'Hiragino Kaku Gothic Pro', 'Yu Gothic', sans-serif"
                   : "Inter, sans-serif",
               }}
             >
               {msg.content}
             </p>
-            {showTranslation && msg.translation && (
-              <div className="mt-2 pt-2 border-t border-[#F1F5F9] flex items-start gap-1.5">
-                <span className="text-[9px] font-bold text-[#4A6741] uppercase shrink-0 mt-0.5">
-                  [{t("profile.japaneseLevel") === "日本語レベル" ? "ベトナム語" : "Tiếng Việt"}]
-                </span>
-                <p className="text-[11px] text-[#6B7280] leading-[1.5]">
-                  {msg.translation}
-                </p>
+                {showTranslation && msg.translation && (
+                  <div className="mt-2 pt-2 border-t border-[#F1F5F9] flex items-start gap-1.5">
+                    <span className="text-[9px] font-bold text-[#4A6741] uppercase shrink-0 mt-0.5">
+                      [{getTargetLanguageLabel(i18n.language)}]
+                    </span>
+                    <p className="text-[11px] text-[#6B7280] leading-[1.5]">
+                      {msg.translation}
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          <div className="flex items-center gap-3 px-1">
-            <span className="text-[10px] text-[#6B7280]">{msg.time}</span>
-            {msg.isJapanese && (
-              <button
-                onClick={handleTranslate}
-                disabled={isTranslating}
-                className="flex items-center gap-1 text-[#4A6741] hover:opacity-80 transition-opacity disabled:opacity-50"
-              >
-                <IconTranslate />
-                <span className="text-[10px] font-bold text-[#4A6741]">
-                  {isTranslating
-                    ? "Đang dịch..."
-                    : showTranslation && msg.translation
-                      ? t("chat.hideTranslation")
-                      : t("chat.translate")}
-                </span>
-              </button>
-            )}
-          </div>
+              <div className="flex items-center gap-3 px-1">
+                <span className="text-[10px] text-[#6B7280]">{msg.time}</span>
+                {msg.type === "TEXT" && (
+                  <button
+                    onClick={handleTranslate}
+                    disabled={isTranslating}
+                    className="flex items-center gap-1 text-[#4A6741] hover:opacity-80 transition-opacity disabled:opacity-50"
+                  >
+                    <IconTranslate />
+                    <span className="text-[10px] font-bold text-[#4A6741]">
+                      {isTranslating
+                        ? "Đang dịch..."
+                        : showTranslation && msg.translation
+                          ? t("chat.hideTranslation")
+                          : t("chat.translate")}
+                    </span>
+                  </button>
+                )}
+              </div>
         </div>
       </div>
     );
@@ -1346,6 +1346,20 @@ function ChatWindow({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+function getTargetLanguage(i18nLanguage: string): "VI" | "JA" | "EN" {
+  const lang = i18nLanguage.split("-")[0].toLowerCase();
+  if (lang === "vi") return "VI";
+  if (lang === "ja" || lang === "jp") return "JA";
+  return "EN";
+}
+
+function getTargetLanguageLabel(i18nLanguage: string): string {
+  const lang = i18nLanguage.split("-")[0].toLowerCase();
+  if (lang === "vi") return "Tiếng Việt";
+  if (lang === "ja" || lang === "jp") return "日本語";
+  return "English";
+}
+
 export default function Index() {
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedUserId = Number(searchParams.get("user_id"));
@@ -1363,6 +1377,7 @@ export default function Index() {
   const lastTypingStateRef = useRef(false);
   const [pusherReady, setPusherReady] = useState(false);
   const [showChatWindowOnMobile, setShowChatWindowOnMobile] = useState(false);
+  const { i18n } = useTranslation();
 
   const activeConv = useMemo(
     () => conversations.find((conversation) => conversation.id === activeConvId) ?? null,
@@ -1645,7 +1660,7 @@ export default function Index() {
   const handleTranslate = async (messageId: number) => {
     setTranslatingIds((items) => new Set(items).add(messageId));
     try {
-      const response = await translateMessage(messageId, "VI");
+      const response = await translateMessage(messageId, getTargetLanguage(i18n.language));
       setMessages((items) =>
         items.map((message) =>
           message.messageId === messageId

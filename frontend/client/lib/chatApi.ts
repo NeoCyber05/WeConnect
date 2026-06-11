@@ -87,13 +87,13 @@ export function sendTypingStatus(conversationId: number, isTyping: boolean) {
   });
 }
 
-export function translateMessage(messageId: number, targetLanguage: "VI" | "JA" = "VI") {
+export function translateMessage(messageId: number, targetLanguage: "VI" | "JA" | "EN" = "VI") {
   return apiFetch<{
     data: {
       message_id: number;
       original_content: string;
       translated_content: string;
-      target_language: "VI" | "JA";
+      target_language: "VI" | "JA" | "EN";
     };
   }>(`/api/v1/messages/${messageId}/translate`, {
     method: "POST",
