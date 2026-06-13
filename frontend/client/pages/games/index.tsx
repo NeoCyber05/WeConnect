@@ -4,6 +4,10 @@ import Navbar from "@/components/Navbar";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
+import {
+  HIRAGANA_STARTERS, TURN_SECONDS_OPTIONS, MATCH_MINUTES_OPTIONS,
+  type ShiritoriRoomSettings,
+} from "@/lib/shiritoriApi";
 
 interface GameRoomOut {
   room_id: number;
@@ -43,6 +47,14 @@ const GAME_ICONS: Record<string, React.ReactNode> = {
       <path d="M3.75 25V19.625C2.5625 18.5417 1.64062 17.276 0.984375 15.8281C0.328125 14.3802 0 12.8542 0 11.25C0 8.125 1.09375 5.46875 3.28125 3.28125C5.46875 1.09375 8.125 0 11.25 0C13.8542 0 16.1615 0.765625 18.1719 2.29688C20.1823 3.82812 21.4896 5.82292 22.0938 8.28125L23.7188 14.6875C23.8229 15.0833 23.75 15.4427 23.5 15.7656C23.25 16.0885 22.9167 16.25 22.5 16.25H20V20C20 20.6875 19.7552 21.276 19.2656 21.7656C18.776 22.2552 18.1875 22.5 17.5 22.5H15V25H12.5V20H17.5V13.75H20.875L19.6875 8.90625C19.2083 7.01042 18.1875 5.46875 16.625 4.28125C15.0625 3.09375 13.2708 2.5 11.25 2.5C8.83333 2.5 6.77083 3.34375 5.0625 5.03125C3.35417 6.71875 2.5 8.77083 2.5 11.1875C2.5 12.4375 2.75521 13.625 3.26562 14.75C3.77604 15.875 4.5 16.875 5.4375 17.75L6.25 18.5V25H3.75Z" fill="#9333EA"/>
     </svg>
   ),
+  shiritori: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M4 6H20V8H4V6ZM6 10H18V12H6V10ZM8 14H16V16H8V14ZM10 18H14V20H10V18Z" fill="#0D9488"/>
+      <circle cx="6" cy="7" r="1.5" fill="#0D9488"/>
+      <circle cx="18" cy="11" r="1.5" fill="#0D9488"/>
+      <circle cx="8" cy="15" r="1.5" fill="#0D9488"/>
+    </svg>
+  ),
 };
 
 const DEFAULT_GAME_ICON = (
@@ -64,6 +76,12 @@ export default function Index() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedGameId, setSelectedGameId] = useState("");
   const [maxPlayers, setMaxPlayers] = useState(10);
+  const [shiriScript, setShiriScript] = useState<"HIRAGANA" | "KATAKANA">("HIRAGANA");
+  const [shiriMinMora, setShiriMinMora] = useState(2);
+  const [shiriMaxMora, setShiriMaxMora] = useState(8);
+  const [shiriStartKana, setShiriStartKana] = useState("RANDOM");
+  const [shiriTurnSeconds, setShiriTurnSeconds] = useState(30);
+  const [shiriMatchMinutes, setShiriMatchMinutes] = useState(10);
 
   // Fetch list of games from database – must be declared before handlers that use apiGames
   const { data: apiGames = [] } = useQuery({
@@ -74,7 +92,7 @@ export default function Index() {
   // Dynamic categories based on games returned from database
   const categories = ["all"];
   if (apiGames.some((g) => g.game_type === "CHESS")) categories.push("strategy");
-  if (apiGames.some((g) => g.game_type === "KANJI")) categories.push("learning");
+  if (apiGames.some((g) => g.game_type === "KANJI" || g.game_type === "SHIRITORI")) categories.push("learning");
   if (apiGames.some((g) => g.game_type === "QUIZ")) categories.push("puzzle");
 
   useEffect(() => {
@@ -131,6 +149,8 @@ export default function Index() {
         setMaxPlayers(2);
       } else if (defaultGame.game_type === "KANJI") {
         setMaxPlayers(4);
+      } else if (defaultGame.game_type === "SHIRITORI") {
+        setMaxPlayers(6);
       } else {
         setMaxPlayers(10);
       }
@@ -149,6 +169,8 @@ export default function Index() {
         setMaxPlayers(2);
       } else if (game.game_type === "KANJI") {
         setMaxPlayers(4);
+      } else if (game.game_type === "SHIRITORI") {
+        setMaxPlayers(6);
       } else {
         setMaxPlayers(10);
       }
@@ -157,10 +179,14 @@ export default function Index() {
 
   // Create room mutation
   const createRoomMutation = useMutation({
-    mutationFn: (variables: { room_type: string; max_players: number }) =>
+    mutationFn: (variables: { room_type: string; max_players: number; settings?: ShiritoriRoomSettings }) =>
       apiFetch<GameRoomOut>("/api/v1/games/rooms", {
         method: "POST",
-        body: JSON.stringify({ room_type: variables.room_type, max_players: variables.max_players }),
+        body: JSON.stringify({
+          room_type: variables.room_type,
+          max_players: variables.max_players,
+          settings: variables.settings,
+        }),
       }),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["game-rooms"] });
@@ -208,7 +234,7 @@ export default function Index() {
     const matchSearch = g.name.toLowerCase().includes(gameSearch.toLowerCase());
     if (activeCategory === "all") return matchSearch;
     if (activeCategory === "strategy") return matchSearch && g.type === "CHESS";
-    if (activeCategory === "learning") return matchSearch && g.type === "KANJI";
+    if (activeCategory === "learning") return matchSearch && (g.type === "KANJI" || g.type === "SHIRITORI");
     if (activeCategory === "puzzle") return matchSearch && g.type === "QUIZ";
     return matchSearch;
   });
@@ -471,6 +497,10 @@ export default function Index() {
                     [2, 3, 4].map(n => (
                       <option key={n} value={n}>{t("games.playersCount", { count: n })}</option>
                     ))
+                  ) : selectedGameId && apiGames.find(g => g.game_id === selectedGameId)?.game_type === "SHIRITORI" ? (
+                    [2, 3, 4, 5, 6, 7, 8].map(n => (
+                      <option key={n} value={n}>{t("games.playersCount", { count: n })}</option>
+                    ))
                   ) : (
                     [2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
                       <option key={n} value={n}>{t("games.playersCount", { count: n })}</option>
@@ -478,6 +508,73 @@ export default function Index() {
                   )}
                 </select>
               </div>
+
+              {/* Shiritori settings */}
+              {selectedGameId && apiGames.find(g => g.game_id === selectedGameId)?.game_type === "SHIRITORI" && (
+                <div className="flex flex-col gap-3 p-4 rounded-2xl bg-teal-50/50 border border-teal-100">
+                  <p className="text-xs font-bold uppercase text-teal-700">{t("shiritori.roomSettings")}</p>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold uppercase text-gray-500 block mb-1">{t("shiritori.script")}</label>
+                      <select value={shiriScript} onChange={(e) => setShiriScript(e.target.value as "HIRAGANA" | "KATAKANA")}
+                        className="w-full px-3 py-2 rounded-xl border border-[#E2E8E2] bg-white text-sm">
+                        <option value="HIRAGANA">Hiragana</option>
+                        <option value="KATAKANA">Katakana</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold uppercase text-gray-500 block mb-1">{t("shiritori.startKana")}</label>
+                      <select value={shiriStartKana} onChange={(e) => setShiriStartKana(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl border border-[#E2E8E2] bg-white text-sm">
+                        <option value="RANDOM">{t("shiritori.random")}</option>
+                        {HIRAGANA_STARTERS.map((k) => (
+                          <option key={k} value={k}>{k}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold uppercase text-gray-500 block mb-1">{t("shiritori.minMora")}</label>
+                      <select value={shiriMinMora} onChange={(e) => setShiriMinMora(Number(e.target.value))}
+                        className="w-full px-3 py-2 rounded-xl border border-[#E2E8E2] bg-white text-sm">
+                        {[1,2,3,4,5,6].map(n => <option key={n} value={n}>{n}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold uppercase text-gray-500 block mb-1">{t("shiritori.maxMora")}</label>
+                      <select value={shiriMaxMora} onChange={(e) => setShiriMaxMora(Number(e.target.value))}
+                        className="w-full px-3 py-2 rounded-xl border border-[#E2E8E2] bg-white text-sm">
+                        {[2,3,4,5,6,7,8,10,12].map(n => <option key={n} value={n}>{n}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold uppercase text-gray-500 block mb-1">{t("shiritori.turnTime")}</label>
+                      <select value={shiriTurnSeconds} onChange={(e) => setShiriTurnSeconds(Number(e.target.value))}
+                        className="w-full px-3 py-2 rounded-xl border border-[#E2E8E2] bg-white text-sm">
+                        {TURN_SECONDS_OPTIONS.map(s => (
+                          <option key={s} value={s}>{s} {t("shiritori.seconds")}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold uppercase text-gray-500 block mb-1">{t("shiritori.matchTime")}</label>
+                      <select value={shiriMatchMinutes} onChange={(e) => setShiriMatchMinutes(Number(e.target.value))}
+                        className="w-full px-3 py-2 rounded-xl border border-[#E2E8E2] bg-white text-sm">
+                        {MATCH_MINUTES_OPTIONS.map(m => (
+                          <option key={m} value={m}>{m} {t("shiritori.minutes")}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                </div>
+              )}
 
               {/* Submit button */}
               <div className="flex gap-3 mt-4">
@@ -491,10 +588,22 @@ export default function Index() {
                   onClick={() => {
                     const game = apiGames.find(g => g.game_id === selectedGameId);
                     if (game) {
-                      createRoomMutation.mutate({
+                      const payload: { room_type: string; max_players: number; settings?: ShiritoriRoomSettings } = {
                         room_type: game.game_type,
-                        max_players: maxPlayers
-                      });
+                        max_players: maxPlayers,
+                      };
+                      if (game.game_type === "SHIRITORI") {
+                        payload.settings = {
+                          script_mode: shiriScript,
+                          min_mora: shiriMinMora,
+                          max_mora: Math.max(shiriMinMora, shiriMaxMora),
+                          start_kana: shiriStartKana,
+                          turn_seconds: shiriTurnSeconds,
+                          match_minutes: shiriMatchMinutes,
+                          allow_long_vowel_chain: true,
+                        };
+                      }
+                      createRoomMutation.mutate(payload);
                     }
                   }}
                   disabled={createRoomMutation.isPending}

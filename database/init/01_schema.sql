@@ -173,8 +173,28 @@ CREATE TABLE GAME_ROOMS (
     paused_at   TIMESTAMP    NULL,
     ended_at    TIMESTAMP    NULL,
     question_ids JSON        NULL,
+    room_settings JSON       NULL,
+    game_state JSON          NULL,
     FOREIGN KEY (host_id) REFERENCES USERS(user_id) ON DELETE CASCADE
 );
+
+-- ── 12b. GAME_WORDS (Shiritori word bank) ────────────────────
+CREATE TABLE GAME_WORDS (
+    word_id     BIGINT       AUTO_INCREMENT PRIMARY KEY,
+    hiragana    VARCHAR(50)  NOT NULL UNIQUE,
+    katakana    VARCHAR(50)  NOT NULL,
+    meaning_vi  VARCHAR(255) NOT NULL,
+    category    VARCHAR(100) NOT NULL,
+    jlpt_level  TINYINT      NULL,
+    mora_count  TINYINT      NOT NULL,
+    first_kana  VARCHAR(3)   NOT NULL,
+    last_kana   VARCHAR(3)   NOT NULL,
+    difficulty  TINYINT      DEFAULT 1
+);
+CREATE INDEX idx_game_words_category   ON GAME_WORDS(category);
+CREATE INDEX idx_game_words_first_kana ON GAME_WORDS(first_kana);
+CREATE INDEX idx_game_words_last_kana  ON GAME_WORDS(last_kana);
+CREATE INDEX idx_game_words_mora       ON GAME_WORDS(mora_count);
 
 -- ── 13. GAME_PARTICIPANTS ────────────────────────────────────
 CREATE TABLE GAME_PARTICIPANTS (

@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useGameRoom } from "./useGameRoom";
+import ShiritoriRoomView from "./ShiritoriRoomView";
 import * as clock from "@/lib/gameClock";
 import { inviteFriendToGameRoom } from "@/lib/chatApi";
 
@@ -97,24 +98,22 @@ const SendIcon = () => (
   </svg>
 );
 
-export default function Index() {
+function QuizGameRoom({ roomCode }: { roomCode: string }) {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const roomCode = new URLSearchParams(window.location.search).get("code") || "";
   const g = useGameRoom(roomCode);
 
-  // Fetch current user
-  const { data: currentUser } = useQuery({
-    queryKey: ["me"],
-    queryFn: () => apiFetch<UserOut>("/api/v1/users/me"),
-  });
-
-  // Fetch game room details (for static metadata like max_players)
   const { data: roomData } = useQuery({
     queryKey: ["game-room", roomCode],
     queryFn: () => apiFetch<GameRoomOut>(`/api/v1/games/rooms/code/${roomCode}`),
     enabled: !!roomCode,
     refetchInterval: 3000,
+  });
+
+  // Fetch current user
+  const { data: currentUser } = useQuery({
+    queryKey: ["me"],
+    queryFn: () => apiFetch<UserOut>("/api/v1/users/me"),
   });
 
   // ── UI STATE VARIABLES ──
@@ -1163,4 +1162,35 @@ export default function Index() {
 
     </div>
   );
+}
+
+export default function Index() {
+  const roomCode = new URLSearchParams(window.location.search).get("code") || "";
+  const { data: roomData, isLoading } = useQuery({
+    queryKey: ["game-room-route", roomCode],
+    queryFn: () => apiFetch<GameRoomOut>(`/api/v1/games/rooms/code/${roomCode}`),
+    enabled: !!roomCode,
+  });
+
+  if (!roomCode) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
+        Không tìm thấy mã phòng
+      </div>
+    );
+  }
+
+  if (isLoading && !roomData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
+        Đang tải phòng...
+      </div>
+    );
+  }
+
+  if (roomData?.room_type === "SHIRITORI") {
+    return <ShiritoriRoomView roomCode={roomCode} />;
+  }
+
+  return <QuizGameRoom roomCode={roomCode} />;
 }

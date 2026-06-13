@@ -246,7 +246,33 @@ const resources = {
         endMatchDesc: "Xem kết quả chung cuộc",
         adminOnly: "Chỉ Admin phòng mới có quyền thực hiện các thao tác này.",
         answerFast: "Trả lời nhanh để giành điểm! Mỗi câu chỉ có",
-        seconds: "giây"
+        seconds: "giây",
+        leave: "Rời phòng",
+        matchEnded: "Kết thúc ván",
+        backToLobby: "Về sảnh game",
+        endEarly: "Kết thúc sớm"
+      },
+      shiritori: {
+        title: "Nối từ tiếng Nhật",
+        roomSettings: "Cấu hình phòng",
+        script: "Kiểu chữ",
+        wordLength: "Độ dài từ",
+        mora: "âm tiết",
+        startKana: "Âm bắt đầu",
+        random: "Ngẫu nhiên",
+        turnTime: "Thời gian mỗi lượt",
+        matchTime: "Thời gian một ván",
+        minutes: "phút",
+        seconds: "giây",
+        minMora: "Tối thiểu (âm)",
+        maxMora: "Tối đa (âm)",
+        categories: "Chủ đề từ",
+        nextKana: "Nối bằng âm",
+        yourTurn: "Đến lượt bạn!",
+        waitingTurn: "Đang chờ {{name}}...",
+        submit: "Gửi",
+        history: "Lịch sử từ",
+        noWordsYet: "Chưa có từ nào"
       },
       chat: {
         chat: "Trò chuyện",
@@ -457,13 +483,15 @@ const resources = {
         "Luyện đọc Kanji": "Luyện đọc Kanji",
         "Trắc nghiệm Kanji": "Trắc nghiệm Kanji",
         "Đố vui văn hóa Nhật Bản": "Đố vui văn hóa Nhật Bản",
-        "Kiến thức chung": "Kiến thức chung"
+        "Kiến thức chung": "Kiến thức chung",
+        "Nối từ tiếng Nhật": "Nối từ tiếng Nhật"
       },
       gameDescriptions: {
         "Luyện đọc Kanji": "Trắc nghiệm Kanji • 2-4 người",
         "Trắc nghiệm Kanji": "Trắc nghiệm Kanji • 2-4 người",
         "Đố vui văn hóa Nhật Bản": "Kiến thức chung • 4-10 người",
-        "Kiến thức chung": "Kiến thức chung • 4-10 người"
+        "Kiến thức chung": "Kiến thức chung • 4-10 người",
+        "Nối từ tiếng Nhật": "しりとり • 2-8 người"
       },
       eventStatus: {
         "UPCOMING": "SẮP DIỄN RA",
@@ -717,7 +745,33 @@ const resources = {
         endMatchDesc: "最終結果を見る",
         adminOnly: "この操作を行えるのはルームの管理者のみです。",
         answerFast: "早く答えてポイントを獲得！各質問の制限時間は",
-        seconds: "秒"
+        seconds: "秒",
+        leave: "退出",
+        matchEnded: "ゲーム終了",
+        backToLobby: "ロビーへ戻る",
+        endEarly: "早期終了"
+      },
+      shiritori: {
+        title: "しりとり",
+        roomSettings: "ルーム設定",
+        script: "文字",
+        wordLength: "単語の長さ",
+        mora: "モーラ",
+        startKana: "開始の文字",
+        random: "ランダム",
+        turnTime: "1ターンの時間",
+        matchTime: "1ゲームの時間",
+        minutes: "分",
+        seconds: "秒",
+        minMora: "最短（モーラ）",
+        maxMora: "最長（モーラ）",
+        categories: "単語カテゴリ",
+        nextKana: "次の文字",
+        yourTurn: "あなたの番です！",
+        waitingTurn: "{{name}}を待っています...",
+        submit: "送信",
+        history: "単語履歴",
+        noWordsYet: "まだ単語がありません"
       },
       chat: {
         chat: "チャット",
@@ -928,13 +982,15 @@ const resources = {
         "Luyện đọc Kanji": "漢字リーディング練習",
         "Trắc nghiệm Kanji": "漢字クイズ",
         "Đố vui văn hóa Nhật Bản": "日本文化クイズ",
-        "Kiến thức chung": "一般知識"
+        "Kiến thức chung": "一般知識",
+        "Nối từ tiếng Nhật": "しりとり"
       },
       gameDescriptions: {
         "Luyện đọc Kanji": "漢字クイズ • 2-4人",
         "Trắc nghiệm Kanji": "漢字クイズ • 2-4人",
         "Đố vui văn hóa Nhật Bản": "一般知識 • 4-10人",
-        "Kiến thức chung": "一般知識 • 4-10人"
+        "Kiến thức chung": "一般知識 • 4-10人",
+        "Nối từ tiếng Nhật": "しりとり • 2-8人"
       },
       eventStatus: {
         "UPCOMING": "今後の予定",

@@ -1,7 +1,8 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Any
 from app.schemas.event import UserBrief
+from app.schemas.shiritori import ShiritoriRoomSettings
 
 
 class ParticipantBrief(BaseModel):
@@ -31,6 +32,7 @@ class GameRoomOut(BaseModel):
     status: str
     created_at: datetime
     started_at: Optional[datetime] = None
+    room_settings: Optional[dict[str, Any]] = None
     participants_count: int
     participants: List[RoomParticipantOut]
 
@@ -47,6 +49,7 @@ class ScoreUpdateRequest(BaseModel):
 class GameRoomCreate(BaseModel):
     room_type: str = Field(default="QUIZ")
     max_players: int = Field(default=10)
+    settings: Optional[ShiritoriRoomSettings] = None
 
 
 class JoinRoomRequest(BaseModel):

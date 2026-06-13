@@ -30,6 +30,8 @@ class GameRoom(Base):
     paused_at = Column(TIMESTAMP, nullable=True)
     ended_at = Column(TIMESTAMP, nullable=True)
     question_ids = Column(JSON, nullable=True)  # ordered list of GAME_QUESTIONS.question_id for this match
+    room_settings = Column(JSON, nullable=True)  # Shiritori / future per-room config
+    game_state = Column(JSON, nullable=True)  # Shiritori runtime state
 
     host = relationship("User", foreign_keys=[host_id])
     participants = relationship("GameParticipant", back_populates="room", cascade="all, delete-orphan")
@@ -91,3 +93,18 @@ class GameAnswer(Base):
     is_correct = Column(Boolean, nullable=False)
     points = Column(Integer, nullable=False, default=0)
     answered_at = Column(TIMESTAMP, server_default=func.now())
+
+
+class GameWord(Base):
+    __tablename__ = "GAME_WORDS"
+
+    word_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    hiragana = Column(String(50), nullable=False, unique=True)
+    katakana = Column(String(50), nullable=False)
+    meaning_vi = Column(String(255), nullable=False)
+    category = Column(String(100), nullable=False)
+    jlpt_level = Column(SmallInteger, nullable=True)
+    mora_count = Column(SmallInteger, nullable=False)
+    first_kana = Column(String(3), nullable=False)
+    last_kana = Column(String(3), nullable=False)
+    difficulty = Column(SmallInteger, default=1)

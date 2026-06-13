@@ -14,7 +14,13 @@ from app.schemas.game import (
     AnswerRequest, AnswerResult, GameStateOut, QuestionOut, LeaderboardEntry,
     GameMessageCreate, GameMessageOut,
 )
+from app.schemas.shiritori import (
+    ShiritoriRoomSettings, ShiritoriStateOut, ShiritoriSubmitRequest, ShiritoriSubmitResult,
+    ShiritoriHistoryEntry,
+)
 from app.utils import game_engine as ge
+from app.utils import shiritori_engine as she
+from app.utils import shiritori_service as shs
 from app.utils.pusher import trigger_event
 
 router = APIRouter()
@@ -102,8 +108,67 @@ def _build_room_out(room: GameRoom, db: Session) -> dict:
         "status": room.status,
         "created_at": room.created_at,
         "started_at": room.started_at,
+        "room_settings": room.room_settings,
         "participants_count": len(participants_list),
         "participants": participants_list,
+    }
+
+
+def _build_shiritori_state(room: GameRoom, db: Session, current_user: User) -> dict:
+    now = _utcnow()
+    settings_dict = shs.parse_settings(room)
+    settings = ShiritoriRoomSettings.model_validate(settings_dict)
+    state = dict(room.game_state or {})
+    pids = shs.participant_ids_ordered(room.room_id, db)
+
+    if room.status == "PLAYING" and room.started_at:
+        if shs.maybe_end_match(room, settings_dict, now):
+            db.commit()
+            _broadcast(room, "game:ended", {"room_id": room.room_id, "leaderboard": _leaderboard(room, db)})
+        elif state and shs.maybe_skip_turn(room, state, settings_dict, pids, now):
+            room.game_state = state
+            db.commit()
+            _broadcast(room, "game:shiritori-turn", {
+                "current_turn_user_id": state["current_turn_user_id"],
+                "required_kana": state["required_kana"],
+                "turn_started_at": state["turn_started_at"],
+            })
+
+    turn_at = None
+    if state.get("turn_started_at"):
+        turn_at = shs._parse_dt(state["turn_started_at"])
+
+    history = [
+        ShiritoriHistoryEntry(
+            user_id=h["user_id"],
+            full_name=h["full_name"],
+            word=h["word"],
+            meaning=h["meaning"],
+            points=h["points"],
+            played_at=shs._parse_dt(h["played_at"]) or now,
+        )
+        for h in state.get("history", [])
+    ]
+
+    return {
+        "room_id": room.room_id,
+        "code": room.code,
+        "status": room.status,
+        "host_id": room.host_id,
+        "started_at": room.started_at,
+        "paused_at": room.paused_at,
+        "ended_at": room.ended_at,
+        "server_now": now,
+        "settings": settings,
+        "required_kana": state.get("required_kana"),
+        "current_turn_user_id": state.get("current_turn_user_id"),
+        "turn_started_at": turn_at,
+        "turn_seconds_left": she.turn_seconds_left(turn_at, settings.turn_seconds, now) if room.status == "PLAYING" else settings.turn_seconds,
+        "match_seconds_left": she.match_seconds_left(room.started_at, settings.match_minutes, now) if room.status == "PLAYING" else settings.match_minutes * 60,
+        "used_words": state.get("used_words", []),
+        "history": history,
+        "leaderboard": _leaderboard(room, db),
+        "is_my_turn": state.get("current_turn_user_id") == current_user.user_id and room.status == "PLAYING",
     }
 
 
@@ -145,13 +210,23 @@ def create_game_room(
     current_user: User = Depends(get_current_user),
 ):
     """Create a new game room. The creator is host and automatically joins."""
+    room_type = body.room_type.upper()
+    room_settings = None
+    if room_type == "SHIRITORI":
+        settings = body.settings or ShiritoriRoomSettings()
+        room_settings = settings.model_dump()
+        pool = shs.query_word_pool(db, room_settings)
+        if not pool:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Không có từ phù hợp với cấu hình đã chọn")
+
     code = _generate_unique_code(db)
     room = GameRoom(
         code=code,
         host_id=current_user.user_id,
-        room_type=body.room_type.upper(),
+        room_type=room_type,
         max_players=body.max_players,
         status="WAITING",
+        room_settings=room_settings,
     )
     db.add(room)
     db.commit()
@@ -353,6 +428,25 @@ def start_game_room(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Chỉ chủ phòng mới có thể bắt đầu trận đấu")
     if room.status != "WAITING":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Phòng game đã bắt đầu hoặc đã kết thúc")
+
+    if room.room_type == "SHIRITORI":
+        now = _utcnow()
+        try:
+            room.game_state = shs.init_game_state(room, db, now)
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        room.status = "PLAYING"
+        room.started_at = now
+        room.paused_at = None
+        room.ended_at = None
+        db.commit()
+        _broadcast(room, "game:started", {"room_id": room.room_id, "started_at": room.started_at})
+        _broadcast(room, "game:shiritori-turn", {
+            "current_turn_user_id": room.game_state["current_turn_user_id"],
+            "required_kana": room.game_state["required_kana"],
+            "turn_started_at": room.game_state["turn_started_at"],
+        })
+        return {"status": "ok", "message": "Trận đấu đã bắt đầu thành công"}
 
     pool = db.query(GameQuestion.question_id).filter(GameQuestion.game_type == room.room_type).all()
     pool_ids = [row[0] for row in pool]
@@ -628,4 +722,158 @@ def end_room(room_id: int, db: Session = Depends(get_db), current_user: User = D
     room.ended_at = _utcnow()
     db.commit()
     _broadcast(room, "game:ended", {"room_id": room.room_id, "leaderboard": _leaderboard(room, db)})
+    return {"status": "ok"}
+
+
+@router.get("/rooms/{room_id}/shiritori/state", response_model=ShiritoriStateOut)
+def get_shiritori_state(
+    room_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    room = db.query(GameRoom).filter(GameRoom.room_id == room_id).first()
+    if not room:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Phòng game không tồn tại")
+    if room.room_type != "SHIRITORI":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Phòng này không phải Shiritori")
+    return _build_shiritori_state(room, db, current_user)
+
+
+@router.post("/rooms/{room_id}/shiritori/submit", response_model=ShiritoriSubmitResult)
+def submit_shiritori_word(
+    room_id: int,
+    body: ShiritoriSubmitRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    room = db.query(GameRoom).filter(GameRoom.room_id == room_id).first()
+    if not room or room.room_type != "SHIRITORI":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Phòng Shiritori không tồn tại")
+    if room.status != "PLAYING" or room.paused_at:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Trận đấu không đang diễn ra")
+
+    participant = _active_participant(room_id, current_user.user_id, db)
+    if not participant:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Bạn không tham gia phòng này")
+
+    now = _utcnow()
+    settings = shs.parse_settings(room)
+    state = dict(room.game_state or {})
+    pids = shs.participant_ids_ordered(room.room_id, db)
+
+    if shs.maybe_end_match(room, settings, now):
+        db.commit()
+        _broadcast(room, "game:ended", {"room_id": room.room_id, "leaderboard": _leaderboard(room, db)})
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Trận đấu đã kết thúc")
+
+    if state.get("current_turn_user_id") != current_user.user_id:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Chưa đến lượt của bạn")
+
+    turn_at = shs._parse_dt(state.get("turn_started_at"))
+    if turn_at and she.turn_expired(turn_at, settings["turn_seconds"], now):
+        shs.advance_turn(state, pids, now)
+        room.game_state = state
+        db.commit()
+        _broadcast(room, "game:shiritori-turn", {
+            "current_turn_user_id": state["current_turn_user_id"],
+            "required_kana": state["required_kana"],
+            "turn_started_at": state["turn_started_at"],
+        })
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Đã hết thời gian lượt này")
+
+    normalized = she.normalize_input(body.word, settings["script_mode"])
+    bank = shs.lookup_word(db, normalized, settings)
+    result = she.validate_submission(
+        normalized,
+        state.get("required_kana", ""),
+        state.get("used_words", []),
+        settings,
+        bank.hiragana if bank else None,
+        bank.mora_count if bank else None,
+    )
+
+    if not result["valid"]:
+        _broadcast(room, "game:shiritori-invalid", {
+            "user_id": current_user.user_id,
+            "reason": result["reason"],
+        })
+        return ShiritoriSubmitResult(valid=False, reason=result["reason"], new_score=participant.score or 0)
+
+    display_word = she.to_script(bank.hiragana, settings["script_mode"])
+    points = she.compute_points(bank.mora_count, turn_at or now, now, settings["turn_seconds"])
+    participant.score = (participant.score or 0) + points
+
+    used = list(state.get("used_words", []))
+    used.append(display_word)
+    next_kana = she.last_chain_kana(display_word, settings.get("allow_long_vowel_chain", True))
+
+    history = list(state.get("history", []))
+    history.append(shs.build_history_entry(current_user, display_word, bank.meaning_vi, points, now))
+
+    state["used_words"] = used
+    state["history"] = history
+    state["required_kana"] = next_kana
+    shs.advance_turn(state, pids, now)
+    room.game_state = state
+    db.commit()
+
+    lb = _leaderboard(room, db)
+    _broadcast(room, "game:shiritori-word", {
+        "user_id": current_user.user_id,
+        "word": display_word,
+        "meaning": bank.meaning_vi,
+        "points": points,
+        "next_kana": next_kana,
+        "leaderboard": lb,
+    })
+    _broadcast(room, "game:shiritori-turn", {
+        "current_turn_user_id": state["current_turn_user_id"],
+        "required_kana": state["required_kana"],
+        "turn_started_at": state["turn_started_at"],
+    })
+
+    return ShiritoriSubmitResult(
+        valid=True,
+        word=display_word,
+        meaning=bank.meaning_vi,
+        points=points,
+        new_score=participant.score,
+        next_kana=next_kana,
+        next_turn_user_id=state["current_turn_user_id"],
+    )
+
+
+@router.post("/rooms/{room_id}/shiritori/skip")
+def skip_shiritori_turn(
+    room_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    room = db.query(GameRoom).filter(GameRoom.room_id == room_id).first()
+    if not room or room.room_type != "SHIRITORI":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Phòng Shiritori không tồn tại")
+    if room.status != "PLAYING":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Trận đấu không đang diễn ra")
+
+    now = _utcnow()
+    settings = shs.parse_settings(room)
+    state = dict(room.game_state or {})
+    pids = shs.participant_ids_ordered(room.room_id, db)
+
+    if shs.maybe_end_match(room, settings, now):
+        db.commit()
+        _broadcast(room, "game:ended", {"room_id": room.room_id, "leaderboard": _leaderboard(room, db)})
+        return {"status": "ended"}
+
+    if state.get("current_turn_user_id") != current_user.user_id:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Chỉ người đang chơi mới bỏ lượt được")
+
+    shs.advance_turn(state, pids, now)
+    room.game_state = state
+    db.commit()
+    _broadcast(room, "game:shiritori-turn", {
+        "current_turn_user_id": state["current_turn_user_id"],
+        "required_kana": state["required_kana"],
+        "turn_started_at": state["turn_started_at"],
+    })
     return {"status": "ok"}
