@@ -49,11 +49,14 @@ const GAME_ICONS: Record<string, React.ReactNode> = {
     </svg>
   ),
   shiritori: (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M4 6H20V8H4V6ZM6 10H18V12H6V10ZM8 14H16V16H8V14ZM10 18H14V20H10V18Z" fill="#0D9488"/>
-      <circle cx="6" cy="7" r="1.5" fill="#0D9488"/>
-      <circle cx="18" cy="11" r="1.5" fill="#0D9488"/>
-      <circle cx="8" cy="15" r="1.5" fill="#0D9488"/>
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+      <rect x="2.5" y="2.5" width="23" height="23" rx="8" fill="#ECFDF5" stroke="#99F6E4"/>
+      <path d="M9 10.5C12 7.5 16 7.5 18 10.5C20.4 14.1 14.8 16.4 12.2 13.8C10 11.6 13.6 9 16 11.3" stroke="#0D9488" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M19 17.5C16 20.5 12 20.5 10 17.5C7.6 13.9 13.2 11.6 15.8 14.2C18 16.4 14.4 19 12 16.7" stroke="#4A6741" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+      <text x="8.1" y="10.5" fill="#0F766E" fontSize="5.2" fontWeight="800" fontFamily="Inter, sans-serif">し</text>
+      <text x="16.1" y="10.5" fill="#4A6741" fontSize="5.2" fontWeight="800" fontFamily="Inter, sans-serif">り</text>
+      <text x="8.1" y="20.4" fill="#4A6741" fontSize="5.2" fontWeight="800" fontFamily="Inter, sans-serif">と</text>
+      <text x="16.1" y="20.4" fill="#0F766E" fontSize="5.2" fontWeight="800" fontFamily="Inter, sans-serif">り</text>
     </svg>
   ),
 };
@@ -106,7 +109,7 @@ export default function Index() {
   }, [apiGames, activeCategory, expandedGame]);
 
   // Fetch all active game rooms
-  const { data: apiRooms = [], refetch } = useQuery({
+  const { data: apiRooms = [] } = useQuery({
     queryKey: ["game-rooms"],
     queryFn: () => apiFetch<GameRoomOut[]>("/api/v1/games/rooms"),
     refetchInterval: 5000, // Auto refresh every 5 seconds

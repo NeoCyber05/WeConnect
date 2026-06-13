@@ -69,6 +69,36 @@ const SendIcon = () => (
   </svg>
 );
 
+const ShiritoriChainMark = () => {
+  const kana = ["し", "り", "と", "り"];
+
+  return (
+    <div
+      className="relative mb-6 flex h-28 w-28 items-center justify-center rounded-[32px] border border-teal-200/70 bg-teal-50 shadow-[0_18px_45px_rgba(13,148,136,0.16)]"
+      aria-hidden="true"
+    >
+      <div className="absolute inset-2 rounded-[26px] border border-white/80" />
+      <svg className="absolute inset-0 h-full w-full" viewBox="0 0 112 112" fill="none">
+        <path d="M35 40C47 26 70 26 78 40C88 58 62 67 51 55C40 44 56 33 66 43" stroke="#0D9488" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" opacity="0.42" />
+        <path d="M77 72C65 86 42 86 34 72C24 54 50 45 61 57C72 68 56 79 46 69" stroke="#4A6741" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" opacity="0.38" />
+      </svg>
+      <div className="relative grid grid-cols-2 gap-1.5">
+        {kana.map((item, index) => (
+          <span
+            key={`${item}-${index}`}
+            className={cn(
+              "flex h-9 w-9 items-center justify-center rounded-2xl border bg-white text-xl font-black shadow-sm",
+              index % 2 === 0 ? "border-teal-100 text-teal-700" : "border-green-100 text-[#4A6741]",
+            )}
+          >
+            {item}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const formatTime = (seconds: number) => {
   const m = Math.floor(seconds / 60).toString().padStart(2, "0");
   const s = (seconds % 60).toString().padStart(2, "0");
@@ -135,6 +165,26 @@ export default function ShiritoriRoomView({ roomCode }: { roomCode: string }) {
     }))
     .sort((a, b) => b.score - a.score);
   const maxScore = Math.max(...sortedPlayers.map((p) => p.score), 1);
+  const settingTiles = settings
+    ? [
+        {
+          label: t("shiritori.script"),
+          value: settings.script_mode === "KATAKANA" ? t("shiritori.katakana") : t("shiritori.hiragana"),
+        },
+        {
+          label: t("shiritori.startKana"),
+          value: settings.start_kana === "RANDOM" ? t("shiritori.random") : settings.start_kana,
+        },
+        {
+          label: t("shiritori.wordLength"),
+          value: `${settings.min_mora}-${settings.max_mora} ${t("shiritori.mora")}`,
+        },
+        {
+          label: t("shiritori.turnTime"),
+          value: `${settings.turn_seconds}s / ${settings.match_minutes} ${t("shiritori.minutes")}`,
+        },
+      ]
+    : [];
 
   const handleSubmit = async () => {
     if (!wordInput.trim()) return;
@@ -320,24 +370,28 @@ export default function ShiritoriRoomView({ roomCode }: { roomCode: string }) {
         <div className={cn("flex-1 flex flex-col overflow-hidden min-w-0 bg-[#F1F5F9] border-r border-[#E2E8E2]", activeTab !== "scores" ? "flex" : "hidden md:flex")}>
           <div className={cn("flex-grow flex items-center justify-center p-4 md:p-6 overflow-y-auto", activeTab === "game" ? "flex" : "hidden md:flex")}>
             {s.gameStatus === "WAITING" ? (
-              <div className="relative w-full max-w-[600px] bg-white border border-[#E2E8E2] rounded-[32px] p-8 shadow-sm flex flex-col items-center text-center min-h-[380px] justify-center">
-                <div className="w-20 h-20 bg-teal-50 border border-teal-100 rounded-3xl flex items-center justify-center mb-6 text-4xl shadow-inner">🔗</div>
+              <div className="relative w-full max-w-[640px] overflow-hidden rounded-[32px] border border-[#DDE8E4] bg-white p-8 text-center shadow-[0_24px_70px_rgba(45,58,58,0.08)] flex min-h-[430px] flex-col items-center justify-center">
+                <div className="absolute left-8 top-8 h-16 w-16 rounded-full border border-teal-100/70 bg-teal-50/60" />
+                <div className="absolute bottom-10 right-10 h-20 w-20 rounded-full border border-green-100/80 bg-[#F1F5F0]" />
+                <ShiritoriChainMark />
                 <h2 className="text-2xl font-black text-[#2D3A3A] mb-3">{t("shiritori.title")}</h2>
-                <p className="text-sm text-gray-500 max-w-sm mb-6">{s.isHost ? t("gameRoom.hostWaitingMsg") : t("gameRoom.guestWaitingMsg")}</p>
+                <p className="max-w-md text-sm leading-6 text-gray-500 mb-7">{s.isHost ? t("gameRoom.hostWaitingMsg") : t("gameRoom.guestWaitingMsg")}</p>
                 {settings && (
-                  <div className="mb-6 text-sm text-left bg-slate-50 rounded-2xl p-4 border border-[#E2E8E2] space-y-1 w-full max-w-sm">
-                    <p>{t("shiritori.script")}: {settings.script_mode === "KATAKANA" ? t("shiritori.katakana") : t("shiritori.hiragana")}</p>
-                    <p>{t("shiritori.startKana")}: {settings.start_kana === "RANDOM" ? t("shiritori.random") : settings.start_kana}</p>
-                    <p>{t("shiritori.wordLength")}: {settings.min_mora}–{settings.max_mora} {t("shiritori.mora")}</p>
-                    <p>{t("shiritori.turnTime")}: {settings.turn_seconds}s · {t("shiritori.matchTime")}: {settings.match_minutes} {t("shiritori.minutes")}</p>
+                  <div className="relative mb-7 grid w-full max-w-[460px] grid-cols-1 gap-3 rounded-3xl border border-[#DDE8E4] bg-[#F8FAF9] p-3 text-left sm:grid-cols-2">
+                    {settingTiles.map((item) => (
+                      <div key={item.label} className="rounded-2xl border border-white bg-white px-4 py-3 shadow-sm">
+                        <p className="mb-1 text-[10px] font-black uppercase tracking-[1.4px] text-teal-700/70">{item.label}</p>
+                        <p className="truncate text-sm font-extrabold text-[#2D3A3A]">{item.value}</p>
+                      </div>
+                    ))}
                   </div>
                 )}
                 {s.isHost ? (
-                  <button onClick={s.start} className="px-8 py-3.5 bg-[#4A6741] text-white font-extrabold rounded-2xl shadow-lg shadow-green-100 uppercase tracking-wider text-sm">
+                  <button onClick={s.start} className="relative rounded-2xl bg-[#4A6741] px-9 py-3.5 text-sm font-extrabold uppercase tracking-wider text-white shadow-lg shadow-green-100 transition hover:bg-[#3c5435]">
                     {t("gameRoom.startMatch")}
                   </button>
                 ) : (
-                  <div className="flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-[#F1F5F0] border border-green-100">
+                  <div className="relative flex items-center gap-2.5 rounded-2xl border border-green-100 bg-[#F1F5F0] px-5 py-3">
                     <div className="w-2 h-2 rounded-full bg-green-500 animate-ping" />
                     <span className="text-xs font-bold text-[#4A6741]">{t("gameRoom.waitingHost")}</span>
                   </div>
