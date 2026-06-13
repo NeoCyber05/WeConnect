@@ -36,19 +36,20 @@ export default function Index() {
 
   const handleRegister = async () => {
     setError("");
+    const trimmedEmail = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError(t("auth.register.invalidEmail"));
+      return;
+    }
     setLoading(true);
     try {
-      const trimmedEmail = email.trim();
-      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
-      const identifierType = isEmail ? "EMAIL" : "PHONE";
-
       await apiFetch(
         "/api/v1/auth/register",
         {
           method: "POST",
           body: JSON.stringify({
             identifier: trimmedEmail,
-            identifier_type: identifierType,
+            identifier_type: "EMAIL",
             password,
             full_name: fullName,
           }),
@@ -58,6 +59,28 @@ export default function Index() {
       setStep("otp_sent");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t("auth.register.errorDefault"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      await apiFetch(
+        "/api/v1/auth/otp/send",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            identifier: email.trim(),
+            purpose: "REGISTER",
+          }),
+        },
+        true
+      );
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : t("auth.register.errorOtp"));
     } finally {
       setLoading(false);
     }
@@ -219,7 +242,7 @@ export default function Index() {
                   <label className="block text-[#334155] text-[11px] font-bold uppercase tracking-wide">
                     {t("auth.register.otpLabel")}
                   </label>
-                  <button type="button" onClick={handleRegister} disabled={loading} className="text-[#10B981] text-xs font-bold hover:text-[#059669] transition-colors disabled:opacity-60">
+                   <button type="button" onClick={handleResendOtp} disabled={loading} className="text-[#10B981] text-xs font-bold hover:text-[#059669] transition-colors disabled:opacity-60">
                     {t("auth.register.resendOtp")}
                   </button>
                 </div>

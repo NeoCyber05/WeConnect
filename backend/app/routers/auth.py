@@ -18,6 +18,11 @@ from app.config import settings
 router = APIRouter()
 
 
+def _has_email_sender_config() -> bool:
+    """True nếu có SMTP config để gửi email OTP."""
+    return bool(settings.SMTP_HOST and settings.SMTP_USER and settings.SMTP_PASSWORD)
+
+
 def _build_token_response(user: User) -> TokenResponse:
     return TokenResponse(
         access_token=create_access_token(user.user_id),
@@ -40,10 +45,24 @@ def _find_user_by_identifier(db: Session, identifier: str) -> User | None:
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 def register(body: RegisterRequest, db: Session = Depends(get_db)):
     """
-    SRS ID 3: Đăng ký tài khoản bằng email hoặc SĐT.
+    SRS ID 3: Đăng ký tài khoản bằng email.
     Sau khi đăng ký, hệ thống gửi OTP — người dùng cần xác thực qua /otp/verify.
     """
-    identifier = body.identifier.strip().lower() if body.identifier_type.value == "EMAIL" else body.identifier.strip()
+    # Từ chối đăng ký bằng số điện thoại (chưa hỗ trợ SMS)
+    if body.identifier_type.value == "PHONE":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Đăng ký bằng số điện thoại chưa được hỗ trợ. Vui lòng sử dụng email.",
+        )
+
+    # Kiểm tra dịch vụ email OTP đã được cấu hình trước khi tạo user
+    if not _has_email_sender_config():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Dịch vụ gửi email OTP chưa được cấu hình. Vui lòng liên hệ quản trị viên.",
+        )
+
+    identifier = body.identifier.strip().lower()
 
     existing = _find_user_by_identifier(db, identifier)
     if existing:
@@ -52,14 +71,10 @@ def register(body: RegisterRequest, db: Session = Depends(get_db)):
     user = User(
         password_hash=hash_password(body.password),
         full_name=body.full_name.strip(),
+        email=identifier,
         is_verified=False,
         role="USER",
     )
-    if body.identifier_type.value == "EMAIL":
-        user.email = identifier
-    else:
-        user.phone_number = identifier
-        user.email = f"phone_{identifier}@weconnect.placeholder"
 
     if body.date_of_birth:
         from datetime import date
@@ -85,7 +100,7 @@ def register(body: RegisterRequest, db: Session = Depends(get_db)):
 # ── POST /otp/send ───────────────────────────────────────────────────────────
 @router.post("/otp/send")
 def otp_send(body: OTPSendRequest, db: Session = Depends(get_db)):
-    """SRS ID 8: Gửi lại OTP (development: in ra console)."""
+    """SRS ID 8: Gửi lại OTP qua email."""
     identifier = body.identifier.strip()
 
     if body.purpose.value == "FORGOT_PASSWORD":

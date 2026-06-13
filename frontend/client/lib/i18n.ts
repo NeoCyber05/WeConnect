@@ -302,6 +302,7 @@ const resources = {
           submitting: "Đang xử lý...",
           errorDefault: "Đăng ký thất bại",
           errorOtp: "Xác thực OTP thất bại",
+          invalidEmail: "Vui lòng nhập địa chỉ email hợp lệ.",
           hasAccount: "Đã có tài khoản? ",
           loginNow: "Đăng nhập"
         },
@@ -759,6 +760,7 @@ const resources = {
           submitting: "処理中...",
           errorDefault: "登録に失敗しました",
           errorOtp: "OTP認証に失敗しました",
+          invalidEmail: "有効なメールアドレスを入力してください。",
           hasAccount: "すでにアカウントをお持ちですか？ ",
           loginNow: "ログイン"
         },

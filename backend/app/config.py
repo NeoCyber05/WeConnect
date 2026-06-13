@@ -15,7 +15,16 @@ class Settings(BaseSettings):
     RESET_TOKEN_EXPIRE_MINUTES: int = 10
 
     OTP_EXPIRE_MINUTES: int = 5
-    RESEND_API_KEY: str | None = None
+    OTP_FROM_EMAIL: str = "WeConnect <otp@nxs24042005.id.vn>"
+    OTP_FROM_NAME: str = "WeConnect"
+
+    # SMTP config (bắt buộc cho OTP qua email)
+    SMTP_HOST: str | None = None
+    SMTP_PORT: int = 587
+    SMTP_USER: str | None = None
+    SMTP_PASSWORD: str | None = None
+    SMTP_USE_TLS: bool = True
+
     GEMINI_API_KEY: str | None = None
 
     PUSHER_APP_ID: str | None = None
