@@ -30,17 +30,31 @@ INSERT INTO HOBBIES (name, category) VALUES
 ('Manga', 'Giải trí'),
 ('Gaming', 'Giải trí'),
 ('Phim ảnh', 'Giải trí'),
+('Board game', 'Giải trí'),
+('Cosplay', 'Giải trí'),
 ('Âm nhạc', 'Nghệ thuật'),
 ('Nhiếp ảnh', 'Nghệ thuật'),
 ('Vẽ tranh', 'Nghệ thuật'),
+('Điêu khắc', 'Nghệ thuật'),
+('Nhảy múa', 'Nghệ thuật'),
 ('Nấu ăn', 'Ẩm thực'),
+('Pha chế', 'Ẩm thực'),
+('Làm bánh', 'Ẩm thực'),
 ('Du lịch', 'Khám phá'),
+('Phượt', 'Khám phá'),
+('Cắm trại', 'Khám phá'),
 ('Đọc sách', 'Học thuật'),
+('Nghiên cứu', 'Học thuật'),
+('Viết lách', 'Học thuật'),
 ('Thể thao', 'Sức khoẻ'),
 ('Yoga', 'Sức khoẻ'),
+('Gym', 'Sức khoẻ'),
+('Đạp xe', 'Sức khoẻ'),
 ('Tiếng Nhật', 'Ngôn ngữ'),
 ('Tiếng Anh', 'Ngôn ngữ'),
-('Công nghệ', 'Kỹ thuật');
+('Công nghệ', 'Kỹ thuật'),
+('Lập trình', 'Kỹ thuật'),
+('AI/Robotics', 'Kỹ thuật');
 
 -- ── 2. USERS ──
 INSERT INTO USERS (email, phone_number, password_hash, full_name, date_of_birth, gender, avatar_url, bio, location, japanese_level, preferred_language, role, is_verified) VALUES

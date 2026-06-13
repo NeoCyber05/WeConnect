@@ -25,10 +25,10 @@ interface EventOut {
 
 function formatDateTimeLocal(dateString?: string) {
   if (!dateString) return "";
-  const normalized = (dateString.endsWith('Z') || dateString.includes('+')) 
-    ? dateString 
+  const normalized = (dateString.endsWith('Z') || dateString.includes('+'))
+    ? dateString
     : dateString + 'Z';
-    
+
   const d = new Date(normalized);
   if (isNaN(d.getTime())) return "";
 
@@ -86,7 +86,7 @@ function mapEventOutToEvent(e: EventOut): Event {
     "Giao lưu J-Pop": "/static/events/giaoluujpop.png",
     "Hùng biện tiếng Nhật": "/static/events/hungbientiengnhat.png",
     "Offline fan anime": "/static/events/offlinefananime.png",
-    "Hội thảo du học": "/static/events/tiengnhatgiaotiep.png",
+    "Hội thảo du học": "/static/events/hoithaoduhoc.png",
     "Tiệc trà đạo": "/static/events/tiectradao.png",
     "Ngày hội việc làm IT": "/static/events/ngayhoivieclamit.png",
     "Workshop Thư pháp": "/static/events/workshopthuphap.png",
@@ -158,7 +158,7 @@ const categoryColors: Record<string, string> = {
 export default function Index() {
   const queryClient = useQueryClient();
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
-  
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedTime, setSelectedTime] = useState<string>("all");
@@ -181,19 +181,19 @@ export default function Index() {
 
 
   const events: Event[] = (apiEvents ?? []).map(mapEventOutToEvent);
-  
+
   const CATEGORIES = ["Công nghệ", "Kinh doanh", "Giáo dục", "Nghệ thuật", "Khác"];
 
   const filtered = events.filter((e) => {
     const matchesSearch = e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          e.location.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesStatus = selectedStatuses.length === 0 || 
-                          selectedStatuses.includes(e.status) || 
-                          selectedStatuses.includes(e.timeStatus);
-    
+      e.location.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesStatus = selectedStatuses.length === 0 ||
+      selectedStatuses.includes(e.status) ||
+      selectedStatuses.includes(e.timeStatus);
+
     const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(e.category);
-    
+
     let matchesTime = true;
     if (selectedTime !== "all") {
       const now = new Date();
@@ -206,21 +206,21 @@ export default function Index() {
         const curr = new Date(now);
         const day = curr.getDay(); // 0 (CN) - 6 (T7)
         const diffToMonday = curr.getDate() - day + (day === 0 ? -6 : 1);
-        
+
         const monday = new Date(curr.setDate(diffToMonday));
         monday.setHours(0, 0, 0, 0);
-        
+
         const sunday = new Date(monday);
         sunday.setDate(monday.getDate() + 6);
         sunday.setHours(23, 59, 59, 999);
-        
+
         matchesTime = eventDate >= monday && eventDate <= sunday;
       } else if (selectedTime === "month") {
         // Từ ngày 1 đến ngày cuối cùng của tháng hiện tại
         const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
         const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
         lastDay.setHours(23, 59, 59, 999);
-        
+
         matchesTime = eventDate >= firstDay && eventDate <= lastDay;
       }
     }
@@ -289,12 +289,12 @@ export default function Index() {
 
       <main className="max-w-[1200px] mx-auto px-4 pt-8">
         <div className="flex flex-col md:flex-row gap-8">
-          
+
           {/* Sidebar Filters */}
           <aside className="w-full md:w-[280px] flex-shrink-0">
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 sticky top-24">
               <h2 className="text-lg font-bold text-slate-900 mb-6">Bộ lọc sự kiện</h2>
-              
+
               {/* Search */}
               <div className="mb-6">
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Tìm kiếm</label>
@@ -326,7 +326,7 @@ export default function Index() {
                           type="checkbox"
                           checked={selectedStatuses.includes(s.id)}
                           onChange={() => {
-                            setSelectedStatuses(prev => 
+                            setSelectedStatuses(prev =>
                               prev.includes(s.id) ? prev.filter(x => x !== s.id) : [...prev, s.id]
                             );
                           }}
@@ -372,15 +372,14 @@ export default function Index() {
                     <button
                       key={c}
                       onClick={() => {
-                        setSelectedCategories(prev => 
+                        setSelectedCategories(prev =>
                           prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]
                         );
                       }}
-                      className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-                        selectedCategories.includes(c) 
-                          ? "bg-slate-900 text-white shadow-md shadow-slate-200" 
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${selectedCategories.includes(c)
+                          ? "bg-slate-900 text-white shadow-md shadow-slate-200"
                           : "bg-slate-50 text-slate-500 hover:bg-slate-100"
-                      }`}
+                        }`}
                     >
                       {c}
                     </button>
@@ -402,7 +401,7 @@ export default function Index() {
                   const d = new Date();
                   const startDate = formatDateOnlyLocal(d);
                   const endDate = formatDateOnlyLocal(new Date(d.getTime() + 2 * 60 * 60 * 1000));
-                  
+
                   setEditingEvent({
                     id: 0,
                     name: "",
@@ -429,7 +428,7 @@ export default function Index() {
             {/* Event Grid */}
             {isLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[1,2,3,4].map(i => <div key={i} className="h-[400px] bg-slate-100 rounded-3xl animate-pulse" />)}
+                {[1, 2, 3, 4].map(i => <div key={i} className="h-[400px] bg-slate-100 rounded-3xl animate-pulse" />)}
               </div>
             ) : filtered.length === 0 ? (
               <div className="bg-white rounded-3xl p-12 border-2 border-dashed border-slate-100 text-center">
