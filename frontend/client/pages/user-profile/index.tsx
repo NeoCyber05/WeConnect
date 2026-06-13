@@ -212,7 +212,7 @@ export default function UserProfilePage() {
                         />
                       </svg>
                       <span className="text-sm sm:text-base font-medium text-[#6B7280]">
-                        {user.location}
+                        {t(`locations.${user.location}`, { defaultValue: user.location })}
                       </span>
                     </div>
                   )}
@@ -273,7 +273,7 @@ export default function UserProfilePage() {
                         className="flex items-center gap-2 px-4 py-2.5 rounded-full border border-[#4A6741]/10 bg-[#F1F5F0] shadow-[0_1px_2px_0_rgba(0,0,0,0.05)]"
                       >
                         <span className="text-sm font-semibold text-[#4A6741]">
-                          {hobby.name}
+                          {t(`hobbiesList.${hobby.name}`, { defaultValue: hobby.name })}
                         </span>
                       </div>
                     ))}
@@ -342,7 +342,9 @@ export default function UserProfilePage() {
                         <p className="text-sm font-bold text-[#2D3A3A]">
                           {t("profile.location")}
                         </p>
-                        <p className="text-xs text-[#6B7280]">{user.location}</p>
+                        <p className="text-xs text-[#6B7280]">
+                          {t(`locations.${user.location}`, { defaultValue: user.location })}
+                        </p>
                       </div>
                     </div>
                   )}
@@ -367,7 +369,7 @@ export default function UserProfilePage() {
                               key={h.hobby_id}
                               className="text-[10px] text-[#6B7280] bg-[#F1F5F9] px-1.5 py-0.5 rounded"
                             >
-                              {h.name}
+                              {t(`hobbiesList.${h.name}`, { defaultValue: h.name })}
                             </span>
                           ))}
                         </div>

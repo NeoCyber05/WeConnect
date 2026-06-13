@@ -243,6 +243,23 @@ export default function Index() {
     return new Intl.DateTimeFormat("vi-VN").format(date);
   };
 
+  const getGenderLabel = (gender?: string) => {
+    if (!gender) return t("profile.notUpdated");
+    if (gender === "MALE") return t("profile.male");
+    if (gender === "FEMALE") return t("profile.female");
+    if (gender === "OTHER") return t("profile.other");
+    return gender;
+  };
+
+  const getRelationshipLabel = (status?: string) => {
+    if (!status) return t("profile.notUpdated");
+    if (status === "Độc thân") return t("profile.single");
+    if (status === "Đang hẹn hò") return t("profile.dating");
+    if (status === "Đã kết hôn") return t("profile.married");
+    if (status === "Khác") return t("profile.other");
+    return status;
+  };
+
   const basicInfoItems = [
     {
       icon: basicInfo[0].icon,
@@ -256,7 +273,7 @@ export default function Index() {
     },
     {
       icon: basicInfo[2].icon,
-      title: data?.relationship_status || t("profile.notUpdated"),
+      title: getRelationshipLabel(data?.relationship_status),
       subtitle: t("profile.relationshipStatus"),
     },
     {
@@ -266,7 +283,7 @@ export default function Index() {
     },
     {
       icon: basicInfo[0].icon,
-      title: data?.gender || t("profile.notUpdated"),
+      title: getGenderLabel(data?.gender),
       subtitle: t("profile.gender"),
     },
     {
@@ -383,7 +400,9 @@ export default function Index() {
                 </h1>
                 <div className="flex items-center gap-2">
                   <LocationIcon />
-                  <span className="text-wc-gray text-base font-medium">{data?.location ?? t("profile.locationNotUpdated")}</span>
+                  <span className="text-wc-gray text-base font-medium">
+                    {data?.location ? t(`locations.${data.location}`, { defaultValue: data.location }) : t("profile.locationNotUpdated")}
+                  </span>
                   <div className="w-1 h-1 rounded-full bg-wc-gray/40" />
                 </div>
               </div>

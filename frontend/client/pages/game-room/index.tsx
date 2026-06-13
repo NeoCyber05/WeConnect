@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 import { useGameRoom } from "./useGameRoom";
 import * as clock from "@/lib/gameClock";
 import { inviteFriendToGameRoom } from "@/lib/chatApi";
@@ -98,6 +99,7 @@ const SendIcon = () => (
 
 export default function Index() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const roomCode = new URLSearchParams(window.location.search).get("code") || "";
   const g = useGameRoom(roomCode);
 
@@ -203,7 +205,7 @@ export default function Index() {
   };
 
   const handleLeaveRoom = () => {
-    const confirmLeave = window.confirm("Bạn có chắc chắn muốn rời phòng game này không?");
+    const confirmLeave = window.confirm(t("gameRoom.confirmLeave"));
     if (confirmLeave) {
       g.leave();
     }
@@ -297,7 +299,7 @@ export default function Index() {
             <div className="flex items-center gap-2">
               <GameControllerIcon />
               <span className="text-[14px] font-semibold text-[#2D3A3A] hidden sm:inline">
-                Phòng game giải trí
+                {t("gameRoom.title")}
               </span>
               <span className="text-[14px] text-gray-500 font-medium">
                 #{roomCode}
@@ -321,8 +323,8 @@ export default function Index() {
               )} />
               <span className="text-[11px] font-bold tracking-[0.55px] uppercase">
                 {g.gameStatus === "WAITING" 
-                  ? "Đang chờ" 
-                  : (g.paused ? "Đang tạm dừng" : "Trận đấu đang diễn ra")}
+                  ? t("gameRoom.waiting") 
+                  : (g.paused ? t("gameRoom.paused") : t("gameRoom.playing"))}
               </span>
             </div>
 
@@ -332,7 +334,7 @@ export default function Index() {
             >
               <LeaveIcon />
               <span className="text-[12px] font-bold text-red-600">
-                Rời phòng
+                {t("gameRoom.leaveRoom")}
               </span>
             </button>
           </div>
@@ -389,7 +391,7 @@ export default function Index() {
           {/* Total Game Timer */}
           <div className="flex flex-col items-start gap-3 p-6 bg-slate-50/50 border-b border-[#E2E8E2] flex-shrink-0">
             <span className="text-[10px] font-bold tracking-[2px] uppercase text-gray-500">
-              Thời gian trận đấu
+              {t("gameRoom.matchTime")}
             </span>
             <div className="flex flex-col items-center justify-center w-full rounded-2xl p-4 bg-[#2D3A3A] shadow-inner">
               <span className="text-[36px] font-black leading-10 tracking-[3.6px] text-white">
@@ -398,7 +400,7 @@ export default function Index() {
               <div className="flex items-center gap-1.5 mt-1 opacity-60">
                 <TimerIcon />
                 <span className="text-[10px] font-bold uppercase text-white tracking-wider">
-                  Tổng cộng
+                  {t("gameRoom.total")}
                 </span>
               </div>
             </div>
@@ -407,7 +409,7 @@ export default function Index() {
           {/* Player List */}
           <div className="flex flex-col gap-4 p-4 flex-grow overflow-y-auto">
             <span className="text-[10px] font-bold tracking-[1px] uppercase text-gray-500">
-              Người tham gia ({g.leaderboard.length}/{roomData?.max_players || 10})
+              {t("gameRoom.participants")} ({g.leaderboard.length}/{roomData?.max_players || 10})
             </span>
             <div className="flex flex-col gap-3">
               {g.leaderboard.map((entry) => {
@@ -447,14 +449,14 @@ export default function Index() {
                     </div>
                     <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                       <span className="text-[14px] font-bold leading-5 text-[#2D3A3A] truncate">
-                        {isMe ? `Bạn (${entry.full_name})` : entry.full_name}
+                        {isMe ? `${t("gameRoom.you")} (${entry.full_name})` : entry.full_name}
                       </span>
                       <span
                         className={`text-[10px] font-semibold tracking-[0.25px] uppercase ${
                           entry.is_ready ? "text-[#4A6741]" : "text-blue-500"
                         }`}
                       >
-                        {entry.is_ready ? "Trạng thái: Sẵn sàng" : "Trạng thái: Đang chờ"}
+                        {entry.is_ready ? t("gameRoom.statusReady") : t("gameRoom.statusWaiting")}
                       </span>
                     </div>
                   </div>
@@ -468,7 +470,7 @@ export default function Index() {
               >
                 <InviteIcon />
                 <span className="text-[12px] font-bold">
-                  Mời bạn bè
+                  {t("gameRoom.inviteFriends")}
                 </span>
               </button>
             </div>
@@ -481,14 +483,14 @@ export default function Index() {
               disabled={g.gameStatus !== "PLAYING" || g.paused || !g.isHost}
               className="flex-1 py-2 rounded-lg text-[12px] font-bold border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
             >
-              Dừng trận
+              {t("gameRoom.stopMatch")}
             </button>
             <button
               onClick={g.ready}
               className="flex-1 py-2 rounded-lg text-[12px] font-bold text-white transition duration-200"
               style={{ background: readyMe ? "#3B82F6" : "#4A6741" }}
             >
-              {readyMe ? "Chờ trận" : "Sẵn sàng"}
+              {readyMe ? t("gameRoom.waitingMatch") : t("gameRoom.ready")}
             </button>
           </div>
         </aside>
@@ -511,12 +513,12 @@ export default function Index() {
                   🎮
                 </div>
                 <h2 className="text-[22px] font-black text-[#2D3A3A] mb-3">
-                  Phòng chờ game
+                  {t("gameRoom.gameLobby")}
                 </h2>
                 <p className="text-sm text-gray-500 max-w-[340px] mb-8 font-medium leading-relaxed">
                   {g.isHost 
-                    ? "Tất cả người chơi đã sẵn sàng? Hãy nhấn nút bắt đầu phía dưới để tiến hành so tài ngay!" 
-                    : "Đang chờ chủ phòng bắt đầu trận đấu. Đừng rời màn hình nhé!"}
+                    ? t("gameRoom.hostWaitingMsg") 
+                    : t("gameRoom.guestWaitingMsg")}
                 </p>
 
                 {g.isHost ? (
@@ -524,13 +526,13 @@ export default function Index() {
                     onClick={g.start}
                     className="px-8 py-3.5 bg-[#4A6741] hover:bg-[#3c5435] text-white font-extrabold rounded-2xl transition duration-200 shadow-lg shadow-green-100 flex items-center gap-2 text-sm uppercase tracking-wider active:scale-95 cursor-pointer"
                   >
-                    Bắt đầu trận đấu
+                    {t("gameRoom.startMatch")}
                   </button>
                 ) : (
                   <div className="flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-[#F1F5F0] border border-green-100">
                     <div className="w-2 h-2 rounded-full bg-green-500 animate-ping" />
                     <span className="text-xs font-bold text-[#4A6741]">
-                      Đang chờ chủ phòng...
+                      {t("gameRoom.waitingHost")}
                     </span>
                   </div>
                 )}
@@ -625,9 +627,9 @@ export default function Index() {
                       <line x1="12" y1="16" x2="12.01" y2="16" />
                     </svg>
                     <span>
-                      Trả lời nhanh để giành điểm! Mỗi câu chỉ có{" "}
+                      {t("gameRoom.answerFast")}{" "}
                       <strong className={g.secondsLeft <= 3 ? "text-red-500 font-bold" : "text-green-600 font-bold"}>
-                        {g.secondsLeft} giây
+                        {g.secondsLeft} {t("gameRoom.seconds")}
                       </strong>.
                     </span>
                   </div>
@@ -651,12 +653,12 @@ export default function Index() {
               <div className="flex items-center gap-2">
                 <ChatIcon />
                 <span className="text-[11px] font-black tracking-wider uppercase text-[#2D3A3A]">
-                  Phòng chờ &amp; Phản hồi
+                  {t("gameRoom.lobbyAndFeedback")}
                 </span>
                 {unreadMessageCount > 0 && (
                   <div className="px-2 py-0.5 rounded-full bg-[#F1F5F0]">
                     <span className="text-[10px] font-bold text-[#4A6741]">
-                      {unreadMessageCount} tin nhắn mới
+                      {t("gameRoom.newMessages", { count: unreadMessageCount })}
                     </span>
                   </div>
                 )}
@@ -692,7 +694,7 @@ export default function Index() {
                       </div>
                       <div className="flex flex-col gap-0.5 min-w-0">
                         <span className="text-[10px] font-bold text-[#4A6741]">
-                          Hệ thống
+                          {t("gameRoom.system")}
                         </span>
                         <div className="px-2.5 py-1.5 rounded-tr-xl rounded-br-xl rounded-bl-xl bg-[#F1F5F0]/50 border border-green-100">
                           <p className="text-[12px] text-[#2D3A3A] italic">
@@ -760,7 +762,7 @@ export default function Index() {
                     setUnreadMessageCount(0);
                   }}
                   onKeyDown={handleKeyDown}
-                  placeholder="Nhập tin nhắn trao đổi tại đây..."
+                  placeholder={t("gameRoom.typeMessage")}
                   className="flex-1 bg-transparent text-[14px] outline-none text-[#2D3A3A]"
                 />
               </div>
@@ -769,7 +771,7 @@ export default function Index() {
                 onClick={handleSend}
                 className="flex items-center gap-1.5 px-5 py-2 rounded-2xl text-white font-bold bg-[#4A6741] hover:bg-[#3c5435] transition duration-200"
               >
-                <span className="text-[13px]">Gửi</span>
+                <span className="text-[13px]">{t("gameRoom.send")}</span>
                 <SendIcon />
               </button>
 
@@ -801,12 +803,12 @@ export default function Index() {
               <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" />
             </svg>
             <span className="text-[10px] font-black tracking-wider uppercase">
-              ĐANG TRANH TÀI
+              {t("gameRoom.competing")}
             </span>
           </div>
 
           <h3 className="text-[14px] font-black tracking-widest text-[#2D3A3A] uppercase border-b border-[#E2E8E2] pb-2 flex-shrink-0">
-            BẢNG ĐIỂM
+            {t("gameRoom.scoreboard")}
           </h3>
 
           <div className="flex flex-col gap-3">
@@ -864,7 +866,7 @@ export default function Index() {
                       </span>
                       {player.isMe && (
                         <span className="px-1.5 py-0.5 text-[8px] font-extrabold uppercase bg-green-500 text-white rounded">
-                          Bạn
+                          {t("gameRoom.you")}
                         </span>
                       )}
                     </div>
@@ -894,7 +896,7 @@ export default function Index() {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-[#E2E8E2] rounded-3xl p-6 shadow-xl w-full max-w-[380px] animate-scale-in">
             <div className="flex justify-between items-center border-b border-[#E2E8E2] pb-3 mb-4">
-              <h3 className="text-md font-bold text-[#2D3A3A]">Mời bạn bè vào phòng</h3>
+              <h3 className="text-md font-bold text-[#2D3A3A]">{t("gameRoom.inviteToRoom")}</h3>
               <button
                 onClick={() => setShowInviteModal(false)}
                 className="text-gray-500 hover:text-red-500 text-xl font-bold"
@@ -916,7 +918,7 @@ export default function Index() {
                       <div className="flex flex-col">
                         <span className="text-xs font-bold text-[#2D3A3A]">{friend.name}</span>
                         <span className="text-[10px] text-gray-500">
-                          {friend.status === "online" ? "🟢 Trực tuyến" : "⚪ Ngoại tuyến"}
+                          {friend.status === "online" ? `🟢 ${t("gameRoom.online")}` : `⚪ ${t("gameRoom.offline")}`}
                         </span>
                       </div>
                     </div>
@@ -933,7 +935,7 @@ export default function Index() {
                           : "bg-[#4A6741] hover:bg-[#3c5435]"
                       }`}
                     >
-                      {isAlreadyInRoom ? "Trong phòng" : isInvited ? "Đã mời" : "Mời"}
+                      {isAlreadyInRoom ? t("gameRoom.inRoom") : isInvited ? t("gameRoom.invited") : t("gameRoom.invite")}
                     </button>
                   </div>
                 );
@@ -953,7 +955,7 @@ export default function Index() {
                 <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600">
                   ⚠️
                 </div>
-                <h3 className="text-lg font-black text-red-600">Dừng trận đấu</h3>
+                <h3 className="text-lg font-black text-red-600">{t("gameRoom.pauseMatch")}</h3>
               </div>
               <button
                 onClick={handleResumeMatch}
@@ -965,19 +967,19 @@ export default function Index() {
 
             {/* Description */}
             <p className="text-[13px] text-gray-600 leading-relaxed mb-4">
-              Bạn đang tạm dừng trận đấu. Mọi người sẽ không thể trả lời cho đến khi bạn tiếp tục.
+              {t("gameRoom.pauseMatchDesc")}
             </p>
 
             {/* Yellow Warning details box */}
             <div className="bg-orange-50 border border-orange-200/50 rounded-2xl p-4 mb-5">
               <div className="flex items-center gap-2 mb-2 text-[13px] font-bold text-orange-700">
                 <span>⏰</span>
-                <span>Trận đấu sẽ tạm dừng</span>
+                <span>{t("gameRoom.matchWillPause")}</span>
               </div>
               <ul className="text-xs text-orange-600 space-y-1.5 pl-5 list-disc font-medium">
-                <li>Đồng hồ đếm ngược sẽ tạm dừng</li>
-                <li>Người chơi không thể trả lời câu hỏi</li>
-                <li>Phòng chat vẫn hoạt động bình thường</li>
+                <li>{t("gameRoom.pauseRule1")}</li>
+                <li>{t("gameRoom.pauseRule2")}</li>
+                <li>{t("gameRoom.pauseRule3")}</li>
               </ul>
             </div>
 
@@ -987,7 +989,7 @@ export default function Index() {
                 <div className="w-full border-t border-[#E2E8E2]" />
               </div>
               <span className="relative px-3 bg-white text-[10px] font-black uppercase text-gray-500 tracking-wider">
-                Bạn muốn làm gì tiếp theo?
+                {t("gameRoom.whatNext")}
               </span>
             </div>
 
@@ -1002,8 +1004,8 @@ export default function Index() {
                   ▶️
                 </div>
                 <div className="flex flex-col items-center text-center">
-                  <span className="text-[13px] font-extrabold text-green-700">Tiếp tục trận</span>
-                  <span className="text-[9px] text-green-600 font-medium">Tiếp tục cuộc đua</span>
+                  <span className="text-[13px] font-extrabold text-green-700">{t("gameRoom.resumeMatch")}</span>
+                  <span className="text-[9px] text-green-600 font-medium">{t("gameRoom.resumeMatchDesc")}</span>
                 </div>
               </button>
 
@@ -1016,8 +1018,8 @@ export default function Index() {
                   🏳️
                 </div>
                 <div className="flex flex-col items-center text-center">
-                  <span className="text-[13px] font-extrabold text-orange-700">Kết thúc trận</span>
-                  <span className="text-[9px] text-orange-600 font-medium">Xem kết quả chung cuộc</span>
+                  <span className="text-[13px] font-extrabold text-orange-700">{t("gameRoom.endMatch")}</span>
+                  <span className="text-[9px] text-orange-600 font-medium">{t("gameRoom.endMatchDesc")}</span>
                 </div>
               </button>
             </div>
@@ -1025,7 +1027,7 @@ export default function Index() {
             {/* Authorizations Footer */}
             <div className="flex items-center gap-2 border-t border-[#E2E8E2] pt-4 text-[10px] text-gray-500 font-medium justify-center">
               <span>🔒</span>
-              <span>Chỉ Admin phòng mới có quyền thực hiện các thao tác này.</span>
+              <span>{t("gameRoom.adminOnly")}</span>
             </div>
           </div>
         </div>
@@ -1041,7 +1043,7 @@ export default function Index() {
               <div className="flex items-center gap-2">
                 <span className="text-2xl">🏆</span>
                 <h2 className="text-[16px] font-black text-[#2D3A3A] tracking-wider uppercase">
-                  Bảng xếp hạng chung cuộc
+                  {t("gameRoom.finalScoreboard")}
                 </h2>
               </div>
               <button
@@ -1053,7 +1055,7 @@ export default function Index() {
             </div>
 
             <p className="text-[13px] text-gray-600 font-semibold mb-6 text-center">
-              Trận đấu đã khép lại! Xin chúc mừng các đấu thủ đã hoàn thành xuất sắc cuộc đua:
+              {t("gameRoom.matchEndedMsg")}
             </p>
 
             {/* Horizontal Podium Display */}
@@ -1071,11 +1073,11 @@ export default function Index() {
                   {sortedPlayers[1]?.name}
                 </h4>
                 <span className="text-[13px] font-black text-slate-500 mt-1">
-                  {sortedPlayers[1]?.score} <span className="text-[10px] text-gray-400 font-semibold">điểm</span>
+                  {sortedPlayers[1]?.score} <span className="text-[10px] text-gray-400 font-semibold">{t("gameRoom.points")}</span>
                 </span>
                 {/* Podium Block */}
                 <div className="w-24 h-16 bg-slate-100 border-t border-[#E2E8E2] rounded-t-xl mt-2 flex items-center justify-center text-xs font-bold text-slate-400">
-                  Hạng 2
+                  {t("gameRoom.rank")} 2
                 </div>
               </div>
 
@@ -1091,15 +1093,15 @@ export default function Index() {
                 <h4 className="text-[13px] font-extrabold text-[#2D3A3A] truncate max-w-[110px] flex items-center gap-1">
                   {sortedPlayers[0]?.name}
                   {sortedPlayers[0]?.isMe && (
-                    <span className="text-[9px] px-1 py-0.2 bg-green-500 text-white rounded">Bạn</span>
+                    <span className="text-[9px] px-1 py-0.2 bg-green-500 text-white rounded">{t("gameRoom.you")}</span>
                   )}
                 </h4>
                 <span className="text-[15px] font-black text-yellow-600 mt-1">
-                  {sortedPlayers[0]?.score} <span className="text-[10px] text-gray-400 font-semibold">điểm</span>
+                  {sortedPlayers[0]?.score} <span className="text-[10px] text-gray-400 font-semibold">{t("gameRoom.points")}</span>
                 </span>
                 {/* Podium Block */}
                 <div className="w-28 h-24 bg-yellow-50 border-t border-yellow-200 rounded-t-xl mt-2 flex items-center justify-center text-xs font-extrabold text-yellow-600 shadow-sm">
-                  Vô địch
+                  {t("gameRoom.champion")}
                 </div>
               </div>
 
@@ -1115,11 +1117,11 @@ export default function Index() {
                   {sortedPlayers[2]?.name}
                 </h4>
                 <span className="text-[13px] font-black text-orange-600 mt-1">
-                  {sortedPlayers[2]?.score} <span className="text-[10px] text-gray-400 font-semibold">điểm</span>
+                  {sortedPlayers[2]?.score} <span className="text-[10px] text-gray-400 font-semibold">{t("gameRoom.points")}</span>
                 </span>
                 {/* Podium Block */}
                 <div className="w-24 h-12 bg-orange-50 border-t border-orange-100 rounded-t-xl mt-2 flex items-center justify-center text-xs font-bold text-orange-400">
-                  Hạng 3
+                  {t("gameRoom.rank")} 3
                 </div>
               </div>
 
@@ -1133,7 +1135,7 @@ export default function Index() {
                   {sortedPlayers[3].avatar}
                   <span className="text-xs font-bold text-[#2D3A3A]">{sortedPlayers[3].name}</span>
                 </div>
-                <span className="text-xs font-bold text-gray-500">{sortedPlayers[3].score} điểm</span>
+                <span className="text-xs font-bold text-gray-500">{sortedPlayers[3].score} {t("gameRoom.points")}</span>
               </div>
             )}
 
@@ -1144,14 +1146,14 @@ export default function Index() {
                   onClick={g.start}
                   className="px-5 py-2.5 rounded-xl border border-[#4A6741] text-[#4A6741] font-bold hover:bg-[#F1F5F0] transition duration-200 cursor-pointer"
                 >
-                  Chơi lại
+                  {t("gameRoom.playAgain")}
                 </button>
               )}
               <button
                 onClick={g.leave}
                 className="px-5 py-2.5 rounded-xl bg-[#4A6741] text-white font-bold hover:bg-[#3c5435] transition duration-200 cursor-pointer"
               >
-                Thoát phòng
+                {t("gameRoom.exitRoom")}
               </button>
             </div>
 

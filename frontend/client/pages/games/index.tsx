@@ -116,7 +116,6 @@ export default function Index() {
       icon: GAME_ICONS[game.game_id] || DEFAULT_GAME_ICON,
       rooms,
       openCount,
-      badgeLabel: openCount === 0 ? "0 phòng chờ" : `${openCount} phòng chờ`,
     };
   });
 
@@ -365,7 +364,7 @@ export default function Index() {
                             <span
                               className={`px-3 py-1 rounded-full text-xs font-bold ${game.badgeBg} ${game.badgeText}`}
                             >
-                              {game.badgeLabel === "0 phòng chờ" ? t("games.noWaitingRooms") : (game.badgeLabel || t("games.roomsOpen", { count: game.openCount }))}
+                              {game.openCount === 0 ? t("games.noWaitingRooms") : t("games.waitingRooms", { count: game.openCount })}
                             </span>
                             <svg
                               width="12"
