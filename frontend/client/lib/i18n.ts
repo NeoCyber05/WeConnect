@@ -266,6 +266,8 @@ const resources = {
         seconds: "giây",
         minMora: "Tối thiểu (âm)",
         maxMora: "Tối đa (âm)",
+        hiragana: "Hiragana",
+        katakana: "Katakana",
         categories: "Chủ đề từ",
         nextKana: "Nối bằng âm",
         yourTurn: "Đến lượt bạn!",
@@ -480,6 +482,9 @@ const resources = {
         "Cắm hoa Ikebana": "Cắm hoa Ikebana"
       },
       gameTitles: {
+        kanji: "Luyện đọc Kanji",
+        nihon: "Đố vui văn hóa Nhật Bản",
+        shiritori: "Nối từ tiếng Nhật",
         "Luyện đọc Kanji": "Luyện đọc Kanji",
         "Trắc nghiệm Kanji": "Trắc nghiệm Kanji",
         "Đố vui văn hóa Nhật Bản": "Đố vui văn hóa Nhật Bản",
@@ -487,11 +492,14 @@ const resources = {
         "Nối từ tiếng Nhật": "Nối từ tiếng Nhật"
       },
       gameDescriptions: {
+        kanji: "Trắc nghiệm Kanji • 2-4 người",
+        nihon: "Kiến thức chung • 4-10 người",
+        shiritori: "Nối từ tiếng Nhật • 2-8 người",
         "Luyện đọc Kanji": "Trắc nghiệm Kanji • 2-4 người",
         "Trắc nghiệm Kanji": "Trắc nghiệm Kanji • 2-4 người",
         "Đố vui văn hóa Nhật Bản": "Kiến thức chung • 4-10 người",
         "Kiến thức chung": "Kiến thức chung • 4-10 người",
-        "Nối từ tiếng Nhật": "しりとり • 2-8 người"
+        "Nối từ tiếng Nhật": "Nối từ tiếng Nhật • 2-8 người"
       },
       eventStatus: {
         "UPCOMING": "SẮP DIỄN RA",
@@ -765,6 +773,8 @@ const resources = {
         seconds: "秒",
         minMora: "最短（モーラ）",
         maxMora: "最長（モーラ）",
+        hiragana: "ひらがな",
+        katakana: "カタカナ",
         categories: "単語カテゴリ",
         nextKana: "次の文字",
         yourTurn: "あなたの番です！",
@@ -979,6 +989,9 @@ const resources = {
         "Cắm hoa Ikebana": "生け花"
       },
       gameTitles: {
+        kanji: "漢字リーディング練習",
+        nihon: "日本文化クイズ",
+        shiritori: "しりとり",
         "Luyện đọc Kanji": "漢字リーディング練習",
         "Trắc nghiệm Kanji": "漢字クイズ",
         "Đố vui văn hóa Nhật Bản": "日本文化クイズ",
@@ -986,6 +999,9 @@ const resources = {
         "Nối từ tiếng Nhật": "しりとり"
       },
       gameDescriptions: {
+        kanji: "漢字クイズ • 2-4人",
+        nihon: "一般知識 • 4-10人",
+        shiritori: "しりとり • 2-8人",
         "Luyện đọc Kanji": "漢字クイズ • 2-4人",
         "Trắc nghiệm Kanji": "漢字クイズ • 2-4人",
         "Đố vui văn hóa Nhật Bản": "一般知識 • 4-10人",

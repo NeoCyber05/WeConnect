@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.schemas.game import LeaderboardEntry
+from app.schemas.game_common import LeaderboardEntry
 
 ScriptMode = Literal["HIRAGANA", "KATAKANA"]
 TURN_SECONDS_CHOICES = (15, 20, 30, 45, 60)

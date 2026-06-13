@@ -126,8 +126,8 @@ export default function Index() {
     return {
       id: game.game_id,
       type: game.game_type,
-      name: t(`gameTitles.${game.name}`, { defaultValue: game.name }),
-      description: t(`gameDescriptions.${game.name}`, { defaultValue: game.description || "" }),
+      name: t(`gameTitles.${game.game_id}`, { defaultValue: game.name }),
+      description: t(`gameDescriptions.${game.game_id}`, { defaultValue: game.description || "" }),
       iconBg: game.icon_bg || "bg-gray-100",
       badgeBg: game.badge_bg || "bg-slate-100",
       badgeText: game.badge_text || "text-slate-500",
@@ -477,7 +477,7 @@ export default function Index() {
                 >
                   {apiGames.map((g) => (
                     <option key={g.game_id} value={g.game_id}>
-                      {t(`gameTitles.${g.name}`, { defaultValue: g.name })}
+                      {t(`gameTitles.${g.game_id}`, { defaultValue: g.name })}
                     </option>
                   ))}
                 </select>
@@ -519,8 +519,8 @@ export default function Index() {
                       <label className="text-[10px] font-bold uppercase text-gray-500 block mb-1">{t("shiritori.script")}</label>
                       <select value={shiriScript} onChange={(e) => setShiriScript(e.target.value as "HIRAGANA" | "KATAKANA")}
                         className="w-full px-3 py-2 rounded-xl border border-[#E2E8E2] bg-white text-sm">
-                        <option value="HIRAGANA">Hiragana</option>
-                        <option value="KATAKANA">Katakana</option>
+                        <option value="HIRAGANA">{t("shiritori.hiragana")}</option>
+                        <option value="KATAKANA">{t("shiritori.katakana")}</option>
                       </select>
                     </div>
                     <div>

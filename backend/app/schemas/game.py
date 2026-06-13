@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import List, Optional, Any
 from app.schemas.event import UserBrief
 from app.schemas.shiritori import ShiritoriRoomSettings
+from app.schemas.game_common import LeaderboardEntry
 
 
 class ParticipantBrief(BaseModel):
@@ -90,14 +91,6 @@ class AnswerResult(BaseModel):
     correct_index: int
     points: int
     new_score: int
-
-
-class LeaderboardEntry(BaseModel):
-    user_id: int
-    full_name: str
-    avatar_url: Optional[str] = None
-    score: int
-    is_ready: bool
 
 
 class GameStateOut(BaseModel):

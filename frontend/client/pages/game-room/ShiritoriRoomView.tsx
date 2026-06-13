@@ -62,7 +62,7 @@ export default function ShiritoriRoomView({ roomCode }: { roomCode: string }) {
             <button onClick={() => navigate("/games")} className="text-sm font-bold text-[#4A6741] hover:underline">
               ← {t("games.gameList")}
             </button>
-            <span className="text-lg font-extrabold text-[#2D3A3A]">しりとり</span>
+            <span className="text-lg font-extrabold text-[#2D3A3A]">{t("shiritori.title")}</span>
             <span className="text-xs font-bold text-gray-500 bg-slate-100 px-3 py-1 rounded-full">{roomCode}</span>
           </div>
           <div className="flex items-center gap-4 text-sm font-bold">
@@ -95,7 +95,7 @@ export default function ShiritoriRoomView({ roomCode }: { roomCode: string }) {
           </div>
           {settings && (
             <div className="p-4 text-xs text-gray-600 space-y-1 border-b border-[#E2E8E2]">
-              <p><b>{t("shiritori.script")}:</b> {settings.script_mode === "KATAKANA" ? "Katakana" : "Hiragana"}</p>
+              <p><b>{t("shiritori.script")}:</b> {settings.script_mode === "KATAKANA" ? t("shiritori.katakana") : t("shiritori.hiragana")}</p>
               <p><b>{t("shiritori.wordLength")}:</b> {settings.min_mora}–{settings.max_mora} {t("shiritori.mora")}</p>
               <p><b>{t("shiritori.turnTime")}:</b> {settings.turn_seconds}s</p>
               <p><b>{t("shiritori.matchTime")}:</b> {settings.match_minutes} {t("shiritori.minutes")}</p>
@@ -117,7 +117,7 @@ export default function ShiritoriRoomView({ roomCode }: { roomCode: string }) {
               <p className="text-gray-500 mb-6 max-w-md">{s.isHost ? t("gameRoom.hostWaitingMsg") : t("gameRoom.guestWaitingMsg")}</p>
               {settings && (
                 <div className="mb-6 text-sm text-left bg-slate-50 rounded-2xl p-4 border border-[#E2E8E2] space-y-1">
-                  <p>{t("shiritori.script")}: {settings.script_mode}</p>
+                  <p>{t("shiritori.script")}: {settings.script_mode === "KATAKANA" ? t("shiritori.katakana") : t("shiritori.hiragana")}</p>
                   <p>{t("shiritori.startKana")}: {settings.start_kana === "RANDOM" ? t("shiritori.random") : settings.start_kana}</p>
                   <p>{t("shiritori.turnTime")}: {settings.turn_seconds}s · {t("shiritori.matchTime")}: {settings.match_minutes} {t("shiritori.minutes")}</p>
                 </div>
