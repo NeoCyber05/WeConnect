@@ -1,9 +1,10 @@
 import random
 import string
 import re
-import smtplib
+import urllib.request
+import urllib.error
+import json
 from datetime import datetime, timedelta, timezone
-from email.mime.text import MIMEText
 from sqlalchemy.orm import Session
 from app.config import settings
 from fastapi import HTTPException, status
@@ -19,21 +20,19 @@ def _is_email(identifier: str) -> bool:
     return bool(_EMAIL_RE.match(identifier))
 
 
-def _has_smtp_config() -> bool:
-    return bool(
-        settings.SMTP_HOST and settings.SMTP_USER and settings.SMTP_PASSWORD
-    )
+def _has_brevo_config() -> bool:
+    return bool(settings.BREVO_API_KEY)
 
 
 def send_otp_email(identifier: str, code: str, purpose: str) -> None:
-    """Gửi OTP qua email bằng SMTP."""
+    """Gửi OTP qua email bằng Brevo API (HTTP/HTTPS, port 443)."""
     if not _is_email(identifier):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="OTP qua số điện thoại chưa được hỗ trợ. Vui lòng sử dụng email.",
         )
 
-    if not _has_smtp_config():
+    if not _has_brevo_config():
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Dịch vụ gửi email OTP chưa được cấu hình. Vui lòng liên hệ quản trị viên.",
@@ -46,20 +45,35 @@ def send_otp_email(identifier: str, code: str, purpose: str) -> None:
         f"<p>Mã này sẽ hết hạn sau {settings.OTP_EXPIRE_MINUTES} phút.</p>"
     )
 
-    msg = MIMEText(html_body, "html", "utf-8")
-    msg["Subject"] = subject
-    msg["From"] = settings.OTP_FROM_EMAIL
-    msg["To"] = identifier
+    payload = {
+        "sender": {"email": settings.BREVO_FROM_EMAIL, "name": settings.OTP_FROM_NAME},
+        "to": [{"email": identifier}],
+        "subject": subject,
+        "htmlContent": html_body,
+    }
+
+    req = urllib.request.Request(
+        "https://api.brevo.com/v3/smtp/email",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "api-key": settings.BREVO_API_KEY,
+        },
+        method="POST",
+    )
 
     try:
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
-            if settings.SMTP_USE_TLS:
-                server.starttls()
-            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-            server.sendmail(settings.OTP_FROM_EMAIL, [identifier], msg.as_string())
-        print(f"[SMTP] Gửi email OTP thành công đến {identifier}")
+        with urllib.request.urlopen(req, timeout=10) as response:
+            print(f"[Brevo] Gửi email OTP thành công: {response.status}")
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8")
+        print(f"[Brevo] HTTP {e.code} - {body}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Không thể gửi email OTP. Vui lòng thử lại sau.",
+        )
     except Exception as e:
-        print(f"[SMTP] Lỗi khi gửi email OTP: {e}")
+        print(f"[Brevo] Lỗi khi gửi email OTP: {e}")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Không thể gửi email OTP. Vui lòng thử lại sau.",

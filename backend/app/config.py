@@ -15,15 +15,11 @@ class Settings(BaseSettings):
     RESET_TOKEN_EXPIRE_MINUTES: int = 10
 
     OTP_EXPIRE_MINUTES: int = 5
-    OTP_FROM_EMAIL: str = "WeConnect <otp@nxs24042005.id.vn>"
     OTP_FROM_NAME: str = "WeConnect"
 
-    # SMTP config (bắt buộc cho OTP qua email)
-    SMTP_HOST: str | None = None
-    SMTP_PORT: int = 587
-    SMTP_USER: str | None = None
-    SMTP_PASSWORD: str | None = None
-    SMTP_USE_TLS: bool = True
+    # Brevo API config (dùng cho OTP qua email, HTTP/HTTPS port 443)
+    BREVO_API_KEY: str | None = None
+    BREVO_FROM_EMAIL: str = "otp@example.com"
 
     GEMINI_API_KEY: str | None = None
 

@@ -19,8 +19,8 @@ router = APIRouter()
 
 
 def _has_email_sender_config() -> bool:
-    """True nếu có SMTP config để gửi email OTP."""
-    return bool(settings.SMTP_HOST and settings.SMTP_USER and settings.SMTP_PASSWORD)
+    """True nếu có Brevo API config để gửi email OTP."""
+    return bool(settings.BREVO_API_KEY)
 
 
 def _build_token_response(user: User) -> TokenResponse:
