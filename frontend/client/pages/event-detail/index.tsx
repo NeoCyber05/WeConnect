@@ -173,6 +173,28 @@ export default function Index() {
     );
   }
 
+  const EVENT_IMAGE_MAP: Record<string, string> = {
+    "Lễ hội hoa anh đào": "/static/events/lehoianhdao.png",
+    "Học làm Sushi": "/static/events/hoclamsushi.png",
+    "Bóng đá cộng đồng": "/static/events/bongdacongdong.png",
+    "Tiếng Nhật giao tiếp": "/static/events/tiengnhatgiaotiep.png",
+    "Triển lãm Manga": "/static/events/trienlammanga.png",
+    "Đêm nhạc Trịnh": "/static/events/demnhactrinh.png",
+    "Leo núi Phú Sĩ": "/static/events/leonuiphusi.png",
+    "Giao lưu J-Pop": "/static/events/giaoluujpop.png",
+    "Hùng biện tiếng Nhật": "/static/events/hungbientiengnhat.png",
+    "Offline fan anime": "/static/events/offlinefananime.png",
+    "Hội thảo du học": "/static/events/hoithaoduhoc.png",
+    "Tiệc trà đạo": "/static/events/tiectradao.png",
+    "Ngày hội việc làm IT": "/static/events/ngayhoivieclamit.png",
+    "Workshop Thư pháp": "/static/events/workshopthuphap.png",
+    "Cắm hoa Ikebana": "/static/events/camhoaikebana.png"
+  };
+
+  const fallbackImage = EVENT_IMAGE_MAP[event.title] || "/static/events/lehoianhdao.png";
+  const isUnsplash = !event.image_url || event.image_url.includes("unsplash.com");
+  const finalImage = isUnsplash ? fallbackImage : event.image_url;
+
   return (
     <div className="min-h-screen bg-background font-inter">
       <Navbar />
@@ -188,7 +210,7 @@ export default function Index() {
 
         <div className="relative rounded-lg overflow-hidden h-[280px] sm:h-[360px] lg:h-[450px] bg-[#F6F3F5] mb-6">
           <img
-            src={getImageUrl(event.image_url, "https://api.builder.io/api/v1/image/assets/TEMP/78e3156d16c6300089b55bfaf620fc8759e9c921?width=2264")}
+            src={getImageUrl(finalImage, "https://api.builder.io/api/v1/image/assets/TEMP/78e3156d16c6300089b55bfaf620fc8759e9c921?width=2264")}
             alt={event.title}
             className="w-full h-full object-cover"
           />
