@@ -157,7 +157,7 @@ function EventCard({
     "https://api.builder.io/api/v1/image/assets/TEMP/e649ba19346eb08e08b62bff6dff775beffd7b6e?width=40",
     "https://api.builder.io/api/v1/image/assets/TEMP/b6307a3da10d80972ce5a4c85d2a120940da9f28?width=40",
   ];
-  
+
   const displayedAvatarsCount = Math.min(registeredCount, 3);
   const attendees = Array.from({ length: displayedAvatarsCount }).map((_, i) => ({
     src: mockAvatars[i % mockAvatars.length],
@@ -167,15 +167,15 @@ function EventCard({
   return (
     <div className="flex h-40 items-stretch rounded-2xl border border-[#E2E8E2] bg-white overflow-hidden hover:shadow-md transition-shadow">
       <Link to={`/events/${id}`} className="relative w-[130px] shrink-0 overflow-hidden bg-[#F6F3F5]">
-        <img 
-          src={image} 
-          alt={title} 
+        <img
+          src={image}
+          alt={title}
           onError={(e) => {
             const target = e.target as HTMLImageElement;
             target.onerror = null;
             target.src = "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=200&fit=crop";
           }}
-          className="w-full h-full object-cover transition-transform hover:scale-105 duration-300" 
+          className="w-full h-full object-cover transition-transform hover:scale-105 duration-300"
         />
         <div className="absolute top-2 left-2 flex items-center px-2 py-0.5 rounded backdrop-blur-sm border border-white/10 bg-[rgba(45,58,58,0.6)]">
           <span className="text-white text-[8px] font-bold uppercase tracking-[0.4px]">{badgeText}</span>
@@ -216,26 +216,26 @@ function EventCard({
               onJoinToggle();
             }}
             disabled={isPending || (isFull && !isRegistered)}
-            className={`flex items-center justify-center px-3 py-1 rounded border transition-colors text-[9px] font-bold uppercase tracking-wide ${
-              isRegistered
+            className={`flex items-center justify-center px-3 py-1 rounded border transition-colors text-[9px] font-bold uppercase tracking-wide ${isRegistered
                 ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
                 : isFull
-                ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed"
-                : "border-[rgba(74,103,65,0.2)] bg-[#F1F5F0] text-[#4A6741] hover:bg-[#E2EBE0]"
-            }`}
+                  ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed"
+                  : "border-[rgba(74,103,65,0.2)] bg-[#F1F5F0] text-[#4A6741] hover:bg-[#E2EBE0]"
+              }`}
           >
             {isPending
               ? t("events.processing") || "..."
               : isRegistered
-              ? t("events.cancelRegistration") || "Huỷ"
-              : isFull
-              ? t("events.full") || "Hết chỗ"
-              : t("home.join") || "Tham gia"}
+                ? t("events.cancelRegistration") || "Huỷ"
+                : isFull
+                  ? t("events.full") || "Hết chỗ"
+                  : t("home.join") || "Tham gia"}
           </button>
         </div>
       </div>
     </div>
-  );}
+  );
+}
 
 interface FriendSuggestionProps {
   userId: number;
@@ -314,13 +314,26 @@ export default function Index() {
     },
   });
 
+  const EVENT_IMAGE_MAP: Record<string, string> = {
+    "Lễ hội hoa anh đào": "/static/events/lehoianhdao.png",
+    "Học làm Sushi": "/static/events/hoclamsushi.png",
+    "Bóng đá cộng đồng": "/static/events/bongdacongdong.png",
+    "Tiếng Nhật giao tiếp": "/static/events/tiengnhatgiaotiep.png"
+  };
+
   const featuredEvents = (apiEvents || []).map((e) => {
     const isOnline = e.location?.toLowerCase().includes("online") ||
       e.location?.toLowerCase().includes("zoom") ||
       e.location?.toLowerCase().includes("meet");
+
+    const fallbackImage = EVENT_IMAGE_MAP[e.title] || "/static/events/lehoianhdao.png";
+
+    const isUnsplash = !e.image_url || e.image_url.includes("unsplash.com");
+    const finalImage = isUnsplash ? fallbackImage : e.image_url;
+
     return {
       id: e.event_id,
-      image: getImageUrl(e.image_url, "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=200&fit=crop"),
+      image: getImageUrl(finalImage, ""),
       badge: (isOnline ? "ONLINE" : "OFFLINE") as "ONLINE" | "OFFLINE",
       title: t(`eventTitles.${e.title}`, { defaultValue: e.title }),
       location: t(`locations.${e.location}`, { defaultValue: e.location }),
