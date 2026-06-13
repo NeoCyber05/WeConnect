@@ -797,7 +797,12 @@ def submit_shiritori_word(
             "user_id": current_user.user_id,
             "reason": result["reason"],
         })
-        return ShiritoriSubmitResult(valid=False, reason=result["reason"], new_score=participant.score or 0)
+        return ShiritoriSubmitResult(
+            valid=False,
+            reason=result["reason"],
+            reason_params=result.get("reason_params"),
+            new_score=participant.score or 0,
+        )
 
     display_word = she.to_script(bank.hiragana, settings["script_mode"])
     points = she.compute_points(bank.mora_count, turn_at or now, now, settings["turn_seconds"])

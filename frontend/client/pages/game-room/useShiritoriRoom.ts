@@ -47,7 +47,7 @@ export function useShiritoriRoom(roomCode: string) {
   const [messages, setMessages] = useState<ChatLine[]>([]);
   const [serverOffsetMs, setServerOffsetMs] = useState(0);
   const [nowMs, setNowMs] = useState(() => Date.now());
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ reason?: string; params?: Record<string, unknown> } | null>(null);
   const skipSentRef = useRef(false);
 
   useEffect(() => {
@@ -123,10 +123,10 @@ export function useShiritoriRoom(roomCode: string) {
     setError(null);
     try {
       const res = await submitShiritoriWord(roomId, word);
-      if (!res.valid) setError(res.reason || "Từ không hợp lệ");
+      if (!res.valid) setError({ reason: res.reason ?? "invalid", params: res.reason_params ?? undefined });
       else refetchState();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Không thể gửi từ");
+      setError({ reason: "submit_failed", params: { detail: e instanceof Error ? e.message : "" } });
     }
   }, [roomId, state?.is_my_turn, refetchState]);
 

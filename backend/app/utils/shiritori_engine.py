@@ -17,9 +17,10 @@ _KATAKANA_TO_HIRAGANA = {chr(0x30A1 + i): chr(0x3041 + i) for i in range(0x5B)}
 _HIRAGANA_TO_KATAKANA = {v: k for k, v in _KATAKANA_TO_HIRAGANA.items()}
 
 
-class ValidationResult(TypedDict):
+class ValidationResult(TypedDict, total=False):
     valid: bool
     reason: Optional[str]
+    reason_params: Optional[dict[str, Any]]
     points: int
 
 
@@ -67,6 +68,10 @@ def first_kana(word: str) -> str:
     if not word:
         return ""
     return word[0]
+
+
+def is_kana_char(ch: str) -> bool:
+    return len(ch) == 1 and (ch in _HIRAGANA_SET or ch in _KATAKANA_SET)
 
 
 def last_chain_kana(word: str, allow_long_vowel: bool = True) -> str:
@@ -117,29 +122,39 @@ def validate_submission(
     script_mode = settings.get("script_mode", HIRAGANA)
     normalized = normalize_input(word, script_mode)
     if not normalized:
-        return {"valid": False, "reason": "Chỉ được nhập Hiragana hoặc Katakana", "points": 0}
+        return {"valid": False, "reason": "invalid_script", "points": 0}
 
     if normalized in used_words:
-        return {"valid": False, "reason": "Từ này đã được dùng rồi", "points": 0}
+        return {"valid": False, "reason": "already_used", "points": 0}
 
     if last_chain_kana(normalized) in ("ん", "ン"):
-        return {"valid": False, "reason": "Từ không được kết thúc bằng ん", "points": 0}
+        return {"valid": False, "reason": "ends_with_n", "points": 0}
 
     if first_kana(normalized) != required_kana:
-        return {"valid": False, "reason": f"Từ phải bắt đầu bằng 「{required_kana}」", "points": 0}
+        return {
+            "valid": False,
+            "reason": "wrong_start",
+            "reason_params": {"kana": required_kana},
+            "points": 0,
+        }
 
     mc = mora_count(normalized)
     min_mora = settings.get("min_mora", 1)
     max_mora = settings.get("max_mora", 12)
     if mc < min_mora or mc > max_mora:
-        return {"valid": False, "reason": f"Độ dài từ phải từ {min_mora}–{max_mora} âm tiết", "points": 0}
+        return {
+            "valid": False,
+            "reason": "wrong_length",
+            "reason_params": {"min": min_mora, "max": max_mora},
+            "points": 0,
+        }
 
     if not bank_hiragana:
-        return {"valid": False, "reason": "Từ không có trong ngân hàng", "points": 0}
+        return {"valid": False, "reason": "not_in_bank", "points": 0}
 
     bank_norm = to_script(bank_hiragana, script_mode)
     if normalized != bank_norm:
-        return {"valid": False, "reason": "Từ không có trong ngân hàng", "points": 0}
+        return {"valid": False, "reason": "not_in_bank", "points": 0}
 
     return {"valid": True, "reason": None, "points": 0}
 

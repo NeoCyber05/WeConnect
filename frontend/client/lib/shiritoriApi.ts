@@ -42,9 +42,39 @@ export interface ShiritoriState {
   is_my_turn: boolean;
 }
 
+export type ShiritoriErrorCode =
+  | "invalid_script"
+  | "already_used"
+  | "ends_with_n"
+  | "wrong_start"
+  | "wrong_length"
+  | "not_in_bank"
+  | "invalid";
+
+const LEGACY_REASON_MAP: Record<string, ShiritoriErrorCode> = {
+  "Chỉ được nhập Hiragana hoặc Katakana": "invalid_script",
+  "Từ này đã được dùng rồi": "already_used",
+  "Từ không được kết thúc bằng ん": "ends_with_n",
+  "Từ không có trong ngân hàng": "not_in_bank",
+};
+
+export function translateShiritoriReason(
+  t: (key: string, opts?: Record<string, unknown>) => string,
+  reason?: string | null,
+  params?: Record<string, unknown> | null,
+): string {
+  if (!reason) return t("shiritori.errors.invalid");
+  const code = (LEGACY_REASON_MAP[reason] ?? reason) as ShiritoriErrorCode;
+  const key = `shiritori.errors.${code}`;
+  const translated = t(key, { ...(params ?? {}), defaultValue: "" });
+  if (translated && translated !== key) return translated;
+  return reason;
+}
+
 export interface ShiritoriSubmitResult {
   valid: boolean;
   reason?: string | null;
+  reason_params?: Record<string, unknown> | null;
   word?: string | null;
   meaning?: string | null;
   points: number;
@@ -120,8 +150,10 @@ export async function subscribeShiritoriRoom(
   return () => { pusher.unsubscribe(`private-game-room-${roomId}`); pusher.disconnect(); };
 }
 
-export const TURN_SECONDS_OPTIONS = [15, 20, 30, 45, 60] as const;
-export const MATCH_MINUTES_OPTIONS = [5, 10, 15, 20, 30] as const;
+export const TURN_SECONDS_MIN = 5;
+export const TURN_SECONDS_MAX = 300;
+export const MATCH_MINUTES_MIN = 1;
+export const MATCH_MINUTES_MAX = 120;
 
 export const HIRAGANA_STARTERS = [
   "あ","い","う","え","お","か","き","く","け","こ",

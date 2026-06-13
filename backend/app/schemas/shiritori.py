@@ -1,12 +1,15 @@
 from datetime import datetime
-from typing import List, Literal, Optional
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from typing import Any, Dict, List, Literal, Optional
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.schemas.game_common import LeaderboardEntry
+from app.utils import shiritori_engine as se
 
 ScriptMode = Literal["HIRAGANA", "KATAKANA"]
-TURN_SECONDS_CHOICES = (15, 20, 30, 45, 60)
-MATCH_MINUTES_CHOICES = (5, 10, 15, 20, 30)
+TURN_SECONDS_MIN = 5
+TURN_SECONDS_MAX = 300
+MATCH_MINUTES_MIN = 1
+MATCH_MINUTES_MAX = 120
 
 class ShiritoriRoomSettings(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -15,32 +18,25 @@ class ShiritoriRoomSettings(BaseModel):
     min_mora: int = Field(default=2, ge=1, le=12)
     max_mora: int = Field(default=8, ge=1, le=12)
     start_kana: str = Field(default="RANDOM", description="Single kana or RANDOM")
-    turn_seconds: int = Field(default=30, description="Thời gian mỗi lượt (giây)")
-    match_minutes: int = Field(default=10, description="Thời gian một ván (phút)")
+    turn_seconds: int = Field(default=30, ge=TURN_SECONDS_MIN, le=TURN_SECONDS_MAX, description="Thời gian mỗi lượt (giây)")
+    match_minutes: int = Field(default=10, ge=MATCH_MINUTES_MIN, le=MATCH_MINUTES_MAX, description="Thời gian một ván (phút)")
     allow_long_vowel_chain: bool = True
 
     @field_validator("start_kana")
     @classmethod
     def validate_start_kana(cls, v: str) -> str:
-        if v.upper() == "RANDOM":
+        v = (v or "").strip()
+        if not v or v.upper() == "RANDOM":
             return "RANDOM"
-        if len(v) != 1:
-            raise ValueError("start_kana must be one kana or RANDOM")
+        if len(v) != 1 or not se.is_kana_char(v):
+            raise ValueError("start_kana must be one hiragana/katakana or RANDOM")
         return v
 
-    @field_validator("turn_seconds")
-    @classmethod
-    def validate_turn_seconds(cls, v: int) -> int:
-        if v not in TURN_SECONDS_CHOICES:
-            raise ValueError(f"turn_seconds must be one of {TURN_SECONDS_CHOICES}")
-        return v
-
-    @field_validator("match_minutes")
-    @classmethod
-    def validate_match_minutes(cls, v: int) -> int:
-        if v not in MATCH_MINUTES_CHOICES:
-            raise ValueError(f"match_minutes must be one of {MATCH_MINUTES_CHOICES}")
-        return v
+    @model_validator(mode="after")
+    def normalize_start_kana_for_script(self) -> "ShiritoriRoomSettings":
+        if self.start_kana != "RANDOM":
+            self.start_kana = se.to_script(self.start_kana, self.script_mode)
+        return self
 
     @field_validator("max_mora")
     @classmethod
@@ -93,6 +89,7 @@ class ShiritoriSubmitRequest(BaseModel):
 class ShiritoriSubmitResult(BaseModel):
     valid: bool
     reason: Optional[str] = None
+    reason_params: Optional[Dict[str, Any]] = None
     word: Optional[str] = None
     meaning: Optional[str] = None
     points: int = 0

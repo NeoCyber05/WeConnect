@@ -5,7 +5,8 @@ import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import {
-  HIRAGANA_STARTERS, TURN_SECONDS_OPTIONS, MATCH_MINUTES_OPTIONS,
+  TURN_SECONDS_MIN, TURN_SECONDS_MAX,
+  MATCH_MINUTES_MIN, MATCH_MINUTES_MAX,
   type ShiritoriRoomSettings,
 } from "@/lib/shiritoriApi";
 
@@ -524,14 +525,24 @@ export default function Index() {
                       </select>
                     </div>
                     <div>
-                      <label className="text-[10px] font-bold uppercase text-gray-500 block mb-1">{t("shiritori.startKana")}</label>
-                      <select value={shiriStartKana} onChange={(e) => setShiriStartKana(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border border-[#E2E8E2] bg-white text-sm">
-                        <option value="RANDOM">{t("shiritori.random")}</option>
-                        {HIRAGANA_STARTERS.map((k) => (
-                          <option key={k} value={k}>{k}</option>
-                        ))}
-                      </select>
+                      <label className="text-[10px] font-bold uppercase text-gray-500 flex items-center gap-1.5 mb-1">
+                        <span>{t("shiritori.startKana")}</span>
+                        <span
+                          className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-semibold normal-case tracking-normal text-gray-400 bg-white border border-dashed border-gray-300"
+                          title={t("shiritori.startKanaHint")}
+                        >
+                          <span aria-hidden className="text-[10px] leading-none">○</span>
+                          {t("shiritori.optional")}
+                        </span>
+                      </label>
+                      <input
+                        type="text"
+                        value={shiriStartKana}
+                        onChange={(e) => setShiriStartKana(e.target.value)}
+                        placeholder={t("shiritori.startKanaPlaceholder")}
+                        className="w-full px-3 py-2 rounded-xl border border-[#E2E8E2] bg-white text-sm"
+                      />
+                      <p className="mt-1 text-[10px] text-gray-400">{t("shiritori.startKanaHint")}</p>
                     </div>
                   </div>
 
@@ -555,21 +566,31 @@ export default function Index() {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-[10px] font-bold uppercase text-gray-500 block mb-1">{t("shiritori.turnTime")}</label>
-                      <select value={shiriTurnSeconds} onChange={(e) => setShiriTurnSeconds(Number(e.target.value))}
-                        className="w-full px-3 py-2 rounded-xl border border-[#E2E8E2] bg-white text-sm">
-                        {TURN_SECONDS_OPTIONS.map(s => (
-                          <option key={s} value={s}>{s} {t("shiritori.seconds")}</option>
-                        ))}
-                      </select>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={TURN_SECONDS_MIN}
+                          max={TURN_SECONDS_MAX}
+                          value={shiriTurnSeconds}
+                          onChange={(e) => setShiriTurnSeconds(Number(e.target.value))}
+                          className="w-full px-3 py-2 rounded-xl border border-[#E2E8E2] bg-white text-sm"
+                        />
+                        <span className="text-xs text-gray-500 shrink-0">{t("shiritori.seconds")}</span>
+                      </div>
                     </div>
                     <div>
                       <label className="text-[10px] font-bold uppercase text-gray-500 block mb-1">{t("shiritori.matchTime")}</label>
-                      <select value={shiriMatchMinutes} onChange={(e) => setShiriMatchMinutes(Number(e.target.value))}
-                        className="w-full px-3 py-2 rounded-xl border border-[#E2E8E2] bg-white text-sm">
-                        {MATCH_MINUTES_OPTIONS.map(m => (
-                          <option key={m} value={m}>{m} {t("shiritori.minutes")}</option>
-                        ))}
-                      </select>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={MATCH_MINUTES_MIN}
+                          max={MATCH_MINUTES_MAX}
+                          value={shiriMatchMinutes}
+                          onChange={(e) => setShiriMatchMinutes(Number(e.target.value))}
+                          className="w-full px-3 py-2 rounded-xl border border-[#E2E8E2] bg-white text-sm"
+                        />
+                        <span className="text-xs text-gray-500 shrink-0">{t("shiritori.minutes")}</span>
+                      </div>
                     </div>
                   </div>
 
@@ -593,13 +614,25 @@ export default function Index() {
                         max_players: maxPlayers,
                       };
                       if (game.game_type === "SHIRITORI") {
+                        const turnSeconds = Math.min(
+                          TURN_SECONDS_MAX,
+                          Math.max(TURN_SECONDS_MIN, shiriTurnSeconds || TURN_SECONDS_MIN),
+                        );
+                        const matchMinutes = Math.min(
+                          MATCH_MINUTES_MAX,
+                          Math.max(MATCH_MINUTES_MIN, shiriMatchMinutes || MATCH_MINUTES_MIN),
+                        );
+                        const startKanaRaw = shiriStartKana.trim();
+                        const startKana = !startKanaRaw || startKanaRaw.toUpperCase() === "RANDOM"
+                          ? "RANDOM"
+                          : [...startKanaRaw][0];
                         payload.settings = {
                           script_mode: shiriScript,
                           min_mora: shiriMinMora,
                           max_mora: Math.max(shiriMinMora, shiriMaxMora),
-                          start_kana: shiriStartKana,
-                          turn_seconds: shiriTurnSeconds,
-                          match_minutes: shiriMatchMinutes,
+                          start_kana: startKana,
+                          turn_seconds: turnSeconds,
+                          match_minutes: matchMinutes,
                           allow_long_vowel_chain: true,
                         };
                       }
