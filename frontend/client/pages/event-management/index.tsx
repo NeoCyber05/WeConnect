@@ -75,6 +75,28 @@ function mapEventOutToEvent(e: EventOut): Event {
     timeStatus = "finished";
   }
 
+  const EVENT_IMAGE_MAP: Record<string, string> = {
+    "Lễ hội hoa anh đào": "/static/events/lehoianhdao.png",
+    "Học làm Sushi": "/static/events/hoclamsushi.png",
+    "Bóng đá cộng đồng": "/static/events/bongdacongdong.png",
+    "Tiếng Nhật giao tiếp": "/static/events/tiengnhatgiaotiep.png",
+    "Triển lãm Manga": "/static/events/trienlammanga.png",
+    "Đêm nhạc Trịnh": "/static/events/demnhactrinh.png",
+    "Leo núi Phú Sĩ": "/static/events/leonuiphusi.png",
+    "Giao lưu J-Pop": "/static/events/giaoluujpop.png",
+    "Hùng biện tiếng Nhật": "/static/events/hungbientiengnhat.png",
+    "Offline fan anime": "/static/events/offlinefananime.png",
+    "Hội thảo du học": "/static/events/tiengnhatgiaotiep.png",
+    "Tiệc trà đạo": "/static/events/tiectradao.png",
+    "Ngày hội việc làm IT": "/static/events/ngayhoivieclamit.png",
+    "Workshop Thư pháp": "/static/events/workshopthuphap.png",
+    "Cắm hoa Ikebana": "/static/events/camhoaikebana.png"
+  };
+
+  const fallbackImage = EVENT_IMAGE_MAP[e.title] || "/static/events/lehoianhdao.png";
+  const isUnsplash = !e.image_url || e.image_url.includes("unsplash.com");
+  const finalImage = isUnsplash ? fallbackImage : e.image_url;
+
   return {
     id: e.event_id,
     name: e.title,
@@ -84,7 +106,7 @@ function mapEventOutToEvent(e: EventOut): Event {
     endDate: formatDateTimeLocal(e.end_time),
     location: e.location || "",
     description: e.description || "",
-    coverImage: getImageUrl(e.image_url, "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=200&fit=crop"),
+    coverImage: getImageUrl(finalImage, ""),
     status: isCancelled ? "cancelled" : (isClosed ? "closed" : timeStatus),
     timeStatus,
     isClosed,
