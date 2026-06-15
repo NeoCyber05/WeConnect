@@ -58,15 +58,15 @@ export default function EditProfileModal({ isOpen, onClose, initialData }: EditP
     mutationFn: (data: typeof initialData) => {
       const payload = {
         full_name: data.full_name.trim(),
-        location: data.location?.trim() || undefined,
-        bio: data.bio?.trim() || undefined,
-        japanese_level: data.japanese_level?.trim() || undefined,
-        job_title: data.job_title?.trim() || undefined,
-        education: data.education?.trim() || undefined,
-        relationship_status: data.relationship_status?.trim() || undefined,
-        gender: data.gender?.trim() || undefined,
+        location: data.location?.trim() || "",
+        bio: data.bio?.trim() || "",
+        japanese_level: data.japanese_level?.trim() || "",
+        job_title: data.job_title?.trim() || "",
+        education: data.education?.trim() || "",
+        relationship_status: data.relationship_status?.trim() || "",
+        gender: data.gender?.trim() || "",
         date_of_birth: data.date_of_birth || undefined,
-        phone_number: data.phone_number?.trim() || undefined,
+        phone_number: data.phone_number?.trim() || "",
       };
 
       return apiFetch("/api/v1/users/me", {
