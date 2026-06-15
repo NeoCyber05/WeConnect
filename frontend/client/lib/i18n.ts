@@ -424,6 +424,12 @@ const resources = {
         "Giải trí": "Giải trí",
         "Công nghệ": "Công nghệ",
         "Kinh doanh": "Kinh doanh",
+        "Giao lưu Ngôn ngữ & Văn hóa": "Giao lưu Ngôn ngữ & Văn hóa",
+        "Ẩm thực & Đời sống": "Ẩm thực & Đời sống",
+        "Thể thao & Giải trí": "Thể thao & Giải trí",
+        "Nghệ thuật & Sáng tạo": "Nghệ thuật & Sáng tạo",
+        "Công nghệ & Thiết kế": "Công nghệ & Thiết kế",
+        "Sự nghiệp & Networking": "Sự nghiệp & Networking",
         "Khác": "Khác"
       },
       hobbiesList: {
@@ -949,6 +955,12 @@ const resources = {
         "Giải trí": "エンターテイメント",
         "Công nghệ": "テクノロジー",
         "Kinh doanh": "ビジネス",
+        "Giao lưu Ngôn ngữ & Văn hóa": "言語交流＆文化",
+        "Ẩm thực & Đời sống": "グルメ＆ライフスタイル",
+        "Thể thao & Giải trí": "スポーツ＆エンターテイメント",
+        "Nghệ thuật & Sáng tạo": "アート＆クリエイティブ",
+        "Công nghệ & Thiết kế": "テクノロジー＆デザイン",
+        "Sự nghiệp & Networking": "キャリア＆ネットワーキング",
         "Khác": "その他"
       },
       hobbiesList: {

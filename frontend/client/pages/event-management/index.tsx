@@ -148,10 +148,12 @@ const statusConfig = {
 };
 
 const categoryColors: Record<string, string> = {
-  "Công nghệ": "bg-slate-900 text-white",
-  "Kinh doanh": "bg-slate-900 text-white",
-  "Giáo dục": "bg-slate-900 text-white",
-  "Nghệ thuật": "bg-slate-900 text-white",
+  "Giao lưu Ngôn ngữ & Văn hóa": "bg-slate-900 text-white",
+  "Ẩm thực & Đời sống": "bg-slate-900 text-white",
+  "Thể thao & Giải trí": "bg-slate-900 text-white",
+  "Nghệ thuật & Sáng tạo": "bg-slate-900 text-white",
+  "Công nghệ & Thiết kế": "bg-slate-900 text-white",
+  "Sự nghiệp & Networking": "bg-slate-900 text-white",
   "Khác": "bg-slate-900 text-white",
 };
 
@@ -182,7 +184,15 @@ export default function Index() {
 
   const events: Event[] = (apiEvents ?? []).map(mapEventOutToEvent);
 
-  const CATEGORIES = ["Công nghệ", "Kinh doanh", "Giáo dục", "Nghệ thuật", "Khác"];
+  const CATEGORIES = [
+    "Giao lưu Ngôn ngữ & Văn hóa",
+    "Ẩm thực & Đời sống",
+    "Thể thao & Giải trí",
+    "Nghệ thuật & Sáng tạo",
+    "Công nghệ & Thiết kế",
+    "Sự nghiệp & Networking",
+    "Khác"
+  ];
 
   const filtered = events.filter((e) => {
     const matchesSearch = e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

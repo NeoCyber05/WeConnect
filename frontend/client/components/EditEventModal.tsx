@@ -129,10 +129,12 @@ interface EditEventModalProps {
 }
 
 const categories = [
-  "Công nghệ",
-  "Kinh doanh",
-  "Giáo dục",
-  "Nghệ thuật",
+  "Giao lưu Ngôn ngữ & Văn hóa",
+  "Ẩm thực & Đời sống",
+  "Thể thao & Giải trí",
+  "Nghệ thuật & Sáng tạo",
+  "Công nghệ & Thiết kế",
+  "Sự nghiệp & Networking",
   "Khác",
 ];
 

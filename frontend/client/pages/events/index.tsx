@@ -338,10 +338,12 @@ export default function Index() {
                   className="w-full px-4 py-2.5 bg-wc-bg border-none rounded-xl text-sm focus:ring-2 focus:ring-wc-green/20 transition-all appearance-none cursor-pointer"
                 >
                   <option value="all">{t("events.categoryAll")}</option>
-                  <option value="Công nghệ">{t("eventCategories.Công nghệ", { defaultValue: "Công nghệ" })}</option>
-                  <option value="Kinh doanh">{t("eventCategories.Kinh doanh", { defaultValue: "Kinh doanh" })}</option>
-                  <option value="Giáo dục">{t("eventCategories.Giáo dục", { defaultValue: "Giáo dục" })}</option>
-                  <option value="Nghệ thuật">{t("eventCategories.Nghệ thuật", { defaultValue: "Nghệ thuật" })}</option>
+                  <option value="Giao lưu Ngôn ngữ & Văn hóa">{t("eventCategories.Giao lưu Ngôn ngữ & Văn hóa", { defaultValue: "Giao lưu Ngôn ngữ & Văn hóa" })}</option>
+                  <option value="Ẩm thực & Đời sống">{t("eventCategories.Ẩm thực & Đời sống", { defaultValue: "Ẩm thực & Đời sống" })}</option>
+                  <option value="Thể thao & Giải trí">{t("eventCategories.Thể thao & Giải trí", { defaultValue: "Thể thao & Giải trí" })}</option>
+                  <option value="Nghệ thuật & Sáng tạo">{t("eventCategories.Nghệ thuật & Sáng tạo", { defaultValue: "Nghệ thuật & Sáng tạo" })}</option>
+                  <option value="Công nghệ & Thiết kế">{t("eventCategories.Công nghệ & Thiết kế", { defaultValue: "Công nghệ & Thiết kế" })}</option>
+                  <option value="Sự nghiệp & Networking">{t("eventCategories.Sự nghiệp & Networking", { defaultValue: "Sự nghiệp & Networking" })}</option>
                   <option value="Khác">{t("eventCategories.Khác", { defaultValue: "Khác" })}</option>
                 </select>
               </div>
