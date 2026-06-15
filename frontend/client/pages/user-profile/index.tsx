@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
@@ -102,6 +102,7 @@ function FriendActionButton({
 export default function UserProfilePage() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["userProfile", id],
@@ -167,9 +168,9 @@ export default function UserProfilePage() {
 
           {/* Profile info row */}
           <div className="max-w-[1152px] mx-auto px-4 sm:px-6">
-            <div className="flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-6 pb-6 sm:pb-10 -mt-12 sm:-mt-16 md:-mt-20">
+            <div className="relative z-10 flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-6 pb-6 sm:pb-10 -mt-12 sm:-mt-16 md:-mt-20">
               {/* Avatar */}
-              <div className="flex-shrink-0">
+              <div className="flex-shrink-0 relative z-20">
                 <div className="w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44 rounded-full bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] p-1 sm:p-1.5 overflow-hidden">
                   {avatarUrl ? (
                     <img
@@ -218,10 +219,26 @@ export default function UserProfilePage() {
                   )}
                 </div>
 
-                <FriendActionButton
-                  status={user.friendship_status}
-                  userId={user.user_id}
-                />
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      if (user.friendship_status !== "FRIEND") {
+                        toast.error("Hiện tại chưa thể nhắn tin vì chưa kết bạn");
+                      } else {
+                        navigate(`/chat?user_id=${user.user_id}`);
+                      }
+                    }}
+                    className="p-2 sm:p-2.5 rounded-2xl border border-[#4A6741]/20 bg-[#F1F5F0] text-[#4A6741] hover:bg-[#E8F0E8] transition-colors"
+                  >
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                  </button>
+                  <FriendActionButton
+                    status={user.friendship_status}
+                    userId={user.user_id}
+                  />
+                </div>
               </div>
             </div>
           </div>

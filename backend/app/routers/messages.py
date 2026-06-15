@@ -313,7 +313,7 @@ def send_message(
     current_user: User = Depends(get_current_user),
 ):
     conversation = _get_conversation_for_user(db, conversation_id, current_user.user_id)
-    receiver_id = _other_user_id(conversation, current_user.user_id)
+    receiver_id = conversation.user2_id if conversation.user1_id == current_user.user_id else conversation.user1_id
     _ensure_friends(db, current_user.user_id, receiver_id)
 
     message = Message(
