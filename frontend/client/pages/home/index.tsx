@@ -286,7 +286,13 @@ export default function Index() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const displayName = user?.full_name?.trim() || t("home.defaultName", { defaultValue: "bạn" });
+  
+  const { data: meData } = useQuery({
+    queryKey: ["me"],
+    queryFn: () => apiFetch<any>("/api/v1/users/me"),
+  });
+
+  const displayName = meData?.full_name?.trim() || user?.full_name?.trim() || t("home.defaultName", { defaultValue: "bạn" });
 
   useEffect(() => {
     if (user?.role === "ORGANIZER") {
