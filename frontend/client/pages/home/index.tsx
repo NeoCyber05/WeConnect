@@ -322,9 +322,35 @@ export default function Index() {
 
   const EVENT_IMAGE_MAP: Record<string, string> = {
     "Lễ hội hoa anh đào": "/static/events/lehoianhdao.png",
+    "桜祭り": "/static/events/lehoianhdao.png",
     "Học làm Sushi": "/static/events/hoclamsushi.png",
+    "寿司作り体験": "/static/events/hoclamsushi.png",
     "Bóng đá cộng đồng": "/static/events/bongdacongdong.png",
-    "Tiếng Nhật giao tiếp": "/static/events/tiengnhatgiaotiep.png"
+    "コミュニティサッカー": "/static/events/bongdacongdong.png",
+    "Tiếng Nhật giao tiếp": "/static/events/tiengnhatgiaotiep.png",
+    "日本語会話交流会": "/static/events/tiengnhatgiaotiep.png",
+    "Triển lãm Manga": "/static/events/trienlammanga.png",
+    "マンガ展": "/static/events/trienlammanga.png",
+    "Đêm nhạc Trịnh": "/static/events/demnhactrinh.png",
+    "トリン・コン・ソン音楽の夕べ": "/static/events/demnhactrinh.png",
+    "Leo núi Phú Sĩ": "/static/events/leonuiphusi.png",
+    "富士山登山": "/static/events/leonuiphusi.png",
+    "Giao lưu J-Pop": "/static/events/giaoluujpop.png",
+    "J-POP交流会": "/static/events/giaoluujpop.png",
+    "Hùng biện tiếng Nhật": "/static/events/hungbientiengnhat.png",
+    "日本語スピーチコンテスト": "/static/events/hungbientiengnhat.png",
+    "Offline fan anime": "/static/events/offlinefananime.png",
+    "アニメファンオフ会": "/static/events/offlinefananime.png",
+    "Hội thảo du học": "/static/events/hoithaoduhoc.png",
+    "留学セミナー": "/static/events/hoithaoduhoc.png",
+    "Tiệc trà đạo": "/static/events/tiectradao.png",
+    "茶道体験会": "/static/events/tiectradao.png",
+    "Ngày hội việc làm IT": "/static/events/ngayhoivieclamit.png",
+    "ITキャリアフェア": "/static/events/ngayhoivieclamit.png",
+    "Workshop Thư pháp": "/static/events/workshopthuphap.png",
+    "書道ワークショップ": "/static/events/workshopthuphap.png",
+    "Cắm hoa Ikebana": "/static/events/camhoaikebana.png",
+    "生け花体験": "/static/events/camhoaikebana.png"
   };
 
   const featuredEvents = (apiEvents || []).map((e) => {

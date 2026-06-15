@@ -618,21 +618,29 @@ INSERT INTO MESSAGES (conversation_id, sender_id, content, message_type, transla
 
 -- ── 6. EVENTS ──
 INSERT INTO EVENTS (organizer_id, title, category, description, start_time, end_time, location, capacity, image_url, status) VALUES
-(6, 'Lễ hội hoa anh đào', 'Nghệ thuật & Sáng tạo', 'Mô tả chi tiết cho sự kiện Lễ hội hoa anh đào.', '2026-04-12 10:00:00', '2026-04-19 18:00:00', 'Tokyo', 50, 'https://images.unsplash.com/photo-1574086631915?w=800', 'ENDED'),
-(30, 'Học làm Sushi', 'Ẩm thực & Đời sống', 'Mô tả chi tiết cho sự kiện Học làm Sushi.', '2026-04-30 10:00:00', '2026-05-02 18:00:00', 'Hải Phòng', 20, 'https://images.unsplash.com/photo-1571929899749?w=800', 'ENDED'),
-(30, 'Leo núi Phú Sĩ', 'Thể thao & Giải trí', 'Mô tả chi tiết cho sự kiện Leo núi Phú Sĩ.', '2026-06-05 08:00:00', '2026-06-15 17:00:00', 'TP.HCM', 30, 'https://images.unsplash.com/photo-1558161695169?w=800', 'ONGOING'),
-(29, 'Hội thảo du học', 'Giao lưu Ngôn ngữ & Văn hóa', 'Mô tả chi tiết cho sự kiện Hội thảo du học.', '2026-06-15 09:00:00', '2026-06-16 17:00:00', 'Hà Nội', 30, 'https://images.unsplash.com/photo-1537362957161?w=800', 'UPCOMING'),
-(7, 'Giao lưu J-Pop', 'Giao lưu Ngôn ngữ & Văn hóa', 'Mô tả chi tiết cho sự kiện Giao lưu J-Pop.', '2026-06-07 19:00:00', '2026-06-09 22:00:00', 'Nagoya', 20, 'https://images.unsplash.com/photo-1529404678368?w=800', 'ONGOING'),
-(28, 'Triển lãm Manga', 'Nghệ thuật & Sáng tạo', 'Mô tả chi tiết cho sự kiện Triển lãm Manga.', '2026-05-19 09:00:00', '2026-06-01 18:00:00', 'Huế', 30, 'https://images.unsplash.com/photo-1584641428931?w=800', 'ENDED'),
-(29, 'Workshop Thư pháp', 'Nghệ thuật & Sáng tạo', 'Mô tả chi tiết cho sự kiện Workshop Thư pháp.', '2026-06-25 09:00:00', '2026-06-25 12:00:00', 'Hà Nội', 100, 'https://images.unsplash.com/photo-1551843174589?w=800', 'UPCOMING'),
-(30, 'Đêm nhạc Trịnh', 'Nghệ thuật & Sáng tạo', 'Mô tả chi tiết cho sự kiện Đêm nhạc Trịnh.', '2026-05-20 20:00:00', '2026-05-20 22:30:00', 'Huế', 100, 'https://images.unsplash.com/photo-1505810227771?w=800', 'ENDED'),
-(6, 'Bóng đá cộng đồng', 'Thể thao & Giải trí', 'Mô tả chi tiết cho sự kiện Bóng đá cộng đồng.', '2026-05-05 08:00:00', '2026-05-05 11:00:00', 'Huế', 50, 'https://images.unsplash.com/photo-1572248045919?w=800', 'ENDED'),
-(6, 'Tiếng Nhật giao tiếp', 'Giao lưu Ngôn ngữ & Văn hóa', 'Mô tả chi tiết cho sự kiện Tiếng Nhật giao tiếp.', '2026-05-05 18:30:00', '2026-05-05 20:30:00', 'Tokyo', 20, 'https://images.unsplash.com/photo-1557512050562?w=800', 'ENDED'),
-(29, 'Ngày hội việc làm IT', 'Công nghệ & Thiết kế', 'Mô tả chi tiết cho sự kiện Ngày hội việc làm IT.', '2026-06-24 08:30:00', '2026-06-24 16:30:00', 'Fukuoka', 100, 'https://images.unsplash.com/photo-1559552488577?w=800', 'UPCOMING'),
-(29, 'Tiệc trà đạo', 'Ẩm thực & Đời sống', 'Mô tả chi tiết cho sự kiện Tiệc trà đạo.', '2026-06-23 15:00:00', '2026-06-23 17:00:00', 'Tokyo', 20, 'https://images.unsplash.com/photo-1598607075312?w=800', 'UPCOMING'),
-(29, 'Cắm hoa Ikebana', 'Nghệ thuật & Sáng tạo', 'Mô tả chi tiết cho sự kiện Cắm hoa Ikebana.', '2026-06-28 09:00:00', '2026-06-28 11:30:00', 'Tokyo', 50, 'https://images.unsplash.com/photo-1545544322133?w=800', 'UPCOMING'),
-(29, 'Hùng biện tiếng Nhật', 'Giao lưu Ngôn ngữ & Văn hóa', 'Mô tả chi tiết cho sự kiện Hùng biện tiếng Nhật.', '2026-06-08 08:00:00', '2026-06-09 18:00:00', 'Nagoya', 50, 'https://images.unsplash.com/photo-1564975697993?w=800', 'ONGOING'),
-(28, 'Offline fan anime', 'Giao lưu Ngôn ngữ & Văn hóa', 'Mô tả chi tiết cho sự kiện Offline fan anime.', '2026-06-12 14:00:00', '2026-06-12 17:00:00', 'Osaka', 50, 'https://images.unsplash.com/photo-1591598203252?w=800', 'UPCOMING');
+(6, '桜祭り', 'Nghệ thuật & Sáng tạo', '桜祭りイベントの詳細説明。伝統的なゲーム、料理、着物体験などをお楽しみください。', '2026-04-12 10:00:00', '2026-04-19 18:00:00', 'Tokyo', 50, '/static/events/lehoianhdao.png', 'ENDED'),
+(30, '寿司作り体験', 'Ẩm thực & Đời sống', 'プロの寿司職人から美味しい寿司の作り方を学ぶ体験ワークショップ。', '2026-04-30 10:00:00', '2026-05-02 18:00:00', 'Hải Phòng', 20, '/static/events/hoclamsushi.png', 'ENDED'),
+(30, '富士山登山', 'Thể thao & Giải trí', '日本のシンボルである富士山の登頂を目指すツアー。初心者から上級者まで歓迎。', '2026-06-05 08:00:00', '2026-06-15 17:00:00', 'TP.HCM', 30, '/static/events/leonuiphusi.png', 'ONGOING'),
+(29, '留学セミナー', 'Giao lưu Ngôn ngữ & Văn hóa', '日本留学に必要な手続き、奨学金、生活についての情報共有セミナー。', '2026-06-15 09:00:00', '2026-06-16 17:00:00', 'Hà Nội', 30, '/static/events/hoithaoduhoc.png', 'UPCOMING'),
+(7, 'J-POP交流会', 'Giao lưu Ngôn ngữ & Văn hóa', '日本のポップカルチャー、J-POP音楽が好きな人々との交流・ファンミーティング。', '2026-06-07 19:00:00', '2026-06-09 22:00:00', 'Nagoya', 20, '/static/events/giaoluujpop.png', 'ONGOING'),
+(28, 'マンガ展', 'Nghệ thuật & Sáng tạo', '最新のマンガ作品、歴史的アートワークや有名作家の原画などを展示する特別展。', '2026-05-19 09:00:00', '2026-06-01 18:00:00', 'Huế', 30, '/static/events/trienlammanga.png', 'ENDED'),
+(29, '書道ワークショップ', 'Nghệ thuật & Sáng tạo', '筆と墨を使った伝統的な日本の書道アートワークショップ。基礎から教えます。', '2026-06-25 09:00:00', '2026-06-25 12:00:00', 'Hà Nội', 100, '/static/events/workshopthuphap.png', 'UPCOMING'),
+(30, 'トリン・コン・ソン音楽の夕べ', 'Nghệ thuật & Sáng tạo', 'ベトナムの有名な作曲家トリン・コン・ソンの名曲を演奏し、楽しむ音楽会。', '2026-05-20 20:00:00', '2026-05-20 22:30:00', 'Huế', 100, '/static/events/demnhactrinh.png', 'ENDED'),
+(6, 'コミュニティサッカー', 'Thể thao & Giải trí', '日越のコミュニティをつなぐ、フレンドリーなサッカー親善試合。', '2026-05-05 08:00:00', '2026-05-05 11:00:00', 'Huế', 50, '/static/events/bongdacongdong.png', 'ENDED'),
+(6, '日本語会話交流会', 'Giao lưu Ngôn ngữ & Văn hóa', '日常会話で役立つ日本語の表現を学び、日本人スピーカーと実践的に話す交流会。', '2026-05-05 18:30:00', '2026-05-05 20:30:00', 'Tokyo', 20, '/static/events/tiengnhatgiaotiep.png', 'ENDED'),
+(29, 'ITキャリアフェア', 'Công nghệ & Thiết kế', '日本および外資系IT企業との直接面接、キャリア相談、情報交換ができる求職フェア。', '2026-06-24 08:30:00', '2026-06-24 16:30:00', 'Fukuoka', 100, '/static/events/ngayhoivieclamit.png', 'UPCOMING'),
+(29, '茶道体験会', 'Ẩm thực & Đời sống', '日本の茶道文化を体験し、美味しい抹茶と和菓子を嗜む伝統的なお茶会。', '2026-06-23 15:00:00', '2026-06-23 17:00:00', 'Tokyo', 20, '/static/events/tiectradao.png', 'UPCOMING'),
+(29, '生け花体験', 'Nghệ thuật & Sáng tạo', '日本の華道（生け花）の基本テクニックを学び、独自の作品を創作する体験クラス。', '2026-06-28 09:00:00', '2026-06-28 11:30:00', 'Tokyo', 50, '/static/events/camhoaikebana.png', 'UPCOMING'),
+(29, '日本語スピーチコンテスト', 'Giao lưu Ngôn ngữ & Văn hóa', '多様なテーマに沿って日本語で自分の考えを表現し、競い合うスピーチ大会。', '2026-06-08 08:00:00', '2026-06-09 18:00:00', 'Nagoya', 50, '/static/events/hungbientiengnhat.png', 'ONGOING'),
+(29, '書道ワークショップ', 'Nghệ thuật & Sáng tạo', '筆と墨を使った伝統的な日本の書道アートワークショップ。基礎から教えます。', '2026-06-25 09:00:00', '2026-06-25 12:00:00', 'Hà Nội', 100, 'https://images.unsplash.com/photo-1551843174589?w=800', 'UPCOMING'),
+(30, 'トリン・コン・ソン音楽の夕べ', 'Nghệ thuật & Sáng tạo', 'ベトナムの有名な作曲家トリン・コン・ソンの名曲を演奏し、楽しむ音楽会。', '2026-05-20 20:00:00', '2026-05-20 22:30:00', 'Huế', 100, 'https://images.unsplash.com/photo-1505810227771?w=800', 'ENDED'),
+(6, 'コミュニティサッカー', 'Thể thao & Giải trí', '日越のコミュニティをつなぐ、フレンドリーなサッカー親善試合。', '2026-05-05 08:00:00', '2026-05-05 11:00:00', 'Huế', 50, 'https://images.unsplash.com/photo-1572248045919?w=800', 'ENDED'),
+(6, '日本語会話交流会', 'Giao lưu Ngôn ngữ & Văn hóa', '日常会話で役立つ日本語の表現を学び、日本人スピーカーと実践的に話す交流会。', '2026-05-05 18:30:00', '2026-05-05 20:30:00', 'Tokyo', 20, 'https://images.unsplash.com/photo-1557512050562?w=800', 'ENDED'),
+(29, 'ITキャリアフェア', 'Công nghệ & Thiết kế', '日本および外資系IT企業との直接面接、キャリア相談、情報交換ができる求職フェア。', '2026-06-24 08:30:00', '2026-06-24 16:30:00', 'Fukuoka', 100, 'https://images.unsplash.com/photo-1559552488577?w=800', 'UPCOMING'),
+(29, '茶道体験会', 'Ẩm thực & Đời sống', '日本の茶道文化を体験し、美味しい抹茶と和菓子を嗜む伝統的なお茶会。', '2026-06-23 15:00:00', '2026-06-23 17:00:00', 'Tokyo', 20, 'https://images.unsplash.com/photo-1598607075312?w=800', 'UPCOMING'),
+(29, '生け花体験', 'Nghệ thuật & Sáng tạo', '日本の華道（生け花）の基本テクニックを学び、独自の作品を創作する体験クラス。', '2026-06-28 09:00:00', '2026-06-28 11:30:00', 'Tokyo', 50, 'https://images.unsplash.com/photo-1545544322133?w=800', 'UPCOMING'),
+(29, '日本語スピーチコンテスト', 'Giao lưu Ngôn ngữ & Văn hóa', '多様なテーマに沿って日本語で自分の考えを表現し、競い合うスピーチ大会。', '2026-06-08 08:00:00', '2026-06-09 18:00:00', 'Nagoya', 50, 'https://images.unsplash.com/photo-1564975697993?w=800', 'ONGOING'),
+(28, 'アニメファンオフ会', 'Giao lưu Ngôn ngữ & Văn hóa', 'アニメ愛好家が集まり、好きな作品について熱く語り合い、限定グッズを共有するファンオフ会。', '2026-06-12 14:00:00', '2026-06-12 17:00:00', 'Osaka', 50, 'https://images.unsplash.com/photo-1591598203252?w=800', 'UPCOMING');
 
 -- ── 7. EVENT_REGISTRATIONS & FEEDBACK ──
 INSERT INTO EVENT_REGISTRATIONS (event_id, user_id, registered_at) VALUES
