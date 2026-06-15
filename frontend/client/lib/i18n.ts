@@ -985,13 +985,12 @@ const resources = {
         "Kỹ thuật": "技術",
         "Gaming": "ゲーム",
         "Công nghệ": "テクノロジー",
-        "GIẢI TRÍ": "エンターテイメント",
-        "HỌC THUẬT": "学術",
-        "KHÁM PHÁ": "探検",
-        "KỸ THUẬT": "技術",
-        "NGHỆ THUẬT": "芸術",
-        "NGÔN NGỮ": "言語",
-        "SỨC KHOẺ": "健康"
+        "Giải trí": "エンターテイメント",
+        "Học thuật": "学術",
+        "Khám phá": "探検",
+        "Nghệ thuật": "芸術",
+        "Ngôn ngữ": "言語",
+        "Sức khoẻ": "健康"
       },
       locations: {
         "Hà Nội": "ハノイ",
