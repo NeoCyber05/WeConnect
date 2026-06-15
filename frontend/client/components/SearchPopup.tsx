@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import {
   searchUsers,
   sendFriendRequest,
@@ -17,12 +18,8 @@ const JLPT_BADGE_STYLE: Record<string, { bg: string; text: string }> = {
   N4: { bg: "bg-slate-100", text: "text-slate-600" },
   N5: { bg: "bg-gray-50", text: "text-gray-600" },
   "Bản ngữ": { bg: "bg-purple-50", text: "text-purple-600" },
+  "Native": { bg: "bg-purple-50", text: "text-purple-600" },
 };
-
-const AGE_OPTIONS = ["Tất cả", "Thế hệ 10x", "Thế hệ 20x", "Thế hệ 30x", "40 tuổi trở lên"];
-const GENDER_OPTIONS = ["Tất cả", "Nam", "Nữ", "Khác"];
-const LEVEL_OPTIONS = ["Tất cả", "N1", "N2", "N3", "N4", "N5", "Bản ngữ"];
-const HOBBY_OPTIONS = ["Tất cả", "Âm nhạc", "Đọc sách", "Nghệ thuật", "Nấu ăn", "Chơi game", "Du lịch", "Thể thao"];
 
 function FilterIcon() {
   return (
@@ -46,7 +43,7 @@ function ChevronDown() {
 interface FilterSelectProps {
   label: string;
   value: string;
-  options: string[];
+  options: { value: string; label: string }[];
   onChange: (v: string) => void;
 }
 
@@ -65,8 +62,8 @@ function FilterSelect({ label, value, options, onChange }: FilterSelectProps) {
           className="w-full h-[32px] rounded-lg border border-[#E2E8E2] bg-white text-[#2D3A3A] text-[11px] font-semibold pl-2 pr-6 appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#4A6741] focus:border-[#4A6741] transition-colors"
         >
           {options.map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
             </option>
           ))}
         </select>
@@ -115,17 +112,18 @@ function FriendStatusButton({
   isLoading?: boolean;
 }) {
   const { friendship_status, user_id } = user;
+  const { t } = useTranslation();
 
   if (friendship_status === "FRIEND") {
-    return <span className="text-[#4A6741] text-[10px] font-bold">Bạn bè</span>;
+    return <span className="text-[#4A6741] text-[10px] font-bold">{t("chat.friendStatus")}</span>;
   }
   if (friendship_status === "REQUEST_SENT") {
-    return <span className="text-[#6B7280] text-[10px] font-bold">Đã gửi lời mời</span>;
+    return <span className="text-[#6B7280] text-[10px] font-bold">{t("chat.requestSent")}</span>;
   }
   if (friendship_status === "REQUEST_RECEIVED") {
     return (
       <Link to="/friends" className="text-[#EA580C] text-[10px] font-bold hover:underline">
-        Phản hồi
+        {t("chat.respond")}
       </Link>
     );
   }
@@ -135,7 +133,7 @@ function FriendStatusButton({
       disabled={isLoading}
       className="text-[#4A6741] text-[10px] font-bold hover:underline disabled:opacity-50"
     >
-      {isLoading ? "..." : "Thêm bạn"}
+      {isLoading ? "..." : t("chat.addFriend")}
     </button>
   );
 }
@@ -147,6 +145,8 @@ interface SearchPopupProps {
 }
 
 export default function SearchPopup({ searchQuery, isOpen, onClose }: SearchPopupProps) {
+  const { t } = useTranslation();
+
   const [ageFilter, setAgeFilter] = useState("Tất cả");
   const [genderFilter, setGenderFilter] = useState("Tất cả");
   const [levelFilter, setLevelFilter] = useState("Tất cả");
@@ -154,6 +154,42 @@ export default function SearchPopup({ searchQuery, isOpen, onClose }: SearchPopu
   const [sendingId, setSendingId] = useState<number | undefined>();
 
   const queryClient = useQueryClient();
+
+  const ageOptions = [
+    { value: "Tất cả", label: t("chat.all") },
+    { value: "Thế hệ 10x", label: t("chat.age10x") },
+    { value: "Thế hệ 20x", label: t("chat.age20x") },
+    { value: "Thế hệ 30x", label: t("chat.age30x") },
+    { value: "40 tuổi trở lên", label: t("chat.age40plus") },
+  ];
+
+  const genderOptions = [
+    { value: "Tất cả", label: t("chat.all") },
+    { value: "Nam", label: t("chat.genderMale") },
+    { value: "Nữ", label: t("chat.genderFemale") },
+    { value: "Khác", label: t("chat.genderOther") },
+  ];
+
+  const levelOptions = [
+    { value: "Tất cả", label: t("chat.all") },
+    { value: "N1", label: "N1" },
+    { value: "N2", label: "N2" },
+    { value: "N3", label: "N3" },
+    { value: "N4", label: "N4" },
+    { value: "N5", label: "N5" },
+    { value: "Bản ngữ", label: t("chat.native") },
+  ];
+
+  const hobbyOptions = [
+    { value: "Tất cả", label: t("chat.all") },
+    { value: "Âm nhạc", label: t("chat.hobbyMusic") },
+    { value: "Đọc sách", label: t("chat.hobbyBooks") },
+    { value: "Nghệ thuật", label: t("chat.hobbyArt") },
+    { value: "Nấu ăn", label: t("chat.hobbyCooking") },
+    { value: "Chơi game", label: t("chat.hobbyGaming") },
+    { value: "Du lịch", label: t("chat.hobbyTravel") },
+    { value: "Thể thao", label: t("chat.hobbySports") },
+  ];
 
   // Map ageFilter to min/max age
   let min_age: number | undefined;
@@ -200,12 +236,12 @@ export default function SearchPopup({ searchQuery, isOpen, onClose }: SearchPopu
       return sendFriendRequest(receiver_id);
     },
     onSuccess: () => {
-      toast.success("Đã gửi lời mời kết bạn!");
+      toast.success(t("chat.requestSentSuccess"));
       queryClient.invalidateQueries({ queryKey: ["searchPopup"] });
       queryClient.invalidateQueries({ queryKey: ["userSearch"] });
     },
     onError: (err: any) => {
-      toast.error(err.message || "Không thể gửi lời mời kết bạn");
+      toast.error(err.message || t("chat.requestSentError"));
     },
     onSettled: () => setSendingId(undefined),
   });
@@ -224,32 +260,32 @@ export default function SearchPopup({ searchQuery, isOpen, onClose }: SearchPopu
         <div className="flex items-center gap-1.5">
           <FilterIcon />
           <span className="text-[#6B7280] text-[10px] font-bold uppercase tracking-wider">
-            Bộ lọc tìm kiếm
+            {t("chat.searchFilters")}
           </span>
         </div>
         <div className="flex gap-2">
           <FilterSelect
-            label="Độ tuổi"
+            label={t("chat.age")}
             value={ageFilter}
-            options={AGE_OPTIONS}
+            options={ageOptions}
             onChange={setAgeFilter}
           />
           <FilterSelect
-            label="Giới tính"
+            label={t("chat.gender")}
             value={genderFilter}
-            options={GENDER_OPTIONS}
+            options={genderOptions}
             onChange={setGenderFilter}
           />
           <FilterSelect
-            label="Sở thích"
+            label={t("chat.interests")}
             value={hobbyFilter}
-            options={HOBBY_OPTIONS}
+            options={hobbyOptions}
             onChange={setHobbyFilter}
           />
           <FilterSelect
-            label="Tiếng Nhật"
+            label={t("chat.japaneseLevel")}
             value={levelFilter}
-            options={LEVEL_OPTIONS}
+            options={levelOptions}
             onChange={setLevelFilter}
           />
         </div>
@@ -259,19 +295,19 @@ export default function SearchPopup({ searchQuery, isOpen, onClose }: SearchPopu
       <div className="flex flex-col">
         <div className="px-4 py-2 border-b border-[rgba(226,232,226,0.3)] bg-white flex justify-between items-center">
           <span className="text-[#6B7280] text-[10px] font-bold uppercase tracking-widest">
-            Kết quả ({users.length})
+            {t("chat.results", { count: users.length })}
           </span>
-          {isLoading && <span className="text-[9px] text-wc-green animate-pulse">Đang tìm...</span>}
+          {isLoading && <span className="text-[9px] text-wc-green animate-pulse">{t("chat.searching")}</span>}
         </div>
 
         <div className="max-h-[350px] overflow-y-auto">
           {!searchQuery && ageFilter === "Tất cả" && genderFilter === "Tất cả" && levelFilter === "Tất cả" && hobbyFilter === "Tất cả" ? (
             <div className="px-4 py-8 text-center text-[#6B7280] text-[11px]">
-              Nhập từ khóa hoặc chọn bộ lọc để tìm kiếm...
+              {t("chat.searchHint")}
             </div>
           ) : users.length === 0 ? (
             <div className="px-4 py-8 text-center text-[#6B7280] text-[11px]">
-              {isLoading ? "Đang tải kết quả..." : "Không tìm thấy người dùng phù hợp."}
+              {isLoading ? t("chat.loadingResults") : t("chat.noUsersFound")}
             </div>
           ) : (
             users.map((user, idx) => (
@@ -293,12 +329,12 @@ export default function SearchPopup({ searchQuery, isOpen, onClose }: SearchPopu
                     </Link>
                     {user.japanese_level && (
                       <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${JLPT_BADGE_STYLE[user.japanese_level]?.bg || "bg-gray-50"} ${JLPT_BADGE_STYLE[user.japanese_level]?.text || "text-gray-600"}`}>
-                        {user.japanese_level}
+                        {user.japanese_level === "Bản ngữ" || user.japanese_level === "Native" ? t("chat.native") : user.japanese_level}
                       </span>
                     )}
                   </div>
                   <span className="text-[#6B7280] text-[11px] truncate">
-                    {user.location || "Chưa cập nhật địa điểm"}
+                    {user.location || t("chat.noLocation")}
                   </span>
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
@@ -307,7 +343,7 @@ export default function SearchPopup({ searchQuery, isOpen, onClose }: SearchPopu
                     className="text-[#4A6741] text-[11px] font-bold hover:underline"
                     onClick={onClose}
                   >
-                    Xem hồ sơ
+                    {t("chat.viewProfile")}
                   </Link>
                   <FriendStatusButton
                     user={user}
@@ -325,7 +361,7 @@ export default function SearchPopup({ searchQuery, isOpen, onClose }: SearchPopu
               onClick={onClose}
             >
               <span className="text-wc-green text-[11px] font-bold">
-                Xem tất cả kết quả...
+                {t("chat.viewAllResults")}
               </span>
             </Link>
           )}
