@@ -258,12 +258,16 @@ export default function Index() {
     // 3. Filter by status
     if (filters.status !== "all") {
       const now = new Date();
-      if (filters.status === "upcoming") {
-        if (now >= event.startTime) return false;
+      const statusUpper = event.status?.toUpperCase();
+      if (filters.status === "open") {
+        if (statusUpper !== "UPCOMING" || now >= event.startTime || event.isFull) return false;
       } else if (filters.status === "ongoing") {
-        if (now < event.startTime || now > event.endTime) return false;
-      } else if (filters.status === "finished") {
-        if (now <= event.endTime) return false;
+        if (statusUpper === "CANCELLED" || now < event.startTime || now > event.endTime) return false;
+      } else if (filters.status === "closed") {
+        const isEnded = (statusUpper === "CLOSED" || statusUpper === "ENDED" || statusUpper === "FINISHED" || now > event.endTime || event.isFull) && statusUpper !== "CANCELLED";
+        if (!isEnded) return false;
+      } else if (filters.status === "cancelled") {
+        if (statusUpper !== "CANCELLED") return false;
       }
     }
 
@@ -351,9 +355,10 @@ export default function Index() {
                   className="w-full px-4 py-2.5 bg-wc-bg border-none rounded-xl text-sm focus:ring-2 focus:ring-wc-green/20 transition-all appearance-none cursor-pointer"
                 >
                   <option value="all">{t("events.statusAll")}</option>
-                  <option value="upcoming">{t("events.statusUpcoming")}</option>
+                  <option value="open">{t("events.statusOpen")}</option>
                   <option value="ongoing">{t("events.statusOngoing")}</option>
-                  <option value="finished">{t("events.statusFinished")}</option>
+                  <option value="closed">{t("events.statusClosed")}</option>
+                  <option value="cancelled">{t("events.statusCancelled")}</option>
                 </select>
               </div>
             </div>
