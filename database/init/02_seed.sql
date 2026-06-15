@@ -46,7 +46,7 @@ INSERT INTO HOBBIES (name, category) VALUES
 ('Đọc sách', 'Học thuật'),
 ('Nghiên cứu', 'Học thuật'),
 ('Viết lách', 'Học thuật'),
-('Thể thao', 'Sức khoẻ'),
+('Cầu lông', 'Sức khoẻ'),
 ('Yoga', 'Sức khoẻ'),
 ('Gym', 'Sức khoẻ'),
 ('Đạp xe', 'Sức khoẻ'),

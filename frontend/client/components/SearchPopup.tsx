@@ -188,7 +188,7 @@ export default function SearchPopup({ searchQuery, isOpen, onClose }: SearchPopu
     { value: "Nấu ăn", label: t("chat.hobbyCooking") },
     { value: "Chơi game", label: t("chat.hobbyGaming") },
     { value: "Du lịch", label: t("chat.hobbyTravel") },
-    { value: "Thể thao", label: t("chat.hobbySports") },
+    { value: "Cầu lông", label: t("chat.hobbySports") },
   ];
 
   // Map ageFilter to min/max age
@@ -213,7 +213,7 @@ export default function SearchPopup({ searchQuery, isOpen, onClose }: SearchPopu
         "Nấu ăn": "8",
         "Chơi game": "3",
         "Du lịch": "9",
-        "Thể thao": "11",
+        "Cầu lông": "21",
       };
       const mappedHobby = hobbyFilter !== "Tất cả" ? hobbyMap[hobbyFilter] : undefined;
 
