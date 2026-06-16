@@ -399,7 +399,8 @@ def translate_message(
     current_user: User = Depends(get_current_user),
 ):
     message = _get_message_for_user(db, message_id, current_user.user_id)
-    if not message.translated_content:
+    # Dịch lại nếu chưa có bản dịch hoặc nếu bản dịch trùng với nội dung gốc (bản dịch lỗi/cũ)
+    if not message.translated_content or message.translated_content.strip() == message.content.strip():
         if not settings.GEMINI_API_KEY:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -407,12 +408,17 @@ def translate_message(
             )
 
         target_language_map = {"VI": "Vietnamese", "JA": "Japanese", "EN": "English"}
-        target_language = target_language_map.get(body.target_language, "Vietnamese")
+        fallback_lang = target_language_map.get(body.target_language, "Vietnamese")
         try:
             client = genai.Client(api_key=settings.GEMINI_API_KEY)
             prompt = (
-                f"Translate the following text to {target_language}. "
-                f"Return only the translated text:\n\n{message.content}"
+                f"You are a translation assistant for a language learning community between Vietnamese and Japanese.\n"
+                f"Your task is to detect the primary language of the text below:\n"
+                f"1. If the text is primarily in Vietnamese, translate it to Japanese.\n"
+                f"2. If the text is primarily in Japanese, translate it to Vietnamese.\n"
+                f"3. If the text is in another language, translate it to {fallback_lang}.\n\n"
+                f"Return ONLY the translation, without any notes, explanations, quotes, or markdown formatting.\n\n"
+                f"Text to translate:\n{message.content}"
             )
             response = client.models.generate_content(
                 model="gemini-2.5-flash",

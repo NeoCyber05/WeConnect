@@ -1005,7 +1005,7 @@ function ChatMessage({
                 {showTranslation && msg.translation && (
                   <div className="mt-2 pt-2 border-t border-[#F1F5F9] flex items-start gap-1.5">
                     <span className="text-[9px] font-bold text-[#4A6741] uppercase shrink-0 mt-0.5">
-                      [{getTargetLanguageLabel(i18n.language)}]
+                      [{getDynamicTargetLanguageLabel(msg.translation, msg.content, i18n.language)}]
                     </span>
                     <p className="text-[11px] text-[#6B7280] leading-[1.5]">
                       {msg.translation}
@@ -1385,6 +1385,12 @@ function getTargetLanguageLabel(i18nLanguage: string): string {
   if (lang === "vi") return "Tiếng Việt";
   if (lang === "ja" || lang === "jp") return "日本語";
   return "English";
+}
+
+function getDynamicTargetLanguageLabel(translatedText: string | undefined, originalText: string, i18nLanguage: string): string {
+  if (translatedText && containsJapanese(translatedText)) return "日本語";
+  if (containsJapanese(originalText)) return "Tiếng Việt";
+  return getTargetLanguageLabel(i18nLanguage);
 }
 
 export default function Index() {
