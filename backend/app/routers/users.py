@@ -41,9 +41,15 @@ def update_my_profile(
     current_user: User = Depends(get_current_user),
 ):
     """SRS ID 6: Cập nhật hồ sơ cá nhân."""
-    update_data = body.model_dump(exclude_none=True)
+    update_data = body.model_dump(exclude_unset=True)
+    
+    # Ignore fields that are explicitly set to None if we want to mimic exclude_none, 
+    # but for bio, we want to allow empty string and None if they unset it.
     for field, value in update_data.items():
+        if value is None and field not in ["bio", "location", "job_title", "education", "japanese_level", "relationship_status", "phone_number"]:
+            continue
         setattr(current_user, field, value)
+        
     db.commit()
     db.refresh(current_user)
     return current_user
