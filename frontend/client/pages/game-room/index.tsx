@@ -1,7 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, API_BASE_URL } from "@/lib/api";
+
+/** Resolve relative avatar paths (e.g. /uploads/...) to absolute URLs for cross-origin deployments. */
+function resolveAvatarUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith("/")) return `${API_BASE_URL}${url}`;
+  return url;
+}
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useGameRoom } from "./useGameRoom";
@@ -234,7 +241,7 @@ function QuizGameRoom({ roomCode }: { roomCode: string }) {
     const nameInitial = entry.full_name.substring(0, 2);
     const avatarElement = entry.avatar_url ? (
       <img
-        src={entry.avatar_url}
+        src={resolveAvatarUrl(entry.avatar_url)!}
         alt={entry.full_name}
         className="w-8 h-8 rounded-full object-cover"
       />
@@ -261,7 +268,7 @@ function QuizGameRoom({ roomCode }: { roomCode: string }) {
       isMe: true,
       score: 0,
       avatar: currentUser.avatar_url ? (
-        <img src={currentUser.avatar_url} alt={currentUser.full_name} className="w-8 h-8 rounded-full object-cover" />
+        <img src={resolveAvatarUrl(currentUser.avatar_url)!} alt={currentUser.full_name} className="w-8 h-8 rounded-full object-cover" />
       ) : (
         <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-800 text-[10px]">
           {currentUser.full_name.substring(0, 2)}
@@ -426,7 +433,7 @@ function QuizGameRoom({ roomCode }: { roomCode: string }) {
                     <div className="relative flex-shrink-0">
                       {entry.avatar_url ? (
                         <img
-                          src={entry.avatar_url}
+                          src={resolveAvatarUrl(entry.avatar_url)!}
                           alt={entry.full_name}
                           className="w-12 h-12 rounded-2xl object-cover"
                         />

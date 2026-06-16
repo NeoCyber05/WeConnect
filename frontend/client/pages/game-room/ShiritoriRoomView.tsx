@@ -3,7 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, API_BASE_URL } from "@/lib/api";
+
+/** Resolve relative avatar paths (e.g. /uploads/...) to absolute URLs for cross-origin deployments. */
+function resolveAvatarUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith("/")) return `${API_BASE_URL}${url}`;
+  return url;
+}
 import { inviteFriendToGameRoom } from "@/lib/chatApi";
 import { translateShiritoriReason } from "@/lib/shiritoriApi";
 import { useShiritoriRoom } from "./useShiritoriRoom";
@@ -320,7 +327,7 @@ export default function ShiritoriRoomView({ roomCode }: { roomCode: string }) {
                   >
                     <div className="relative flex-shrink-0">
                       {entry.avatar_url ? (
-                        <img src={entry.avatar_url} alt={entry.full_name} className="w-12 h-12 rounded-2xl object-cover" />
+                        <img src={resolveAvatarUrl(entry.avatar_url)!} alt={entry.full_name} className="w-12 h-12 rounded-2xl object-cover" />
                       ) : (
                         <div className="w-12 h-12 rounded-2xl bg-teal-100 flex items-center justify-center font-bold text-teal-800">
                           {entry.full_name.substring(0, 2)}
@@ -534,7 +541,7 @@ export default function ShiritoriRoomView({ roomCode }: { roomCode: string }) {
                 <div key={player.id} className={cn("flex items-center gap-3 p-3 rounded-2xl border", player.isMe ? "border-green-200 bg-[#F1F5F0]" : "border-gray-100")}>
                   <div className={cn("w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold", badgeBg)}>{idx + 1}</div>
                   {player.avatarUrl ? (
-                    <img src={player.avatarUrl} alt={player.name} className="w-8 h-8 rounded-full object-cover" />
+                    <img src={resolveAvatarUrl(player.avatarUrl)!} alt={player.name} className="w-8 h-8 rounded-full object-cover" />
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center font-bold text-teal-800 text-[10px]">{player.name.substring(0, 2)}</div>
                   )}
